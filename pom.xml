@@ -23,6 +23,13 @@
         <springdoc.version>2.8.0</springdoc.version>
         <spotless.version>2.43.0</spotless.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <jib.version>3.4.0</jib.version>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
+        <google-java-format.version>1.17.0</google-java-format.version>
+
+        <!-- Docker image configuration -->
+        <docker.image.prefix>ghcr.io/tomassirio</docker.image.prefix>
+        <docker.base.image>eclipse-temurin:21-jre</docker.base.image>
     </properties>
 
     <modules>
@@ -71,7 +78,7 @@
                 <configuration>
                     <java>
                         <googleJavaFormat>
-                            <version>1.17.0</version>
+                            <version>${google-java-format.version}</version>
                             <style>AOSP</style>
                         </googleJavaFormat>
                     </java>
@@ -92,9 +99,28 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                 </plugin>
                 <plugin>
+                    <groupId>com.google.cloud.tools</groupId>
+                    <artifactId>jib-maven-plugin</artifactId>
+                    <version>${jib.version}</version>
+                    <configuration>
+                        <from>
+                            <image>${docker.base.image}</image>
+                            <platforms>
+                                <platform>
+                                    <architecture>arm64</architecture>
+                                    <os>linux</os>
+                                </platform>
+                            </platforms>
+                        </from>
+                        <container>
+                            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+                        </container>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.11.0</version>
+                    <version>${maven-compiler-plugin.version}</version>
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
