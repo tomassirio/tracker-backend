@@ -26,19 +26,38 @@ public class BaseTestEntityFactory {
     }
 
     public static Trip createTrip(UUID tripId) {
-        return Trip.builder().id(tripId).name("Test Trip").build();
+        return createTrip(tripId, "Test Trip");
     }
 
-    public static LocationDTO createLocationDTO(UUID locationId) {
-        return new LocationDTO(
-                locationId,
-                LATITUDE,
-                LONGITUDE,
-                Instant.now(),
-                ALTITUDE,
-                10.0,
-                85,
-                "TRIP_ENDPOINT");
+    public static Trip createTrip(UUID tripId, String name) {
+        return createTrip(tripId, name, TripVisibility.PUBLIC);
+    }
+
+    public static Trip createTrip(UUID tripId, String name, TripVisibility visibility) {
+        return createTrip(
+                tripId,
+                name,
+                LocalDate.now().minusDays(5),
+                LocalDate.now().plusDays(5),
+                1500.0,
+                visibility);
+    }
+
+    public static Trip createTrip(
+            UUID tripId,
+            String name,
+            LocalDate startDate,
+            LocalDate endDate,
+            Double totalDistance,
+            TripVisibility visibility) {
+        return Trip.builder()
+                .id(tripId)
+                .name(name)
+                .startDate(startDate)
+                .endDate(endDate)
+                .totalDistance(totalDistance)
+                .visibility(visibility)
+                .build();
     }
 
     public static LocationDTO createLocationDTO(
