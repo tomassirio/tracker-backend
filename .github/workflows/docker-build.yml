@@ -63,24 +63,26 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Building version: ${VERSION}"
 
-      - name: Build Docker image with Jib (Local)
-        if: ${{ !inputs.push-to-registry }}
+      - name: Build Docker image with Jib
         run: |
           mvn clean package jib:dockerBuild -pl ${{ matrix.module }} -DskipTests
 
-      - name: Build and Push Docker image with Jib (Registry)
+      - name: Tag and Push to Registry
         if: ${{ inputs.push-to-registry }}
         run: |
-          mvn clean package jib:build -pl ${{ matrix.module }} -DskipTests \
-            -Ddocker.image.prefix=${{ inputs.registry }}/${{ secrets.registry-username || 'tracker-backend' }}
-
-      - name: Tag additional version
-        if: ${{ inputs.push-to-registry && inputs.image-tag != '' }}
-        run: |
-          docker tag ${{ inputs.registry }}/${{ secrets.registry-username || 'tracker-backend' }}/${{ matrix.module }}:${{ steps.version.outputs.version }} \
-                     ${{ inputs.registry }}/${{ secrets.registry-username || 'tracker-backend' }}/${{ matrix.module }}:${{ inputs.image-tag }}
-          docker push ${{ inputs.registry }}/${{ secrets.registry-username || 'tracker-backend' }}/${{ matrix.module }}:${{ inputs.image-tag }}
+          # The image was built as: ghcr.io/tomassirio/module:version (from pom.xml)
+          SOURCE_IMAGE="${{ inputs.registry }}/${{ secrets.registry-username }}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
+          
+          # Tag with version
+          docker tag ${SOURCE_IMAGE} ${SOURCE_IMAGE}
+          docker push ${SOURCE_IMAGE}
+          
+          # Tag with additional tag if provided
+          if [ -n "${{ inputs.image-tag }}" ]; then
+            TARGET_IMAGE="${{ inputs.registry }}/${{ secrets.registry-username }}/${{ matrix.module }}:${{ inputs.image-tag }}"
+            docker tag ${SOURCE_IMAGE} ${TARGET_IMAGE}
+            docker push ${TARGET_IMAGE}
+          fi
 
       - name: List built images
-        run: docker images | grep tracker-backend || docker images | grep ${{ matrix.module }}
-
+        run: docker images | grep ${{ matrix.module }} || echo "No images found for ${{ matrix.module }}"
