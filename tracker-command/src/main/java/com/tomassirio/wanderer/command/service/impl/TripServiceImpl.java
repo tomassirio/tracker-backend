@@ -69,22 +69,24 @@ public class TripServiceImpl implements TripService {
     private void setLocationsOnTrip(
             Trip trip, LocationRequest startingLocation, LocationRequest endingLocation) {
         if (startingLocation != null) {
-            trip.setStartingLocation(createLocationFromRequest(startingLocation, trip));
+            trip.setStartingLocation(
+                    createLocationFromRequest(startingLocation, trip, "TRIP_STARTPOINT"));
         }
 
         if (endingLocation != null) {
-            trip.setEndingLocation(createLocationFromRequest(endingLocation, trip));
+            trip.setEndingLocation(
+                    createLocationFromRequest(endingLocation, trip, "TRIP_ENDPOINT"));
         }
     }
 
-    private Location createLocationFromRequest(LocationRequest request, Trip trip) {
+    private Location createLocationFromRequest(LocationRequest request, Trip trip, String source) {
         return Location.builder()
                 .latitude(request.latitude())
                 .longitude(request.longitude())
                 .altitude(request.altitude())
                 .timestamp(Instant.now())
                 .trip(trip)
-                .source("TRIP_ENDPOINT")
+                .source(source)
                 .build();
     }
 }

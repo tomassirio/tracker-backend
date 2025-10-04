@@ -48,11 +48,11 @@ public class Trip {
     @Column(name = "total_distance")
     private Double totalDistance;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "starting_location_id")
     private Location startingLocation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "ending_location_id")
     private Location endingLocation;
 
