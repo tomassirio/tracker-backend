@@ -1,17 +1,70 @@
 version: '3.8'
+
+x-db-credentials: &db-credentials
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_NAME: wanderer_db
+  DB_USER: wanderer
+  DB_PASSWORD: password
+
+x-docker-images: &docker-images
+  POSTGRES_IMAGE: postgres:15-alpine
+  TRACKER_COMMAND_IMAGE: ghcr.io/tomassirio/tracker-command:latest
+  TRACKER_QUERY_IMAGE: ghcr.io/tomassirio/tracker-query:latest
+
+x-service-ports: &service-ports
+  TRACKER_COMMAND_PORT: 8081
+  TRACKER_QUERY_PORT: 8082
+
+x-common-variables: &common-db-variables
+  SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST:-postgres}:${DB_PORT:-5432}/${DB_NAME:-wanderer_db}
+  SPRING_DATASOURCE_USERNAME: ${DB_USER:-wanderer}
+  SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-password}
+  DB_URL: jdbc:postgresql://${DB_HOST:-postgres}:${DB_PORT:-5432}/${DB_NAME:-wanderer_db}
+  DB_USERNAME: ${DB_USER:-wanderer}
+  DB_PASSWORD: ${DB_PASSWORD:-password}
+
+x-service-common: &service-common
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+
 services:
   postgres:
-    image: postgres:15-alpine
+    image: ${POSTGRES_IMAGE:-postgres:15-alpine}
     container_name: wanderer-postgres
     environment:
-      POSTGRES_USER: wanderer
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: wanderer_db
+      POSTGRES_USER: ${DB_USER:-wanderer}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-wanderer_db}
     ports:
-      - "5432:5432"
+      - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-wanderer}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  tracker-command:
+    <<: *service-common
+    image: ${TRACKER_COMMAND_IMAGE:-ghcr.io/tomassirio/tracker-command:latest}
+    container_name: tracker-command
+    ports:
+      - "${TRACKER_COMMAND_PORT:-8081}:8081"
+    environment:
+      <<: *common-db-variables
+
+  tracker-query:
+    <<: *service-common
+    image: ${TRACKER_QUERY_IMAGE:-ghcr.io/tomassirio/tracker-query:latest}
+    container_name: tracker-query
+    ports:
+      - "${TRACKER_QUERY_PORT:-8082}:8082"
+    environment:
+      <<: *common-db-variables
 
 volumes:
   postgres_data:
-

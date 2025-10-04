@@ -15,6 +15,12 @@
     <name>tracker-query</name>
     <description>Query side of CQRS - handles read operations</description>
 
+    <properties>
+        <start-class>com.tomassirio.wanderer.query.TrackerQueryApplication</start-class>
+        <docker.image.name>${docker.image.prefix}/tracker-query</docker.image.name>
+        <docker.image.port>8082</docker.image.port>
+    </properties>
+
     <dependencies>
         <!-- Commons module -->
         <dependency>
@@ -94,6 +100,24 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <to>
+                        <image>${docker.image.name}:${project.version}</image>
+                        <tags>
+                            <tag>latest</tag>
+                        </tags>
+                    </to>
+                    <container>
+                        <mainClass>${start-class}</mainClass>
+                        <ports>
+                            <port>${docker.image.port}</port>
+                        </ports>
+                    </container>
+                </configuration>
             </plugin>
         </plugins>
     </build>
