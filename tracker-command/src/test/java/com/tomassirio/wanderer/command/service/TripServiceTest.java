@@ -295,7 +295,7 @@ class TripServiceTest {
 
         // Then
         assertThat(createdTrip.startingLocation()).isNotNull();
-        assertThat(createdTrip.startingLocation().source()).isEqualTo("TRIP_ENDPOINT");
+        assertThat(createdTrip.startingLocation().source()).isEqualTo("TRIP_STARTPOINT");
 
         verify(tripRepository).save(any(Trip.class));
     }
