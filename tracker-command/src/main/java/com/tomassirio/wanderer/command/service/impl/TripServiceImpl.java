@@ -25,27 +25,8 @@ public class TripServiceImpl implements TripService {
 
     @Override
     public TripDTO createTrip(TripCreationRequest request) {
-        Trip trip =
-                Trip.builder()
-                        .name(request.name())
-                        .startDate(request.startDate())
-                        .endDate(request.endDate())
-                        .totalDistance(request.totalDistance())
-                        .visibility(request.visibility())
-                        .build();
-
-        // Create starting location if provided
-        if (request.startingLocation() != null) {
-            Location startLocation = createLocationFromRequest(request.startingLocation(), trip);
-            trip.setStartingLocation(startLocation);
-        }
-
-        // Create ending location if provided
-        if (request.endingLocation() != null) {
-            Location endLocation = createLocationFromRequest(request.endingLocation(), trip);
-            trip.setEndingLocation(endLocation);
-        }
-
+        Trip trip = buildTripFromRequest(request);
+        setLocationsOnTrip(trip, request.startingLocation(), request.endingLocation());
         return tripMapper.toDTO(tripRepository.save(trip));
     }
 
@@ -55,23 +36,9 @@ public class TripServiceImpl implements TripService {
                 tripRepository
                         .findById(id)
                         .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
-        trip.setName(request.name());
-        trip.setStartDate(request.startDate());
-        trip.setEndDate(request.endDate());
-        trip.setTotalDistance(request.totalDistance());
-        trip.setVisibility(request.visibility());
 
-        // Update starting location if provided
-        if (request.startingLocation() != null) {
-            Location startLocation = createLocationFromRequest(request.startingLocation(), trip);
-            trip.setStartingLocation(startLocation);
-        }
-
-        // Update ending location if provided
-        if (request.endingLocation() != null) {
-            Location endLocation = createLocationFromRequest(request.endingLocation(), trip);
-            trip.setEndingLocation(endLocation);
-        }
+        updateTripFields(trip, request);
+        setLocationsOnTrip(trip, request.startingLocation(), request.endingLocation());
 
         return tripMapper.toDTO(tripRepository.save(trip));
     }
@@ -79,6 +46,35 @@ public class TripServiceImpl implements TripService {
     @Override
     public void deleteTrip(UUID id) {
         tripRepository.deleteById(id);
+    }
+
+    private Trip buildTripFromRequest(TripCreationRequest request) {
+        return Trip.builder()
+                .name(request.name())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .totalDistance(request.totalDistance())
+                .visibility(request.visibility())
+                .build();
+    }
+
+    private void updateTripFields(Trip trip, TripUpdateRequest request) {
+        trip.setName(request.name());
+        trip.setStartDate(request.startDate());
+        trip.setEndDate(request.endDate());
+        trip.setTotalDistance(request.totalDistance());
+        trip.setVisibility(request.visibility());
+    }
+
+    private void setLocationsOnTrip(
+            Trip trip, LocationRequest startingLocation, LocationRequest endingLocation) {
+        if (startingLocation != null) {
+            trip.setStartingLocation(createLocationFromRequest(startingLocation, trip));
+        }
+
+        if (endingLocation != null) {
+            trip.setEndingLocation(createLocationFromRequest(endingLocation, trip));
+        }
     }
 
     private Location createLocationFromRequest(LocationRequest request, Trip trip) {
