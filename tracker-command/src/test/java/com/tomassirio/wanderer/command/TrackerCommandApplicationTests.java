@@ -1,13 +1,11 @@
 package com.tomassirio.wanderer.command;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class TrackerCommandApplicationTests {
+class TrackerCommandApplicationTests extends BaseIntegrationTest {
 
-    @Test
-    void contextLoads() {
-        // This test verifies that the Spring application context loads successfully
-    }
+	@Test
+	void contextLoads() {
+	}
+
 }

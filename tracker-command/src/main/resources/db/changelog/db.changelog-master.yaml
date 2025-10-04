@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/001-create-trips-table.yaml
+  - include:
+      file: db/changelog/002-create-locations-table.yaml
+  - include:
+      file: db/changelog/003-create-messages-table.yaml
