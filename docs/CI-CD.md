@@ -1,18 +1,24 @@
 # CI/CD Workflows
 
-This document describes the GitHub Actions workflows for building, testing, and deploying the Tracker Backend application.
+This document describes the GitHub Actions workflows for building, testing, and deploying the Tracker Backend application to GitHub Container Registry (GHCR).
 
 ## Workflows Overview
 
 ### 1. **CI Build** (`ci.yml`)
 **Trigger**: Push to any branch except `main`
 
-**Purpose**: Validates feature branches before merging
+**Purpose**: Validates feature branches and publishes test images to GHCR
 
 **Steps**:
 - Runs full Maven build with tests (`mvn clean install`)
-- Builds Docker images locally (no push to registry)
-- Ensures Docker images can be built successfully
+- Builds Docker images with Jib
+- Pushes images to GHCR with `ci-test` tag for testing
+
+**Images Published**:
+- `ghcr.io/tomassirio/tracker-command:0.1.1-SNAPSHOT`
+- `ghcr.io/tomassirio/tracker-command:ci-test`
+- `ghcr.io/tomassirio/tracker-query:0.1.1-SNAPSHOT`
+- `ghcr.io/tomassirio/tracker-query:ci-test`
 
 **Usage**: Automatically runs on every push to feature branches
 
@@ -21,7 +27,7 @@ This document describes the GitHub Actions workflows for building, testing, and 
 ### 2. **Merge to Main** (`merge.yml`)
 **Trigger**: Push to `main` branch
 
-**Purpose**: Creates releases and builds production-ready artifacts
+**Purpose**: Creates releases and publishes production images to GHCR
 
 **Steps**:
 1. Removes `-SNAPSHOT` from version
@@ -29,115 +35,79 @@ This document describes the GitHub Actions workflows for building, testing, and 
 3. Builds project with Maven
 4. Creates GitHub Release with JAR artifacts
 5. Bumps to next development version
-6. Builds Docker images (locally by default)
+6. Builds and pushes Docker images to GHCR with `latest` tag
 
-**Docker Publishing**: Currently builds images locally. Uncomment the configuration to push to a registry:
-
-```yaml
-build-release-docker-images:
-  needs: version-and-release
-  uses: ./.github/workflows/docker-build.yml
-  with:
-    push-to-registry: true
-    registry: docker.io
-    image-tag: latest
-  secrets:
-    registry-username: ${{ secrets.DOCKER_USERNAME }}
-    registry-password: ${{ secrets.DOCKER_PASSWORD }}
-```
+**Images Published**:
+- `ghcr.io/tomassirio/tracker-command:0.1.1`
+- `ghcr.io/tomassirio/tracker-command:latest`
+- `ghcr.io/tomassirio/tracker-query:0.1.1`
+- `ghcr.io/tomassirio/tracker-query:latest`
 
 ---
 
-### 3. **Build Docker Images** (`docker-build.yml`)
+### 3. **Build Docker Images** (`docker/docker-build.yml`)
 **Trigger**: Reusable workflow called by other workflows
 
-**Purpose**: Builds Docker images for both services using Jib
+**Purpose**: Builds Docker images for both services using Jib and pushes to GHCR
+
+**Location**: `.github/workflows/docker/docker-build.yml`
 
 **Features**:
 - ✅ **Matrix strategy**: Builds tracker-command and tracker-query in parallel
 - ✅ **Fail-fast disabled**: If one module fails, the other continues
-- ✅ **Flexible**: Can build locally or push to registry
-- ✅ **Multi-architecture**: Configured for ARM64 (Apple Silicon)
+- ✅ **ARM64 support**: Configured for Apple Silicon
 - ✅ **Version extraction**: Automatically uses Maven project version
+- ✅ **GHCR integration**: Uses GitHub token for authentication
 
 **Parameters**:
-- `push-to-registry`: Whether to push images to a registry (default: false)
-- `registry`: Docker registry URL (default: docker.io)
+- `push-to-registry`: Whether to push images to GHCR (default: false)
 - `image-tag`: Additional tag for images (default: '')
 
-**Secrets**:
-- `registry-username`: Docker registry username
-- `registry-password`: Docker registry password/token
+**Secrets** (automatically provided):
+- `registry-username`: GitHub username (`github.actor`)
+- `registry-password`: GitHub token (`GITHUB_TOKEN`)
 
 ---
 
-### 4. **Publish Docker Images** (`docker-publish.yml`)
+### 4. **Publish Docker Images** (`docker/docker-publish.yml`)
 **Trigger**: Manual (workflow_dispatch)
 
-**Purpose**: Manually publish Docker images to a registry
+**Purpose**: Manually publish Docker images to GHCR with custom tags
+
+**Location**: `.github/workflows/docker/docker-publish.yml`
 
 **Usage**:
 1. Go to Actions tab in GitHub
-2. Select "Publish Docker Images"
+2. Select "Publish Docker Images to GHCR"
 3. Click "Run workflow"
-4. Choose registry (Docker Hub or GitHub Container Registry)
-5. Specify additional tag (e.g., `latest`, `stable`, `v1.0.0`)
+4. Specify additional tag (e.g., `stable`, `v1.0.0`, `hotfix-123`)
+5. Click "Run workflow"
 
-**Prerequisites**: Set up secrets in your repository:
-- `DOCKER_USERNAME`: Your Docker Hub username
-- `DOCKER_PASSWORD`: Your Docker Hub access token
+**No Setup Required**: Uses automatic GitHub authentication
 
 ---
 
 ## Setup Instructions
 
-### 1. Configure Docker Registry Secrets
+### GitHub Container Registry (GHCR)
 
-#### For Docker Hub:
-1. Go to Repository Settings → Secrets and variables → Actions
-2. Add secrets:
-   - `DOCKER_USERNAME`: Your Docker Hub username
-   - `DOCKER_PASSWORD`: Docker Hub access token (not password!)
+**No manual setup required!** The workflows automatically use:
+- **Username**: `github.actor` (your GitHub username)
+- **Password**: `GITHUB_TOKEN` (automatically available in GitHub Actions)
+- **Registry**: `ghcr.io`
 
-**Create Docker Hub token**:
-- Go to https://hub.docker.com/settings/security
-- Click "New Access Token"
-- Copy the token and save it as `DOCKER_PASSWORD` secret
+The `packages: write` permission in each workflow provides access to push images.
 
-#### For GitHub Container Registry (ghcr.io):
-1. Use `GITHUB_TOKEN` (automatically available)
-2. Or create a Personal Access Token with `write:packages` scope
+### Image Configuration
 
-### 2. Enable Docker Push on Releases
-
-Edit `.github/workflows/merge.yml` and uncomment the Docker publishing section:
-
-```yaml
-build-release-docker-images:
-  needs: version-and-release
-  uses: ./.github/workflows/docker-build.yml
-  with:
-    push-to-registry: true        # Enable pushing
-    registry: docker.io           # Or ghcr.io
-    image-tag: latest
-  secrets:
-    registry-username: ${{ secrets.DOCKER_USERNAME }}
-    registry-password: ${{ secrets.DOCKER_PASSWORD }}
-```
-
-### 3. Update Image Prefix for Your Registry
-
-If pushing to Docker Hub, update `pom.xml`:
-
+Your `pom.xml` is already configured:
 ```xml
-<docker.image.prefix>yourusername</docker.image.prefix>
+<docker.image.prefix>ghcr.io/tomassirio</docker.image.prefix>
 ```
 
-Or for GitHub Container Registry:
-
-```xml
-<docker.image.prefix>ghcr.io/yourusername</docker.image.prefix>
-```
+This creates images like:
+- `ghcr.io/tomassirio/tracker-command:version`
+- `ghcr.io/tomassirio/tracker-query:version`
 
 ---
 
@@ -145,8 +115,18 @@ Or for GitHub Container Registry:
 
 ### Reusable Workflow Pattern
 
-The Docker build workflow is designed as a **reusable workflow** for maximum flexibility:
+Docker workflows are organized in `.github/workflows/docker/` for better organization:
 
+```
+.github/workflows/
+├── ci.yml                    → Feature branch builds
+├── merge.yml                 → Release builds
+└── docker/
+    ├── docker-build.yml      → Reusable build logic
+    └── docker-publish.yml    → Manual publishing
+```
+
+**Workflow Relationships**:
 ```
 ┌─────────────────┐
 │   ci.yml        │
@@ -155,28 +135,28 @@ The Docker build workflow is designed as a **reusable workflow** for maximum fle
          │
          │ calls
          ▼
-┌─────────────────────┐
-│  docker-build.yml   │◄───────┐
-│  (Reusable)         │        │
-│                     │        │ calls
-│ • Matrix Strategy   │        │
-│ • Parallel Builds   │        │
-│ • Push Optional     │        │
-└─────────────────────┘        │
-         ▲                     │
-         │ calls               │
-         │                     │
-┌────────┴────────┐   ┌────────┴──────────┐
-│   merge.yml     │   │ docker-publish.yml│
-│  (Main Branch)  │   │    (Manual)       │
-└─────────────────┘   └───────────────────┘
+┌──────────────────────────┐
+│  docker/docker-build.yml │◄───────┐
+│     (Reusable)           │        │
+│                          │        │ calls
+│ • Matrix Strategy        │        │
+│ • Parallel Builds        │        │
+│ • GHCR Push              │        │
+└──────────────────────────┘        │
+         ▲                          │
+         │ calls                    │
+         │                          │
+┌────────┴────────┐   ┌─────────────┴──────────┐
+│   merge.yml     │   │ docker/docker-publish  │
+│  (Main Branch)  │   │     (Manual)           │
+└─────────────────┘   └────────────────────────┘
 ```
 
 ### Benefits:
-- **DRY**: Docker build logic defined once
+- **Organized**: Docker workflows in dedicated subfolder
+- **DRY**: Build logic defined once
 - **Consistent**: Same process across all workflows
-- **Flexible**: Easy to add new triggers
-- **Scalable**: Adding new modules is trivial (just update matrix)
+- **Scalable**: Easy to add new modules
 
 ---
 
@@ -184,14 +164,21 @@ The Docker build workflow is designed as a **reusable workflow** for maximum fle
 
 To add a new Docker module (e.g., `tracker-analytics`):
 
-1. **Add to matrix** in `docker-build.yml`:
+1. **Add to matrix** in `docker/docker-build.yml`:
    ```yaml
    strategy:
      matrix:
        module: [tracker-command, tracker-query, tracker-analytics]
    ```
 
-2. **Configure Jib** in the new module's `pom.xml` (follow existing pattern)
+2. **Configure Jib** in the new module's `pom.xml`:
+   ```xml
+   <properties>
+       <start-class>com.tomassirio.wanderer.analytics.TrackerAnalyticsApplication</start-class>
+       <docker.image.name>${docker.image.prefix}/tracker-analytics</docker.image.name>
+       <docker.image.port>8083</docker.image.port>
+   </properties>
+   ```
 
 3. Done! All workflows automatically build the new module
 
@@ -201,16 +188,23 @@ To add a new Docker module (e.g., `tracker-analytics`):
 
 Images are tagged with multiple versions:
 
-- **Version tag**: `tracker-backend/tracker-command:0.1.1-SNAPSHOT`
-- **Latest tag**: `tracker-backend/tracker-command:latest`
-- **Custom tag**: `tracker-backend/tracker-command:stable` (if specified)
+**Format**: `ghcr.io/tomassirio/{module}:{tag}`
 
-Example after release:
+**Tags**:
+- **Version tag**: `0.1.1-SNAPSHOT`, `0.1.1`
+- **Environment tag**: `ci-test` (feature branches), `latest` (releases)
+- **Custom tag**: `stable`, `v1.0.0`, etc. (manual)
+
+**Examples**:
 ```
-docker.io/yourusername/tracker-command:0.1.0
-docker.io/yourusername/tracker-command:latest
-docker.io/yourusername/tracker-query:0.1.0
-docker.io/yourusername/tracker-query:latest
+ghcr.io/tomassirio/tracker-command:0.1.1-SNAPSHOT  (CI builds)
+ghcr.io/tomassirio/tracker-command:ci-test         (CI builds)
+ghcr.io/tomassirio/tracker-command:0.1.1           (Release)
+ghcr.io/tomassirio/tracker-command:latest          (Release)
+ghcr.io/tomassirio/tracker-query:0.1.1-SNAPSHOT
+ghcr.io/tomassirio/tracker-query:ci-test
+ghcr.io/tomassirio/tracker-query:0.1.1
+ghcr.io/tomassirio/tracker-query:latest
 ```
 
 ---
@@ -218,19 +212,18 @@ docker.io/yourusername/tracker-query:latest
 ## Manual Publishing Workflow
 
 ### When to Use:
-- Emergency hotfix needs to be deployed
-- Testing deployment to different registries
+- Emergency hotfix deployment
 - Creating specific version tags
-- Publishing without creating a full release
+- Testing before release
+- Publishing beta/alpha versions
 
 ### How to Use:
 1. Navigate to **Actions** tab
-2. Select **"Publish Docker Images"** workflow
+2. Select **"Publish Docker Images to GHCR"** workflow
 3. Click **"Run workflow"** button
 4. Configure:
    - **Branch**: Which branch to build from
-   - **Registry**: docker.io or ghcr.io
-   - **Image tag**: Additional tag (e.g., `hotfix-2024-10`, `beta`)
+   - **Image tag**: Custom tag (e.g., `hotfix-2024-10`, `beta`, `v1.2.3`)
 5. Click **"Run workflow"**
 
 ---
@@ -238,17 +231,18 @@ docker.io/yourusername/tracker-query:latest
 ## Troubleshooting
 
 ### Docker build fails with "platform mismatch"
-**Solution**: The workflow uses `ubuntu-latest` which is AMD64. Images are configured for ARM64 by default (Apple Silicon). Either:
-- Remove platform specification from `pom.xml` for multi-arch
-- Use Docker Buildx with multiple platforms
-- Accept the warning (images still work with emulation)
+**Solution**: The workflow uses `ubuntu-latest` (AMD64). Images are configured for ARM64 (Apple Silicon).
+- The warning is informational - images work with emulation
+- For production, consider multi-arch builds
 
-### Images not pushing to registry
+### Images not appearing in GHCR
 **Check**:
-1. Secrets are configured correctly
-2. `push-to-registry: true` is set
-3. Docker Hub token has write permissions
-4. Image name matches registry format
+1. Workflow completed successfully
+2. `packages: write` permission exists
+3. Check the "Packages" tab in your repository
+
+### Cannot pull images
+**Solution**: Make packages public (see "Making Packages Public" below)
 
 ### Matrix build partially fails
 **Behavior**: With `fail-fast: false`, if one module fails, others continue
@@ -256,26 +250,98 @@ docker.io/yourusername/tracker-query:latest
 
 ---
 
+## Verifying Published Images
+
+### On GitHub Container Registry (GHCR)
+
+After your workflow completes successfully, verify the images were published:
+
+**1. GitHub Packages UI:**
+- Go to: `https://github.com/tomassirio/tracker-backend`
+- Click "Packages" tab (right sidebar)
+- You should see:
+  - `tracker-command`
+  - `tracker-query`
+
+**2. Direct Package Links:**
+- `https://github.com/tomassirio/tracker-backend/pkgs/container/tracker-command`
+- `https://github.com/tomassirio/tracker-backend/pkgs/container/tracker-query`
+
+**3. Command Line Verification:**
+```bash
+# Pull CI test images
+docker pull ghcr.io/tomassirio/tracker-command:ci-test
+docker pull ghcr.io/tomassirio/tracker-query:ci-test
+
+# Pull version-specific images
+docker pull ghcr.io/tomassirio/tracker-command:0.1.1-SNAPSHOT
+docker pull ghcr.io/tomassirio/tracker-query:0.1.1-SNAPSHOT
+
+# Pull latest release images
+docker pull ghcr.io/tomassirio/tracker-command:latest
+docker pull ghcr.io/tomassirio/tracker-query:latest
+```
+
+**4. List All Tags:**
+View all available tags in the GitHub Packages UI, or use GitHub CLI:
+```bash
+gh api /user/packages/container/tracker-command/versions
+```
+
+### Making Packages Public
+
+By default, GHCR packages are **private**. To make them public for unauthenticated pulls:
+
+1. Go to package page: `https://github.com/tomassirio/tracker-backend/pkgs/container/tracker-command`
+2. Click **"Package settings"** (right sidebar)
+3. Scroll to **"Danger Zone"**
+4. Click **"Change visibility"** → Select **"Public"**
+5. Confirm the change
+6. Repeat for `tracker-query`
+
+**After making public**, anyone can pull without authentication:
+```bash
+docker pull ghcr.io/tomassirio/tracker-command:latest
+```
+
+### Checking Workflow Results
+
+**In GitHub Actions UI:**
+1. Repository → **"Actions"** tab
+2. Click on the latest workflow run
+3. Click on **"build-images"** job
+4. Expand **"Tag and Push to GHCR"** step
+5. Verify output shows successful pushes:
+   ```
+   The push refers to repository [ghcr.io/tomassirio/tracker-command]
+   abc123def: Pushed
+   0.1.1-SNAPSHOT: digest: sha256:... size: 1234
+   ci-test: digest: sha256:... size: 1234
+   ```
+
+---
+
 ## Best Practices
 
 ### 1. **Feature Branches**
-- Always build Docker images to catch integration issues early
-- Images are built but not pushed (keeps registry clean)
+- Images automatically pushed to GHCR with `ci-test` tag
+- Allows testing Docker deployments before merging
+- Old `ci-test` tags are overwritten on each push
 
 ### 2. **Main Branch**
-- Docker images are built on every release
-- Consider enabling push for automatic deployment
-- Images are tagged with release version
+- Releases automatically publish with version and `latest` tags
+- Version tags are immutable (e.g., `0.1.1`)
+- `latest` always points to most recent release
 
-### 3. **Secrets Management**
-- Use Personal Access Tokens, not passwords
-- Rotate tokens regularly
-- Use minimal scope permissions
+### 3. **Package Visibility**
+- Keep packages private during development
+- Make public when ready to share
+- Can change visibility at any time
 
 ### 4. **Version Tags**
 - Maven version automatically becomes Docker tag
-- `latest` tag always points to most recent build
-- Use semantic versioning (v1.0.0, v1.1.0, etc.)
+- Use semantic versioning (0.1.0, 1.0.0, 2.0.0)
+- Never reuse version tags
 
 ---
 
@@ -288,6 +354,7 @@ docker.io/yourusername/tracker-query:latest
 - [ ] Automated deployment to Kubernetes
 - [ ] Build caching for faster builds
 - [ ] Helm chart versioning and publishing
+- [ ] Retention policy for old `ci-test` images
 
 ---
 
@@ -295,6 +362,5 @@ docker.io/yourusername/tracker-query:latest
 
 - [Docker Usage Guide](DOCKER.md)
 - [Release Notes](release-notes.md)
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
+- [GitHub Packages Documentation](https://docs.github.com/en/packages)
 - [Jib Maven Plugin](https://github.com/GoogleContainerTools/jib)
-

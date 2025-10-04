@@ -8,11 +8,6 @@ on:
         required: false
         type: boolean
         default: false
-      registry:
-        description: 'Docker registry to push to'
-        required: false
-        type: string
-        default: 'docker.io'
       image-tag:
         description: 'Additional tag for the images'
         required: false
@@ -48,11 +43,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Login to Docker Registry
+      - name: Login to GitHub Container Registry
         if: ${{ inputs.push-to-registry }}
         uses: docker/login-action@v3
         with:
-          registry: ${{ inputs.registry }}
+          registry: ghcr.io
           username: ${{ secrets.registry-username }}
           password: ${{ secrets.registry-password }}
 
@@ -67,22 +62,22 @@ jobs:
         run: |
           mvn clean package jib:dockerBuild -pl ${{ matrix.module }} -DskipTests
 
-      - name: Tag and Push to Registry
+      - name: Tag and Push to GHCR
         if: ${{ inputs.push-to-registry }}
         run: |
           # The image was built as: ghcr.io/tomassirio/module:version (from pom.xml)
-          SOURCE_IMAGE="${{ inputs.registry }}/${{ secrets.registry-username }}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
+          SOURCE_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
           
-          # Tag with version
-          docker tag ${SOURCE_IMAGE} ${SOURCE_IMAGE}
+          # Push version tag
           docker push ${SOURCE_IMAGE}
           
-          # Tag with additional tag if provided
+          # Tag and push additional tag if provided
           if [ -n "${{ inputs.image-tag }}" ]; then
-            TARGET_IMAGE="${{ inputs.registry }}/${{ secrets.registry-username }}/${{ matrix.module }}:${{ inputs.image-tag }}"
+            TARGET_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ inputs.image-tag }}"
             docker tag ${SOURCE_IMAGE} ${TARGET_IMAGE}
             docker push ${TARGET_IMAGE}
           fi
 
       - name: List built images
         run: docker images | grep ${{ matrix.module }} || echo "No images found for ${{ matrix.module }}"
+
