@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.config;
+package com.tomassirio.wanderer.query.config;
 
 import com.tomassirio.wanderer.commons.config.CommonsJpaConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -12,5 +12,5 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  */
 @Configuration
 @ConditionalOnMissingBean(name = "testJpaConfiguration")
-@EnableJpaRepositories(basePackages = "com.tomassirio.wanderer.command.repository")
+@EnableJpaRepositories(basePackages = "com.tomassirio.wanderer.query.repository")
 public class JpaConfiguration extends CommonsJpaConfiguration {}
