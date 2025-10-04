@@ -1,16 +1,14 @@
-package com.tomassirio.wanderer.command.config.properties;
+package com.tomassirio.wanderer.commons.config.properties;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 /**
  * Type-safe configuration properties for the database connection. Binds to properties with the
  * prefix "db".
  */
-@Component
 @ConfigurationProperties(prefix = "db")
 @Data
 @Validated

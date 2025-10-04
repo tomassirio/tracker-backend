@@ -5,3 +5,7 @@ databaseChangeLog:
       file: db/changelog/002-create-locations-table.yaml
   - include:
       file: db/changelog/003-create-messages-table.yaml
+  - include:
+      file: db/changelog/004-add-visibility-to-trips.yaml
+  - include:
+      file: db/changelog/005-update-trips-locations-to-references.yaml

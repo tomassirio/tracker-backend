@@ -1,7 +1,8 @@
-package com.tomassirio.wanderer.command;
+package com.tomassirio.wanderer.commons;
 
-import com.tomassirio.wanderer.command.config.TestJpaConfiguration;
+import com.tomassirio.wanderer.commons.config.TestJpaConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -9,7 +10,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-@SpringBootTest
+@SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 @Testcontainers
 @Import(TestJpaConfiguration.class)
 public abstract class BaseIntegrationTest {

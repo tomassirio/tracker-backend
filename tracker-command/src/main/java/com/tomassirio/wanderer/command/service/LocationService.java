@@ -1,73 +1,43 @@
 package com.tomassirio.wanderer.command.service;
 
 import com.tomassirio.wanderer.command.dto.LocationUpdateRequest;
-import com.tomassirio.wanderer.command.repository.LocationRepository;
-import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.commons.domain.Location;
-import java.time.Instant;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-@Service
-@RequiredArgsConstructor
-@Slf4j
-public class LocationService {
-
-    private final LocationRepository locationRepository;
-    private final TripRepository tripRepository;
+/**
+ * Service interface for managing location tracking operations in the command side of the CQRS
+ * architecture.
+ *
+ * <p>This service handles GPS location updates from tracking devices such as OwnTracks. Each
+ * location update is associated with a specific trip and includes coordinates, timestamp, and
+ * device metadata.
+ *
+ * @author tomassirio
+ * @since 0.0.2
+ */
+public interface LocationService {
 
     /**
      * Creates a new location entry for the specified trip.
      *
-     * @param tripId the ID of the trip
-     * @param request the location update request
-     * @return the created Location entity
-     * @throws IllegalArgumentException if the trip doesn't exist or request is invalid
+     * <p>This method processes location updates from tracking devices and persists them to the
+     * database. If no timestamp is provided in the request, the current system time is used. The
+     * location is validated to ensure it belongs to an existing trip.
+     *
+     * <p>Location data includes:
+     *
+     * <ul>
+     *   <li>GPS coordinates (latitude, longitude, altitude)
+     *   <li>Timestamp of when the location was recorded
+     *   <li>Accuracy information from the GPS device
+     *   <li>Device battery level
+     *   <li>Source identifier (e.g., device name or tracking app)
+     * </ul>
+     *
+     * @param tripId the UUID of the trip this location belongs to
+     * @param request the location update request containing GPS coordinates and metadata
+     * @return the created {@link Location} entity with generated ID
+     * @throws IllegalArgumentException if the trip doesn't exist or request data is invalid
      */
-    @Transactional
-    public Location createLocationUpdate(UUID tripId, LocationUpdateRequest request) {
-        log.info(
-                "Processing location update for trip {} from source: {}", tripId, request.source());
-
-        if (!tripRepository.existsById(tripId)) {
-            log.warn("Trip not found with ID: {}", tripId);
-            throw new IllegalArgumentException("Trip not found with ID: " + tripId);
-        }
-
-        Instant timestamp =
-                (request.timestamp() == null || request.timestamp().trim().isEmpty())
-                        ? Instant.now()
-                        : Instant.parse(request.timestamp().trim());
-
-        Location location = createLocationEntity(tripId, request, timestamp);
-
-        Location savedLocation = locationRepository.save(location);
-
-        log.info(
-                "Successfully created location update with ID: {} at coordinates [{}, {}] for trip {}",
-                savedLocation.getId(),
-                savedLocation.getLatitude(),
-                savedLocation.getLongitude(),
-                tripId);
-
-        return savedLocation;
-    }
-
-    /** Creates a Location entity from the request data using the builder pattern. */
-    private Location createLocationEntity(
-            UUID tripId, LocationUpdateRequest request, Instant timestamp) {
-        return Location.builder()
-                .trip(tripRepository.getReferenceById(tripId))
-                .latitude(request.latitude())
-                .longitude(request.longitude())
-                .timestamp(timestamp)
-                .altitude(request.altitude())
-                .accuracy(request.accuracy())
-                .batteryLevel(request.batteryLevel())
-                .source(request.source())
-                .build();
-    }
+    Location createLocationUpdate(UUID tripId, LocationUpdateRequest request);
 }
