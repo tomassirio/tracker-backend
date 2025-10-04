@@ -1,6 +1,6 @@
 # Trip Tracker Application
 
-A comprehensive tracking system for my pilgrimage to Santiago de Compostela, built with CQRS architecture using Spring Boot and Java 25.
+A comprehensive tracking system for my pilgrimage to Santiago de Compostela, built with CQRS architecture using Spring Boot and Java 21.
 
 ## 📖 Description
 
@@ -16,7 +16,7 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 - **Tracker-Query**: Read operations (location history, achievements, weather) - Port 8082
 
 ### Technology Stack
-- **Backend**: Java 25 with Spring Boot
+- **Backend**: Java 21 with Spring Boot
 - **Database**: PostgreSQL with Liquibase migrations
 - **Architecture**: CQRS (Command Query Responsibility Segregation)
 - **Containerization**: Docker with Jib Maven Plugin
@@ -134,7 +134,7 @@ GET /api/1/{tripId}/weather/latest         → Live weather data
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Java 25
+- Java 21
 - Maven 3.6+
 - Docker (optional)
 
