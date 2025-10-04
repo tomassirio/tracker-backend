@@ -14,7 +14,7 @@ jobs:
     permissions:
       contents: read
       packages: write
-    uses: ./.github/workflows/docker/docker-build.yml
+    uses: ./.github/workflows/docker-build.yml
     with:
       push-to-registry: true
       image-tag: ${{ inputs.image-tag }}
