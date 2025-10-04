@@ -2,14 +2,17 @@ package com.tomassirio.wanderer.command;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import com.tomassirio.wanderer.command.config.TestJpaConfiguration;
 
 @SpringBootTest
 @Testcontainers
+@Import(TestJpaConfiguration.class)
 class TrackerCommandApplicationTests {
 
     @Container
@@ -26,9 +29,8 @@ class TrackerCommandApplicationTests {
         registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     }
 
-    @Test
-    void contextLoads() {
-        // This test verifies that the Spring application context loads successfully
-        // with a real PostgreSQL database running in a container
-    }
+	@Test
+	void contextLoads() {
+	}
+
 }
