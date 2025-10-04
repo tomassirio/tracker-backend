@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.exception;
+package com.tomassirio.wanderer.commons.exception;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import jakarta.persistence.EntityNotFoundException;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,13 +23,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @ExtendWith(MockitoExtension.class)
 class GlobalExceptionHandlerTest {
 
-    @InjectMocks
-    private GlobalExceptionHandler globalExceptionHandler;
+    @InjectMocks private GlobalExceptionHandler globalExceptionHandler;
 
     private MockMvc mockMvc;
 
@@ -55,11 +53,13 @@ class GlobalExceptionHandlerTest {
                 new MethodArgumentNotValidException(null, bindingResult);
 
         // When
-        ResponseEntity<Object> response = globalExceptionHandler.handleValidationExceptions(exception);
+        ResponseEntity<Object> response =
+                globalExceptionHandler.handleValidationExceptions(exception);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).isEqualTo("Field 'name' is required, Field 'email' must be valid");
+        assertThat(response.getBody())
+                .isEqualTo("Field 'name' is required, Field 'email' must be valid");
     }
 
     @Test
@@ -73,7 +73,8 @@ class GlobalExceptionHandlerTest {
                 new MethodArgumentNotValidException(null, bindingResult);
 
         // When
-        ResponseEntity<Object> response = globalExceptionHandler.handleValidationExceptions(exception);
+        ResponseEntity<Object> response =
+                globalExceptionHandler.handleValidationExceptions(exception);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -83,10 +84,12 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleIllegalArgumentException_shouldReturnBadRequest() {
         // Given
-        IllegalArgumentException exception = new IllegalArgumentException("Invalid argument provided");
+        IllegalArgumentException exception =
+                new IllegalArgumentException("Invalid argument provided");
 
         // When
-        ResponseEntity<Void> response = globalExceptionHandler.handleIllegalArgumentException(exception);
+        ResponseEntity<Void> response =
+                globalExceptionHandler.handleIllegalArgumentException(exception);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -95,10 +98,12 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleIllegalArgumentException_withCustomMessage_shouldReturnBadRequest() {
         // Given
-        IllegalArgumentException exception = new IllegalArgumentException("Trip not found with ID: 123");
+        IllegalArgumentException exception =
+                new IllegalArgumentException("Trip not found with ID: 123");
 
         // When
-        ResponseEntity<Void> response = globalExceptionHandler.handleIllegalArgumentException(exception);
+        ResponseEntity<Void> response =
+                globalExceptionHandler.handleIllegalArgumentException(exception);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
@@ -110,7 +115,8 @@ class GlobalExceptionHandlerTest {
         EntityNotFoundException exception = new EntityNotFoundException("Trip not found");
 
         // When
-        ResponseEntity<Void> response = globalExceptionHandler.handleEntityNotFoundException(exception);
+        ResponseEntity<Void> response =
+                globalExceptionHandler.handleEntityNotFoundException(exception);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -119,10 +125,12 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleEntityNotFoundException_withCustomMessage_shouldReturnNotFound() {
         // Given
-        EntityNotFoundException exception = new EntityNotFoundException("Entity with ID abc-123 does not exist");
+        EntityNotFoundException exception =
+                new EntityNotFoundException("Entity with ID abc-123 does not exist");
 
         // When
-        ResponseEntity<Void> response = globalExceptionHandler.handleEntityNotFoundException(exception);
+        ResponseEntity<Void> response =
+                globalExceptionHandler.handleEntityNotFoundException(exception);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
@@ -134,7 +142,8 @@ class GlobalExceptionHandlerTest {
         RuntimeException exception = new RuntimeException("Unexpected error occurred");
 
         // When
-        ResponseEntity<Void> response = globalExceptionHandler.handleAllUncaughtException(exception);
+        ResponseEntity<Void> response =
+                globalExceptionHandler.handleAllUncaughtException(exception);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -143,19 +152,18 @@ class GlobalExceptionHandlerTest {
     @Test
     void handleIllegalArgumentException_throughMockMvc_shouldReturnBadRequest() throws Exception {
         // When & Then
-        mockMvc.perform(get("/test/illegal-argument-exception"))
-                .andExpect(status().isBadRequest());
+        mockMvc.perform(get("/test/illegal-argument-exception")).andExpect(status().isBadRequest());
     }
 
     @Test
     void handleEntityNotFoundException_throughMockMvc_shouldReturnNotFound() throws Exception {
         // When & Then
-        mockMvc.perform(get("/test/entity-not-found-exception"))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/test/entity-not-found-exception")).andExpect(status().isNotFound());
     }
 
     @Test
-    void handleAllUncaughtException_throughMockMvc_shouldReturnInternalServerError() throws Exception {
+    void handleAllUncaughtException_throughMockMvc_shouldReturnInternalServerError()
+            throws Exception {
         // When & Then
         mockMvc.perform(get("/test/unexpected-exception"))
                 .andExpect(status().isInternalServerError());

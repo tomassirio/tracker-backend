@@ -16,12 +16,12 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.dto.LocationRequest;
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
-import com.tomassirio.wanderer.command.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.LocationDTO;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -60,16 +60,22 @@ class TripControllerTest {
     @Test
     void createTrip_whenValidRequest_shouldReturnCreatedTrip() throws Exception {
         // Given
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest(39.7392, -104.9903, 1609.3);
-        LocationRequest endLocation = TestEntityFactory.createLocationRequest(37.7749, -122.4194, 16.0);
-        TripCreationRequest request = TestEntityFactory.createTripCreationRequest(
-                "Summer Road Trip 2025", startLocation, endLocation);
+        LocationRequest startLocation =
+                TestEntityFactory.createLocationRequest(39.7392, -104.9903, 1609.3);
+        LocationRequest endLocation =
+                TestEntityFactory.createLocationRequest(37.7749, -122.4194, 16.0);
+        TripCreationRequest request =
+                TestEntityFactory.createTripCreationRequest(
+                        "Summer Road Trip 2025", startLocation, endLocation);
 
         UUID tripId = UUID.randomUUID();
-        LocationDTO startLocationDTO = TestEntityFactory.createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903, 1609.3);
-        LocationDTO endLocationDTO = TestEntityFactory.createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, 16.0);
-        TripDTO expectedResponse = TestEntityFactory.createTripDTO(
-                tripId, "Summer Road Trip 2025", startLocationDTO, endLocationDTO);
+        LocationDTO startLocationDTO =
+                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903, 1609.3);
+        LocationDTO endLocationDTO =
+                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, 16.0);
+        TripDTO expectedResponse =
+                TestEntityFactory.createTripDTO(
+                        tripId, "Summer Road Trip 2025", startLocationDTO, endLocationDTO);
 
         when(tripService.createTrip(any(TripCreationRequest.class))).thenReturn(expectedResponse);
 
@@ -85,16 +91,22 @@ class TripControllerTest {
     @Test
     void createTrip_whenLocationRequestsHaveNoAltitude_shouldReturnCreatedTrip() throws Exception {
         // Given - locations without altitude
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest(39.7392, -104.9903, null);
-        LocationRequest endLocation = TestEntityFactory.createLocationRequest(37.7749, -122.4194, null);
-        TripCreationRequest request = TestEntityFactory.createTripCreationRequest(
-                "Road Trip Without Altitude", startLocation, endLocation);
+        LocationRequest startLocation =
+                TestEntityFactory.createLocationRequest(39.7392, -104.9903, null);
+        LocationRequest endLocation =
+                TestEntityFactory.createLocationRequest(37.7749, -122.4194, null);
+        TripCreationRequest request =
+                TestEntityFactory.createTripCreationRequest(
+                        "Road Trip Without Altitude", startLocation, endLocation);
 
         UUID tripId = UUID.randomUUID();
-        LocationDTO startLocationDTO = TestEntityFactory.createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903, null);
-        LocationDTO endLocationDTO = TestEntityFactory.createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, null);
-        TripDTO expectedResponse = TestEntityFactory.createTripDTO(
-                tripId, "Road Trip Without Altitude", startLocationDTO, endLocationDTO);
+        LocationDTO startLocationDTO =
+                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903, null);
+        LocationDTO endLocationDTO =
+                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, null);
+        TripDTO expectedResponse =
+                TestEntityFactory.createTripDTO(
+                        tripId, "Road Trip Without Altitude", startLocationDTO, endLocationDTO);
 
         when(tripService.createTrip(any(TripCreationRequest.class))).thenReturn(expectedResponse);
 
@@ -134,7 +146,8 @@ class TripControllerTest {
     void createTrip_whenStartingLocationLatitudeIsInvalid_shouldReturnBadRequest()
             throws Exception {
         // Given - latitude out of range
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest(91.0, -104.9903, null);
+        LocationRequest startLocation =
+                TestEntityFactory.createLocationRequest(91.0, -104.9903, null);
 
         TripCreationRequest request =
                 new TripCreationRequest(
@@ -158,7 +171,8 @@ class TripControllerTest {
     void createTrip_whenStartingLocationLongitudeIsInvalid_shouldReturnBadRequest()
             throws Exception {
         // Given - longitude out of range
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest(39.7392, -181.0, null);
+        LocationRequest startLocation =
+                TestEntityFactory.createLocationRequest(39.7392, -181.0, null);
 
         TripCreationRequest request =
                 new TripCreationRequest(
@@ -226,15 +240,21 @@ class TripControllerTest {
     void updateTrip_whenValidRequest_shouldReturnUpdatedTrip() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest(40.7128, -74.0060, 10.0);
-        LocationRequest endLocation = TestEntityFactory.createLocationRequest(34.0522, -118.2437, 71.0);
-        TripUpdateRequest request = TestEntityFactory.createTripUpdateRequest(
-                "Updated Trip Name", startLocation, endLocation);
+        LocationRequest startLocation =
+                TestEntityFactory.createLocationRequest(40.7128, -74.0060, 10.0);
+        LocationRequest endLocation =
+                TestEntityFactory.createLocationRequest(34.0522, -118.2437, 71.0);
+        TripUpdateRequest request =
+                TestEntityFactory.createTripUpdateRequest(
+                        "Updated Trip Name", startLocation, endLocation);
 
-        LocationDTO startLocationDTO = TestEntityFactory.createLocationDTO(UUID.randomUUID(), 40.7128, -74.0060, 10.0);
-        LocationDTO endLocationDTO = TestEntityFactory.createLocationDTO(UUID.randomUUID(), 34.0522, -118.2437, 71.0);
-        TripDTO expectedResponse = TestEntityFactory.createTripDTO(
-                tripId, "Updated Trip Name", startLocationDTO, endLocationDTO);
+        LocationDTO startLocationDTO =
+                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 40.7128, -74.0060, 10.0);
+        LocationDTO endLocationDTO =
+                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 34.0522, -118.2437, 71.0);
+        TripDTO expectedResponse =
+                TestEntityFactory.createTripDTO(
+                        tripId, "Updated Trip Name", startLocationDTO, endLocationDTO);
 
         when(tripService.updateTrip(eq(tripId), any(TripUpdateRequest.class)))
                 .thenReturn(expectedResponse);

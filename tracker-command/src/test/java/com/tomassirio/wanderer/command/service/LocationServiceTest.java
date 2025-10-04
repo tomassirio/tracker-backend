@@ -12,9 +12,9 @@ import com.tomassirio.wanderer.command.dto.LocationUpdateRequest;
 import com.tomassirio.wanderer.command.repository.LocationRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.impl.LocationServiceImpl;
-import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.Location;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
@@ -37,11 +37,11 @@ class LocationServiceTest {
     void createLocationUpdate_whenTripExists_shouldCreateAndSaveLocation() {
         // Given
         UUID tripId = UUID.randomUUID();
-        Trip trip = TestEntityFactory.createTrip(tripId);
+        Trip trip = BaseTestEntityFactory.createTrip(tripId);
         LocationUpdateRequest request =
                 new LocationUpdateRequest(
-                        TestEntityFactory.LATITUDE,
-                        TestEntityFactory.LONGITUDE,
+                        BaseTestEntityFactory.LATITUDE,
+                        BaseTestEntityFactory.LONGITUDE,
                         null,
                         100.0,
                         10.0,
@@ -74,8 +74,8 @@ class LocationServiceTest {
         UUID nonExistentTripId = UUID.randomUUID();
         LocationUpdateRequest request =
                 new LocationUpdateRequest(
-                        TestEntityFactory.LATITUDE,
-                        TestEntityFactory.LONGITUDE,
+                        BaseTestEntityFactory.LATITUDE,
+                        BaseTestEntityFactory.LONGITUDE,
                         null,
                         null,
                         null,
@@ -96,13 +96,13 @@ class LocationServiceTest {
     void createLocationUpdate_withSpecificTimestamp_shouldUseProvidedTimestamp() {
         // Given
         UUID tripId = UUID.randomUUID();
-        Trip trip = TestEntityFactory.createTrip(tripId);
+        Trip trip = BaseTestEntityFactory.createTrip(tripId);
         String timestampString = "2025-10-04T10:00:00Z";
         Instant expectedTimestamp = Instant.parse(timestampString);
         LocationUpdateRequest request =
                 new LocationUpdateRequest(
-                        TestEntityFactory.LATITUDE,
-                        TestEntityFactory.LONGITUDE,
+                        BaseTestEntityFactory.LATITUDE,
+                        BaseTestEntityFactory.LONGITUDE,
                         timestampString,
                         null,
                         null,

@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.exception;
+package com.tomassirio.wanderer.commons.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import java.util.stream.Collectors;

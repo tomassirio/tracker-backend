@@ -9,11 +9,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tomassirio.wanderer.command.dto.LocationUpdateRequest;
-import com.tomassirio.wanderer.command.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.command.service.LocationService;
-import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.Location;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
+import com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,16 +50,16 @@ class LocationControllerTest {
         UUID locationId = UUID.randomUUID();
         LocationUpdateRequest request =
                 new LocationUpdateRequest(
-                        TestEntityFactory.LATITUDE,
-                        TestEntityFactory.LONGITUDE,
+                        BaseTestEntityFactory.LATITUDE,
+                        BaseTestEntityFactory.LONGITUDE,
                         null,
                         null,
                         null,
                         null,
                         "test");
 
-        Trip trip = TestEntityFactory.createTrip(tripId);
-        Location createdLocation = TestEntityFactory.createLocation(locationId, trip);
+        Trip trip = BaseTestEntityFactory.createTrip(tripId);
+        Location createdLocation = BaseTestEntityFactory.createLocation(locationId, trip);
 
         when(locationService.createLocationUpdate(eq(tripId), any(LocationUpdateRequest.class)))
                 .thenReturn(createdLocation);
@@ -78,7 +78,7 @@ class LocationControllerTest {
         // Latitude is out of range
         LocationUpdateRequest request =
                 new LocationUpdateRequest(
-                        90.1, TestEntityFactory.LONGITUDE, null, null, null, null, "test");
+                        90.1, BaseTestEntityFactory.LONGITUDE, null, null, null, null, "test");
 
         mockMvc.perform(
                         post("/api/1/{tripId}/location", tripId)
@@ -92,8 +92,8 @@ class LocationControllerTest {
         UUID tripId = UUID.randomUUID();
         LocationUpdateRequest request =
                 new LocationUpdateRequest(
-                        TestEntityFactory.LATITUDE,
-                        TestEntityFactory.LONGITUDE,
+                        BaseTestEntityFactory.LATITUDE,
+                        BaseTestEntityFactory.LONGITUDE,
                         null,
                         null,
                         null,
@@ -116,7 +116,7 @@ class LocationControllerTest {
         // Longitude is null
         LocationUpdateRequest request =
                 new LocationUpdateRequest(
-                        TestEntityFactory.LATITUDE, null, null, null, null, null, "test");
+                        BaseTestEntityFactory.LATITUDE, null, null, null, null, null, "test");
 
         mockMvc.perform(
                         post("/api/1/{tripId}/location", tripId)

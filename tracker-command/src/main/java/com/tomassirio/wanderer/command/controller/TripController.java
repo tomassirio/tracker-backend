@@ -28,7 +28,8 @@ public class TripController {
     private final TripService tripService;
 
     @PostMapping
-    public ResponseEntity<TripResponse> createTrip(@Valid @RequestBody TripCreationRequest request) {
+    public ResponseEntity<TripResponse> createTrip(
+            @Valid @RequestBody TripCreationRequest request) {
         log.info("Received request to create trip: {}", request.name());
 
         TripDTO createdTrip = tripService.createTrip(request);
