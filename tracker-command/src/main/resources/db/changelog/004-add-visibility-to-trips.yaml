@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: wanderer
+      changes:
+        - addColumn:
+            tableName: trips
+            columns:
+              - column:
+                  name: visibility
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+
+

@@ -3,13 +3,16 @@ package com.tomassirio.wanderer.commons.domain;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDate;
 import java.util.List;
@@ -31,7 +34,7 @@ public class Trip {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotBlank
+    @NotNull
     @Column(nullable = false)
     private String name;
 
@@ -45,13 +48,17 @@ public class Trip {
     @Column(name = "total_distance")
     private Double totalDistance;
 
-    @NotBlank
-    @Column(name = "starting_location")
-    private String startingLocation;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "starting_location_id")
+    private Location startingLocation;
 
-    @NotBlank
-    @Column(name = "ending_location")
-    private String endingLocation;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ending_location_id")
+    private Location endingLocation;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "visibility")
+    private TripVisibility visibility;
 
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Location> locations;

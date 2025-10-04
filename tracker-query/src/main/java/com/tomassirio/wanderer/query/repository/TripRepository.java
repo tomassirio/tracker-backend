@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.repository;
+package com.tomassirio.wanderer.query.repository;
 
 import com.tomassirio.wanderer.commons.domain.Trip;
 import java.util.UUID;

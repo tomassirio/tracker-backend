@@ -11,6 +11,7 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.command.dto.LocationUpdateRequest;
 import com.tomassirio.wanderer.command.repository.LocationRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.service.impl.LocationServiceImpl;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.Location;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -30,7 +31,7 @@ class LocationServiceTest {
 
     @Mock private TripRepository tripRepository;
 
-    @InjectMocks private LocationService locationService;
+    @InjectMocks private LocationServiceImpl locationService;
 
     @Test
     void createLocationUpdate_whenTripExists_shouldCreateAndSaveLocation() {
