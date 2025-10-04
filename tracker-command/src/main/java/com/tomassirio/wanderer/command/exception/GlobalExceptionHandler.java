@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.exception;
 
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -9,18 +10,16 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.stream.Collectors;
-
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Object> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        String errors = ex.getBindingResult()
-                .getAllErrors().stream()
-                .map(ObjectError::getDefaultMessage)
-                .collect(Collectors.joining(", "));
+        String errors =
+                ex.getBindingResult().getAllErrors().stream()
+                        .map(ObjectError::getDefaultMessage)
+                        .collect(Collectors.joining(", "));
         log.warn("Validation failed: {}", errors);
         return ResponseEntity.badRequest().body(errors);
     }

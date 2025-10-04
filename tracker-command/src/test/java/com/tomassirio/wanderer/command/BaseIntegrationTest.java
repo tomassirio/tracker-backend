@@ -15,10 +15,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public abstract class BaseIntegrationTest {
 
     @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:15-alpine")
-            .withDatabaseName("tracker_test")
-            .withUsername("test")
-            .withPassword("test");
+    static PostgreSQLContainer<?> postgres =
+            new PostgreSQLContainer<>("postgres:15-alpine")
+                    .withDatabaseName("tracker_test")
+                    .withUsername("test")
+                    .withPassword("test");
 
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
@@ -27,4 +28,3 @@ public abstract class BaseIntegrationTest {
         registry.add("spring.datasource.password", postgres::getPassword);
     }
 }
-

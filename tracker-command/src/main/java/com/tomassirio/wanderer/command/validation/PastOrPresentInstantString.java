@@ -12,7 +12,8 @@ import java.lang.annotation.Target;
 @Constraint(validatedBy = PastOrPresentInstantStringValidator.class)
 public @interface PastOrPresentInstantString {
     String message() default "Timestamp must be a valid ISO-8601 date-time in the past or present";
+
     Class<?>[] groups() default {};
+
     Class<? extends Payload>[] payload() default {};
 }
-

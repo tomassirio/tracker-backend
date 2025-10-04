@@ -2,7 +2,6 @@ package com.tomassirio.wanderer.command.utils;
 
 import com.tomassirio.wanderer.commons.domain.Location;
 import com.tomassirio.wanderer.commons.domain.Trip;
-
 import java.time.Instant;
 import java.util.UUID;
 
@@ -22,9 +21,6 @@ public class TestEntityFactory {
     }
 
     public static Trip createTrip(UUID tripId) {
-        return Trip.builder()
-                .id(tripId)
-                .name("Test Trip")
-                .build();
+        return Trip.builder().id(tripId).name("Test Trip").build();
     }
 }

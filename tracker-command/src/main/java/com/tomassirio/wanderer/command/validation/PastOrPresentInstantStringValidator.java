@@ -5,7 +5,8 @@ import jakarta.validation.ConstraintValidatorContext;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 
-public class PastOrPresentInstantStringValidator implements ConstraintValidator<PastOrPresentInstantString, String> {
+public class PastOrPresentInstantStringValidator
+        implements ConstraintValidator<PastOrPresentInstantString, String> {
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
@@ -21,4 +22,3 @@ public class PastOrPresentInstantStringValidator implements ConstraintValidator<
         }
     }
 }
-

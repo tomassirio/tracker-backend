@@ -10,14 +10,13 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
+import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
-import java.util.UUID;
 
 @Entity
 @Table(name = "locations")
@@ -47,15 +46,12 @@ public class Location {
     @Column(nullable = false)
     private Instant timestamp;
 
-    @Column
-    private Double altitude;
+    @Column private Double altitude;
 
-    @Column
-    private Double accuracy;
+    @Column private Double accuracy;
 
     @Column(name = "battery_level")
     private Integer batteryLevel;
 
-    @Column
-    private String source;
+    @Column private String source;
 }
