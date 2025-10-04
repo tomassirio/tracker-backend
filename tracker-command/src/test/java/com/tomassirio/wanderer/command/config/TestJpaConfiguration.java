@@ -5,6 +5,4 @@ import org.springframework.boot.test.context.TestConfiguration;
 
 @TestConfiguration
 @EntityScan("com.tomassirio.wanderer.commons.domain")
-public class TestJpaConfiguration {
-}
-
+public class TestJpaConfiguration {}
