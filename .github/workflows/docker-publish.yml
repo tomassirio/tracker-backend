@@ -1,16 +1,17 @@
-name: Publish Docker Images to GHCR
+name: Manual Docker Publish
 
 on:
   workflow_dispatch:
     inputs:
       image-tag:
-        description: 'Additional tag (e.g., latest, stable, v1.0.0)'
+        description: 'Additional tag (e.g., latest, stable, v1.0.0, hotfix-123)'
         required: false
         default: 'latest'
         type: string
 
 jobs:
-  publish-docker-images:
+  publish-to-ghcr:
+    name: Build and Publish to GHCR
     permissions:
       contents: read
       packages: write
@@ -21,4 +22,3 @@ jobs:
     secrets:
       registry-username: ${{ github.actor }}
       registry-password: ${{ secrets.GITHUB_TOKEN }}
-

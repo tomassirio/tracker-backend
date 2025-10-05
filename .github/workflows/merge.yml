@@ -31,28 +31,30 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
 
-      - name: Build and Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set release version
         run: |
-          # Set version to release version (remove -SNAPSHOT)
           mvn versions:set -DremoveSnapshot -DprocessAllModules=true
           RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
 
-          # Commit the release version
+      - name: Commit release version
+        run: |
           git add .
           git commit -m "ci: Release version ${RELEASE_VERSION}"
 
-          # Build the project
-          mvn clean install
+      - name: Build project
+        run: mvn clean install
 
-          # Create release notes
+      - name: Create release notes
+        run: |
           echo "Release ${RELEASE_VERSION}" > release-notes.md
           echo "" >> release-notes.md
           git log --pretty=format:"* %s" $(git describe --tags --abbrev=0)..HEAD >> release-notes.md
 
-          # Create GitHub Release and upload artifacts
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
           gh release create "v${RELEASE_VERSION}" \
             --title "Release ${RELEASE_VERSION}" \
             --notes-file release-notes.md \
@@ -60,16 +62,19 @@ jobs:
             tracker-command/target/*.jar \
             tracker-query/target/*.jar
 
-          # Set version to next development version
+      - name: Set next development version
+        run: |
           mvn versions:set -DnextSnapshot=true -DprocessAllModules=true
           NEXT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "NEXT_VERSION=${NEXT_VERSION}" >> $GITHUB_ENV
 
-          # Commit the next development version
+      - name: Commit next development version
+        run: |
           git add .
           git commit -m "ci: Prepare for next development iteration (${NEXT_VERSION})"
 
-          # Push commits and tags
+      - name: Push changes and tags
+        run: |
           git push
           git push --tags
 
