@@ -6,7 +6,7 @@
     <parent>
         <groupId>com.tomassirio.wanderer</groupId>
         <artifactId>tracker-backend</artifactId>
-        <version>0.1.5-SNAPSHOT</version>
+        <version>0.1.5</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
