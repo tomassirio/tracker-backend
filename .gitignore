@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Maven Versions Plugin ###
+pom.xml.versionsBackup
+**/pom.xml.versionsBackup
+
+### Release Files ###
+release-notes.md
