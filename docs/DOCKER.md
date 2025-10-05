@@ -100,27 +100,21 @@ Once running, your services are available at:
 
 ## Pushing to Docker Registry
 
-### Configure registry in pom.xml
-Update the `docker.image.prefix` property:
-```xml
-<docker.image.prefix>your-registry.io/your-namespace</docker.image.prefix>
-```
+**Note**: This project uses GitHub Container Registry (GHCR) exclusively. Docker images are automatically published by CI/CD workflows.
 
-### Build and push to registry
+### Manual Push to GHCR
+
+If you need to manually push images:
+
 ```bash
-# Requires Docker registry authentication
+# Login to GHCR
+echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+
+# Build and push
 ./mvnw clean package jib:build
 ```
 
-### Push to Docker Hub
-```bash
-# Login to Docker Hub first
-docker login
-
-# Update property to use your Docker Hub username
-# Then run:
-./mvnw clean package jib:build
-```
+**Or use the GitHub Actions workflow**: Go to Actions → "Manual Docker Publish" → Run workflow with your desired tag.
 
 ## Troubleshooting
 
@@ -146,11 +140,14 @@ docker logs tracker-query
 ### Rebuild after code changes
 ```bash
 # Rebuild images
-./mvnw clean package jib:dockerBuild
+./mvnw clean package jib:dockerBuild -DskipTests
 
 # Restart services
 docker-compose restart tracker-command tracker-query
 ```
+
+### Platform mismatch warnings
+If you see warnings about AMD64 vs ARM64 platforms, this is normal. The images are configured for ARM64 (Apple Silicon) but will work on AMD64 with emulation.
 
 ## Environment Variables
 
@@ -190,7 +187,7 @@ environment:
 
 ```bash
 # Full rebuild and restart
-./mvnw clean package jib:dockerBuild && docker-compose up -d
+./mvnw clean package jib:dockerBuild -DskipTests && docker-compose up -d
 
 # View all running containers
 docker-compose ps
@@ -199,5 +196,15 @@ docker-compose ps
 docker-compose down
 
 # Clean restart (with fresh database)
-docker-compose down -v && ./mvnw clean package jib:dockerBuild && docker-compose up -d
+docker-compose down -v && ./mvnw clean package jib:dockerBuild -DskipTests && docker-compose up -d
 ```
+
+## CI/CD Integration
+
+Images are automatically built and published to GHCR by GitHub Actions:
+
+- **Feature branches**: Push creates `ci-test` tagged images
+- **Main branch**: Merge creates versioned release images with `latest` tag
+- **Manual**: Use "Manual Docker Publish" workflow for custom tags
+
+See [CI/CD Workflows](CI-CD.md) for detailed information.

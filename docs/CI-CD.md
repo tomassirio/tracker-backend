@@ -4,7 +4,7 @@ This document describes the GitHub Actions workflows for building, testing, and 
 
 ## Workflows Overview
 
-### 1. **CI Build** (`ci.yml`)
+### 1. **Feature Branch Build and Test** (`ci.yml`)
 **Trigger**: Push to any branch except `main`
 
 **Purpose**: Validates feature branches and publishes test images to GHCR
@@ -15,9 +15,9 @@ This document describes the GitHub Actions workflows for building, testing, and 
 - Pushes images to GHCR with `ci-test` tag for testing
 
 **Images Published**:
-- `ghcr.io/tomassirio/tracker-command:0.1.1-SNAPSHOT`
+- `ghcr.io/tomassirio/tracker-command:X.X.X-SNAPSHOT`
 - `ghcr.io/tomassirio/tracker-command:ci-test`
-- `ghcr.io/tomassirio/tracker-query:0.1.1-SNAPSHOT`
+- `ghcr.io/tomassirio/tracker-query:X.X.X-SNAPSHOT`
 - `ghcr.io/tomassirio/tracker-query:ci-test`
 
 **Usage**: Automatically runs on every push to feature branches
@@ -30,27 +30,33 @@ This document describes the GitHub Actions workflows for building, testing, and 
 **Purpose**: Creates releases and publishes production images to GHCR
 
 **Steps**:
-1. Removes `-SNAPSHOT` from version
+1. Sets release version (removes `-SNAPSHOT`)
 2. Commits release version
-3. Builds project with Maven
-4. Creates GitHub Release with JAR artifacts
-5. Bumps to next development version
-6. Builds and pushes Docker images to GHCR with `latest` tag
+3. **Creates Git tag** (e.g., `v0.1.4`)
+4. Builds project with Maven
+5. Generates release notes
+6. Bumps to next development version
+7. Commits next development version
+8. Pushes changes and tags
+9. Creates GitHub Release with JAR artifacts
+10. Builds and pushes Docker images from the release tag
 
 **Images Published**:
-- `ghcr.io/tomassirio/tracker-command:0.1.1`
+- `ghcr.io/tomassirio/tracker-command:0.1.4` (release version)
 - `ghcr.io/tomassirio/tracker-command:latest`
-- `ghcr.io/tomassirio/tracker-query:0.1.1`
+- `ghcr.io/tomassirio/tracker-query:0.1.4` (release version)
 - `ghcr.io/tomassirio/tracker-query:latest`
+
+**Important**: Docker images are built from the release tag, not from the main branch after version bump.
 
 ---
 
-### 3. **Build Docker Images** (`docker/docker-build.yml`)
+### 3. **Build Docker Images** (`docker-build.yml`)
 **Trigger**: Reusable workflow called by other workflows
 
 **Purpose**: Builds Docker images for both services using Jib and pushes to GHCR
 
-**Location**: `.github/workflows/docker/docker-build.yml`
+**Location**: `.github/workflows/docker-build.yml` (root level)
 
 **Features**:
 - ✅ **Matrix strategy**: Builds tracker-command and tracker-query in parallel
@@ -58,10 +64,12 @@ This document describes the GitHub Actions workflows for building, testing, and 
 - ✅ **ARM64 support**: Configured for Apple Silicon
 - ✅ **Version extraction**: Automatically uses Maven project version
 - ✅ **GHCR integration**: Uses GitHub token for authentication
+- ✅ **Parent POM installation**: Installs parent POM and commons before building modules
 
 **Parameters**:
 - `push-to-registry`: Whether to push images to GHCR (default: false)
 - `image-tag`: Additional tag for images (default: '')
+- `checkout-ref`: Git ref to checkout (branch, tag, or commit) (default: '')
 
 **Secrets** (automatically provided):
 - `registry-username`: GitHub username (`github.actor`)
@@ -69,16 +77,16 @@ This document describes the GitHub Actions workflows for building, testing, and 
 
 ---
 
-### 4. **Publish Docker Images** (`docker/docker-publish.yml`)
+### 4. **Manual Docker Publish** (`docker-publish.yml`)
 **Trigger**: Manual (workflow_dispatch)
 
 **Purpose**: Manually publish Docker images to GHCR with custom tags
 
-**Location**: `.github/workflows/docker/docker-publish.yml`
+**Location**: `.github/workflows/docker-publish.yml` (root level)
 
 **Usage**:
 1. Go to Actions tab in GitHub
-2. Select "Publish Docker Images to GHCR"
+2. Select "Manual Docker Publish"
 3. Click "Run workflow"
 4. Specify additional tag (e.g., `stable`, `v1.0.0`, `hotfix-123`)
 5. Click "Run workflow"
@@ -115,40 +123,42 @@ This creates images like:
 
 ### Reusable Workflow Pattern
 
-Docker workflows are organized in `.github/workflows/docker/` for better organization:
+Docker workflows are at the root level of `.github/workflows/`:
 
 ```
 .github/workflows/
 ├── ci.yml                    → Feature branch builds
 ├── merge.yml                 → Release builds
-└── docker/
-    ├── docker-build.yml      → Reusable build logic
-    └── docker-publish.yml    → Manual publishing
+├── docker-build.yml          → Reusable build logic
+└── docker-publish.yml        → Manual publishing
 ```
+
+**Note**: GitHub Actions requires reusable workflows to be at the top level of `.github/workflows/`, they cannot be in subdirectories.
 
 **Workflow Relationships**:
 ```
-┌─────────────────┐
-│   ci.yml        │
-│ (Feature Branch)│
-└────────┬────────┘
+┌──────────────────────────┐
+│   ci.yml                 │
+│ (Feature Branch Build)   │
+└────────┬─────────────────┘
          │
          │ calls
          ▼
 ┌──────────────────────────┐
-│  docker/docker-build.yml │◄───────┐
-│     (Reusable)           │        │
+│  docker-build.yml        │◄───────┐
+│  (Reusable)              │        │
 │                          │        │ calls
 │ • Matrix Strategy        │        │
 │ • Parallel Builds        │        │
 │ • GHCR Push              │        │
+│ • Parent POM Install     │        │
 └──────────────────────────┘        │
          ▲                          │
          │ calls                    │
          │                          │
 ┌────────┴────────┐   ┌─────────────┴──────────┐
-│   merge.yml     │   │ docker/docker-publish  │
-│  (Main Branch)  │   │     (Manual)           │
+│   merge.yml     │   │ docker-publish.yml     │
+│  (Main Branch)  │   │    (Manual)            │
 └─────────────────┘   └────────────────────────┘
 ```
 
@@ -245,7 +255,7 @@ ghcr.io/tomassirio/tracker-query:latest
 **Solution**: Make packages public (see "Making Packages Public" below)
 
 ### Matrix build partially fails
-**Behavior**: With `fail-fast: false`, if one module fails, others continue
+**Behavior**: With `fail-fast: false`, if one module fails, the others continue
 **To fix**: Check the specific module's logs, fix the issue, re-run workflow
 
 ---
@@ -361,6 +371,5 @@ docker pull ghcr.io/tomassirio/tracker-command:latest
 ## Related Documentation
 
 - [Docker Usage Guide](DOCKER.md)
-- [Release Notes](release-notes.md)
 - [GitHub Packages Documentation](https://docs.github.com/en/packages)
 - [Jib Maven Plugin](https://github.com/GoogleContainerTools/jib)
