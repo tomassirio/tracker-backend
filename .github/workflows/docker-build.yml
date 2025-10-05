@@ -58,26 +58,27 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Building version: ${VERSION}"
 
+      - name: Build commons module first
+        run: |
+          mvn clean install -pl commons -DskipTests
+
       - name: Build Docker image with Jib
         run: |
-          mvn clean package jib:dockerBuild -pl ${{ matrix.module }} -DskipTests
+          mvn package jib:dockerBuild -pl ${{ matrix.module }} -DskipTests
 
-      - name: Tag and Push to GHCR
+      - name: Push version tag to GHCR
         if: ${{ inputs.push-to-registry }}
         run: |
-          # The image was built as: ghcr.io/tomassirio/module:version (from pom.xml)
           SOURCE_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
-          
-          # Push version tag
           docker push ${SOURCE_IMAGE}
-          
-          # Tag and push additional tag if provided
-          if [ -n "${{ inputs.image-tag }}" ]; then
-            TARGET_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ inputs.image-tag }}"
-            docker tag ${SOURCE_IMAGE} ${TARGET_IMAGE}
-            docker push ${TARGET_IMAGE}
-          fi
+
+      - name: Tag and push additional tag
+        if: ${{ inputs.push-to-registry && inputs.image-tag != '' }}
+        run: |
+          SOURCE_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
+          TARGET_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ inputs.image-tag }}"
+          docker tag ${SOURCE_IMAGE} ${TARGET_IMAGE}
+          docker push ${TARGET_IMAGE}
 
       - name: List built images
         run: docker images | grep ${{ matrix.module }} || echo "No images found for ${{ matrix.module }}"
-
