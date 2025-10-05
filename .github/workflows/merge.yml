@@ -46,6 +46,10 @@ jobs:
           git add .
           git commit -m "ci: Release version ${RELEASE_VERSION}"
 
+      - name: Create Git tag
+        run: |
+          git tag -a "v${RELEASE_VERSION}" -m "Release version ${RELEASE_VERSION}"
+
       - name: Build project
         run: mvn clean install
 
@@ -54,17 +58,6 @@ jobs:
           echo "Release ${RELEASE_VERSION}" > release-notes.md
           echo "" >> release-notes.md
           git log --pretty=format:"* %s" $(git describe --tags --abbrev=0)..HEAD >> release-notes.md
-
-      - name: Create GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "v${RELEASE_VERSION}" \
-            --title "Release ${RELEASE_VERSION}" \
-            --notes-file release-notes.md \
-            commons/target/*.jar \
-            tracker-command/target/*.jar \
-            tracker-query/target/*.jar
 
       - name: Set next development version
         run: |
@@ -81,6 +74,17 @@ jobs:
         run: |
           git push
           git push --tags
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${RELEASE_VERSION}" \
+            --title "Release ${RELEASE_VERSION}" \
+            --notes-file release-notes.md \
+            commons/target/*.jar \
+            tracker-command/target/*.jar \
+            tracker-query/target/*.jar
 
   build-release-docker-images:
     needs: version-and-release
