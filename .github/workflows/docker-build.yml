@@ -65,7 +65,11 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Building version: ${VERSION}"
 
-      - name: Build commons module first
+      - name: Install parent POM
+        run: |
+          mvn install -N -DskipTests
+
+      - name: Build commons module
         run: |
           mvn clean install -pl commons -DskipTests
 
