@@ -13,6 +13,11 @@ on:
         required: false
         type: string
         default: ''
+      checkout-ref:
+        description: 'Git ref to checkout (branch, tag, or commit)'
+        required: false
+        type: string
+        default: ''
     secrets:
       registry-username:
         description: 'Docker registry username'
@@ -32,6 +37,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.checkout-ref }}
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4

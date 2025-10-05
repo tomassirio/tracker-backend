@@ -8,6 +8,8 @@ on:
 jobs:
   version-and-release:
     runs-on: ubuntu-latest
+    outputs:
+      release-version: ${{ steps.set-release-version.outputs.version }}
     permissions:
       contents: write # To push commits and tags, and create releases
       packages: write # To push Docker images to GHCR
@@ -32,10 +34,12 @@ jobs:
           git config user.email "github-actions@github.com"
 
       - name: Set release version
+        id: set-release-version
         run: |
           mvn versions:set -DremoveSnapshot -DprocessAllModules=true
           RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
+          echo "version=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
 
       - name: Commit release version
         run: |
@@ -87,6 +91,7 @@ jobs:
     with:
       push-to-registry: true
       image-tag: latest
+      checkout-ref: v${{ needs.version-and-release.outputs.release-version }}
     secrets:
       registry-username: ${{ github.actor }}
       registry-password: ${{ secrets.GITHUB_TOKEN }}
