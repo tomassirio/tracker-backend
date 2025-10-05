@@ -2,6 +2,12 @@
 
 A comprehensive tracking system for my pilgrimage to Santiago de Compostela, built with CQRS architecture using Spring Boot and Java 21.
 
+## 📚 Documentation
+
+- **[Docker Guide](docs/DOCKER.md)** - Complete guide for building and running with Docker
+- **[CI/CD Workflows](docs/CI-CD.md)** - GitHub Actions workflows and automation
+- **[Release Notes](docs/release-notes.md)** - Version history and changelog
+
 ## 📖 Description
 
 As part of my trip to Santiago de Compostela, I'm creating a set of applications for friends, family, and guests to check on my status. The journey will be approximately 48 days long, walking 50 km per day from Utrecht to Santiago de Compostela.
