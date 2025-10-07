@@ -14,6 +14,7 @@ public class BaseTestEntityFactory {
     public static final double LATITUDE = 33.95036882906084;
     public static final double LONGITUDE = -105.33119262037046;
     public static final double ALTITUDE = 1500.0;
+    public static final UUID USER_ID = UUID.randomUUID();
 
     public static Location createLocation(UUID locationId, Trip trip) {
         return Location.builder()
@@ -74,7 +75,11 @@ public class BaseTestEntityFactory {
     }
 
     public static TripDTO createTripDTO(
-            UUID tripId, String name, LocationDTO startLocation, LocationDTO endLocation) {
+            UUID tripId,
+            UUID userId,
+            String name,
+            LocationDTO startLocation,
+            LocationDTO endLocation) {
         return new TripDTO(
                 tripId,
                 name,
@@ -83,6 +88,7 @@ public class BaseTestEntityFactory {
                 1250.5,
                 startLocation,
                 endLocation,
-                TripVisibility.PUBLIC);
+                TripVisibility.PUBLIC,
+                userId);
     }
 }
