@@ -1,8 +1,10 @@
 package com.tomassirio.wanderer.command.service;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -11,15 +13,18 @@ import com.tomassirio.wanderer.command.dto.LocationRequest;
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.impl.TripServiceImpl;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,7 +36,25 @@ class TripServiceTest {
 
     @Mock private TripRepository tripRepository;
 
+    @Mock private UserRepository userRepository;
+
     @InjectMocks private TripServiceImpl tripService;
+
+    @BeforeEach
+    void setUp() {
+        lenient()
+                .when(userRepository.findById(any(UUID.class)))
+                .thenAnswer(
+                        invocation -> {
+                            UUID id = invocation.getArgument(0);
+                            return Optional.of(
+                                    User.builder()
+                                            .id(id)
+                                            .username("test-user")
+                                            .email("test@example.com")
+                                            .build());
+                        });
+    }
 
     @Test
     void createTrip_whenValidRequest_shouldCreateAndSaveTrip() {
@@ -53,7 +76,7 @@ class TripServiceTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTrip(request);
+        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
 
         // Then
         assertThat(createdTrip).isNotNull();
@@ -90,7 +113,7 @@ class TripServiceTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTrip(request);
+        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
 
         // Then
         assertThat(createdTrip).isNotNull();
@@ -120,7 +143,7 @@ class TripServiceTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTrip(request);
+        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
 
         // Then
         assertThat(createdTrip).isNotNull();
@@ -264,7 +287,7 @@ class TripServiceTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTrip(request);
+        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
 
         // Then
         assertThat(createdTrip).isNotNull();
@@ -291,7 +314,7 @@ class TripServiceTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTrip(request);
+        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
 
         // Then
         assertThat(createdTrip.startingLocation()).isNotNull();

@@ -1,0 +1,43 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-add-users-and-owner-to-trips
+      author: tomassirio
+      changes:
+        - createTable:
+            tableName: users
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: username
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+        - addColumn:
+            tableName: trips
+            columns:
+              - column:
+                  name: owner_id
+                  type: uuid
+        - addForeignKeyConstraint:
+            baseTableName: trips
+            baseColumnNames: owner_id
+            constraintName: fk_trips_owner
+            referencedTableName: users
+            referencedColumnNames: id
+        - addNotNullConstraint:
+            tableName: users
+            columnName: username
+            columnDataType: varchar(100)
+
