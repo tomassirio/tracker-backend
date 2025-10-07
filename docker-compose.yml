@@ -56,6 +56,7 @@ services:
       - "${TRACKER_COMMAND_PORT:-8081}:8081"
     environment:
       <<: *common-db-variables
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:3000
 
   tracker-query:
     <<: *service-common
@@ -65,6 +66,7 @@ services:
       - "${TRACKER_QUERY_PORT:-8082}:8082"
     environment:
       <<: *common-db-variables
+      APP_CORS_ALLOWED_ORIGINS: http://localhost:3000
 
 volumes:
   postgres_data:
