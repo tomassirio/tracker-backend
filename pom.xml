@@ -40,7 +40,7 @@
         <module>commons</module>
         <module>tracker-command</module>
         <module>tracker-query</module>
-<!--        <module>tracker-auth</module>-->
+        <module>tracker-auth</module>
     </modules>
 
     <dependencyManagement>
@@ -147,6 +147,9 @@
                     <artifactId>jib-maven-plugin</artifactId>
                     <version>${jib.version}</version>
                     <configuration>
+                        <to>
+                            <image>${docker.image.prefix}/${project.artifactId}:latest</image>
+                        </to>
                         <from>
                             <image>${docker.base.image}</image>
                             <platforms>
