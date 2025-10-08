@@ -1,37 +1,38 @@
-version: '3.8'
-
 x-db-credentials: &db-credentials
-  DB_HOST: postgres
+  DB_HOST: postgres-cqrs
   DB_PORT: 5432
   DB_NAME: wanderer_db
   DB_USER: wanderer
   DB_PASSWORD: password
+  AUTH_DB_USER: wanderer_auth
+  AUTH_DB_PASSWORD: password
+  AUTH_DB_NAME: wanderer_auth_db
+  AUTH_DB_PORT: 5433
 
 x-docker-images: &docker-images
   POSTGRES_IMAGE: postgres:15-alpine
   TRACKER_COMMAND_IMAGE: ghcr.io/tomassirio/tracker-command:latest
   TRACKER_QUERY_IMAGE: ghcr.io/tomassirio/tracker-query:latest
+  TRACKER_AUTH_IMAGE: ghcr.io/tomassirio/tracker-auth:latest
 
 x-service-ports: &service-ports
   TRACKER_COMMAND_PORT: 8081
   TRACKER_QUERY_PORT: 8082
+  TRACKER_AUTH_PORT: 8083
 
 x-common-variables: &common-db-variables
-  SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST:-postgres}:${DB_PORT:-5432}/${DB_NAME:-wanderer_db}
+  SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST:-postgres-cqrs}:${DB_PORT:-5432}/${DB_NAME:-wanderer_db}
   SPRING_DATASOURCE_USERNAME: ${DB_USER:-wanderer}
   SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-password}
-  DB_URL: jdbc:postgresql://${DB_HOST:-postgres}:${DB_PORT:-5432}/${DB_NAME:-wanderer_db}
+  DB_URL: jdbc:postgresql://${DB_HOST:-postgres-cqrs}:${DB_PORT:-5432}/${DB_NAME:-wanderer_db}
   DB_USERNAME: ${DB_USER:-wanderer}
   DB_PASSWORD: ${DB_PASSWORD:-password}
 
 x-service-common: &service-common
   restart: unless-stopped
-  depends_on:
-    postgres:
-      condition: service_healthy
 
 services:
-  postgres:
+  postgres-cqrs:
     image: ${POSTGRES_IMAGE:-postgres:15-alpine}
     container_name: wanderer-postgres
     environment:
@@ -48,8 +49,28 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-auth:
+    image: ${POSTGRES_IMAGE:-postgres:15-alpine}
+    container_name: wanderer-auth-postgres
+    environment:
+      POSTGRES_USER: ${AUTH_DB_USER:-wanderer_auth}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-password}
+      POSTGRES_DB: ${AUTH_DB_NAME:-wanderer_auth_db}
+    ports:
+      - "${AUTH_DB_PORT:-5433}:5432"
+    volumes:
+      - auth_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${AUTH_DB_USER:-wanderer_auth}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   tracker-command:
     <<: *service-common
+    depends_on:
+      postgres-cqrs:
+        condition: service_healthy
     image: ${TRACKER_COMMAND_IMAGE:-ghcr.io/tomassirio/tracker-command:latest}
     container_name: tracker-command
     ports:
@@ -62,6 +83,9 @@ services:
 
   tracker-query:
     <<: *service-common
+    depends_on:
+      postgres-cqrs:
+        condition: service_healthy
     image: ${TRACKER_QUERY_IMAGE:-ghcr.io/tomassirio/tracker-query:latest}
     container_name: tracker-query
     ports:
@@ -72,5 +96,25 @@ services:
       # Defaults to http://localhost:51538 when the variable is not provided.
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:51538}
 
+  tracker-auth:
+    <<: *service-common
+    depends_on:
+      postgres-auth:
+        condition: service_healthy
+    image: ${TRACKER_AUTH_IMAGE:-ghcr.io/tomassirio/tracker-auth:latest}
+    container_name: tracker-auth
+    ports:
+      - "${TRACKER_AUTH_PORT:-8083}:8083"
+    environment:
+      DB_URL: jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-wanderer_auth_db}
+      DB_USERNAME: ${AUTH_DB_USER:-wanderer_auth}
+      DB_PASSWORD: ${AUTH_DB_PASSWORD:-password}
+      DB_DRIVERCLASSNAME: org.postgresql.Driver
+      JWT_SECRET: ${JWT_SECRET:-ChangeMeInProdReplaceWithEnvVarOrKMS}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
+      TRACKER_QUERY_URL: ${TRACKER_QUERY_URL:-http://tracker-query:8082}
+      TRACKER_COMMAND_URL: ${TRACKER_COMMAND_URL:-http://tracker-command:8081}
+
 volumes:
   postgres_data:
+  auth_postgres_data:

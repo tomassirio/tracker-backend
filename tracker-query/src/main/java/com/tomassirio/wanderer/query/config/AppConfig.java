@@ -1,6 +1,5 @@
 package com.tomassirio.wanderer.query.config;
 
-import com.tomassirio.wanderer.commons.config.CommonsJpaConfiguration;
 import com.tomassirio.wanderer.commons.config.CorsConfig;
 import com.tomassirio.wanderer.commons.config.DatabaseConfig;
 import org.springframework.context.annotation.Configuration;
@@ -8,5 +7,5 @@ import org.springframework.context.annotation.Import;
 
 /** Application configuration that imports shared configurations from the commons module. */
 @Configuration
-@Import({DatabaseConfig.class, CommonsJpaConfiguration.class, CorsConfig.class})
+@Import({DatabaseConfig.class, CorsConfig.class})
 public class AppConfig {}

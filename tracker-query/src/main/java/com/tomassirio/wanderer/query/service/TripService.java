@@ -34,4 +34,15 @@ public interface TripService {
      *     trips exist
      */
     List<TripDTO> getAllTrips();
+
+    /**
+     * Retrieves all trips with PUBLIC visibility.
+     *
+     * <p>This method is intended for unauthenticated users or public browsing. It returns only the
+     * trips that are marked as PUBLIC, ensuring that sensitive or private trip data is not exposed.
+     *
+     * @return a list of {@link TripDTO} objects representing all public trips, or an empty list if
+     *     no public trips exist
+     */
+    List<TripDTO> getPublicTrips();
 }

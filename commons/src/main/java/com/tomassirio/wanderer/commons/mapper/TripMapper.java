@@ -11,6 +11,9 @@ public interface TripMapper {
 
     TripMapper INSTANCE = Mappers.getMapper(TripMapper.class);
 
+    @Mapping(
+            target = "ownerId",
+            expression = "java(trip.getOwner() != null ? trip.getOwner().getId() : null)")
     TripDTO toDTO(Trip trip);
 
     @Mapping(target = "locations", ignore = true)

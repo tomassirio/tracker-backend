@@ -88,7 +88,7 @@ class GlobalExceptionHandlerTest {
                 new IllegalArgumentException("Invalid argument provided");
 
         // When
-        ResponseEntity<Void> response =
+        ResponseEntity<String> response =
                 globalExceptionHandler.handleIllegalArgumentException(exception);
 
         // Then
@@ -102,7 +102,7 @@ class GlobalExceptionHandlerTest {
                 new IllegalArgumentException("Trip not found with ID: 123");
 
         // When
-        ResponseEntity<Void> response =
+        ResponseEntity<String> response =
                 globalExceptionHandler.handleIllegalArgumentException(exception);
 
         // Then
@@ -142,7 +142,7 @@ class GlobalExceptionHandlerTest {
         RuntimeException exception = new RuntimeException("Unexpected error occurred");
 
         // When
-        ResponseEntity<Void> response =
+        ResponseEntity<String> response =
                 globalExceptionHandler.handleAllUncaughtException(exception);
 
         // Then

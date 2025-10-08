@@ -5,6 +5,8 @@ import com.tomassirio.wanderer.command.dto.TripResponse;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.security.CurrentUserId;
+import com.tomassirio.wanderer.commons.security.Scope;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller for trip command operations. Handles trip creation, update, and deletion
+ * requests.
+ *
+ * @since 0.1.8
+ */
 @RestController
 @RequestMapping("/api/1/trips")
 @RequiredArgsConstructor
@@ -28,11 +36,13 @@ public class TripController {
     private final TripService tripService;
 
     @PostMapping
+    @Scope("login")
     public ResponseEntity<TripResponse> createTrip(
-            @Valid @RequestBody TripCreationRequest request) {
-        log.info("Received request to create trip: {}", request.name());
+            @CurrentUserId UUID userId, @Valid @RequestBody TripCreationRequest request) {
 
-        TripDTO createdTrip = tripService.createTrip(request);
+        log.info("Received request to create trip: {} by user {}", request.name(), userId);
+
+        TripDTO createdTrip = tripService.createTrip(userId, request);
         TripResponse response = new TripResponse(createdTrip.id());
 
         log.info("Successfully created trip with ID: {}", createdTrip.id());

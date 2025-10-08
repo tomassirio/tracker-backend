@@ -4,9 +4,11 @@ import com.tomassirio.wanderer.command.dto.LocationRequest;
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.commons.domain.Location;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -21,12 +23,21 @@ public class TripServiceImpl implements TripService {
 
     private final TripRepository tripRepository;
 
+    private final UserRepository userRepository;
+
     private final TripMapper tripMapper = TripMapper.INSTANCE;
 
     @Override
-    public TripDTO createTrip(TripCreationRequest request) {
+    public TripDTO createTrip(UUID ownerId, TripCreationRequest request) {
         Trip trip = buildTripFromRequest(request);
         setLocationsOnTrip(trip, request.startingLocation(), request.endingLocation());
+
+        User owner =
+                userRepository
+                        .findById(ownerId)
+                        .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        trip.setOwner(owner);
+
         return tripMapper.toDTO(tripRepository.save(trip));
     }
 
