@@ -2,50 +2,37 @@ package com.tomassirio.wanderer.auth.service;
 
 import com.tomassirio.wanderer.commons.domain.User;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.security.Keys;
-import java.nio.charset.StandardCharsets;
-import java.security.Key;
-import java.util.Date;
-import java.util.List;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
-@Service
-@RequiredArgsConstructor
-public class JwtService {
+/**
+ * Service interface for JWT token operations.
+ * Provides methods for generating and parsing JWT tokens.
+ *
+ * @since 0.1.8
+ */
+public interface JwtService {
 
-    @Value("${jwt.secret}")
-    private String secret;
+    /**
+     * Generates a JWT token for the given user.
+     * The token includes user ID, username, email, and scopes as claims.
+     *
+     * @param user the user for whom the token is generated
+     * @return the generated JWT token as a String
+     */
+    String generateToken(User user);
 
-    @Getter
-    @Value("${jwt.expiration-ms:3600000}")
-    private long expirationMs;
+    /**
+     * Parses the given JWT token and returns the claims.
+     *
+     * @param token the JWT token to parse
+     * @return the Claims object containing the token's payload
+     * @throws io.jsonwebtoken.JwtException if the token is invalid or expired
+     */
+    Claims parseToken(String token);
 
-    public String generateToken(User user) {
-        Key key = getSigningKey();
-        Date now = new Date();
-        Date expiry = new Date(now.getTime() + expirationMs);
-        return Jwts.builder()
-                .setSubject(user.getId().toString())
-                .claim("username", user.getUsername())
-                .claim("email", user.getEmail())
-                .claim("scopes", List.of("login"))
-                .setIssuedAt(now)
-                .setExpiration(expiry)
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
-    }
-
-    public Claims parseToken(String token) {
-        Key key = getSigningKey();
-        return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
-    }
-
-    private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
-    }
+    /**
+     * Returns the expiration time in milliseconds for JWT tokens.
+     *
+     * @return the expiration time in milliseconds
+     */
+    long getExpirationMs();
 }

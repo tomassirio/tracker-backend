@@ -21,6 +21,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * REST controller for trip command operations.
+ * Handles trip creation, update, and deletion requests.
+ *
+ * @since 0.1.8
+ */
 @RestController
 @RequestMapping("/api/1/trips")
 @RequiredArgsConstructor

@@ -12,6 +12,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * REST controller for location command operations.
+ * Handles location update submissions for trips.
+ *
+ * @since 0.1.8
+ */
 @RestController
 @RequestMapping("/api/1/{tripId}/location")
 @RequiredArgsConstructor
