@@ -24,11 +24,12 @@ class JwtServiceImplTest {
     @BeforeEach
     void setUp() throws Exception {
         jwtService = new JwtServiceImpl();
-        testUser = User.builder()
-                .id(UUID.randomUUID())
-                .username("testuser")
-                .email("test@example.com")
-                .build();
+        testUser =
+                User.builder()
+                        .id(UUID.randomUUID())
+                        .username("testuser")
+                        .email("test@example.com")
+                        .build();
 
         // Set secret via reflection
         Field secretField = JwtServiceImpl.class.getDeclaredField("secret");

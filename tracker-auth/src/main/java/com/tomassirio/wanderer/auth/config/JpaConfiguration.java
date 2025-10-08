@@ -3,7 +3,6 @@ package com.tomassirio.wanderer.auth.config;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 
 /**
  * Configuration class to specify the base packages for JPA entity and repository scanning. This is
@@ -13,5 +12,4 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 @Configuration
 @ConditionalOnMissingBean(name = "testJpaConfiguration")
 @EnableJpaRepositories(basePackages = "com.tomassirio.wanderer.auth.repository")
-@EntityScan({"com.tomassirio.wanderer.commons.domain", "com.tomassirio.wanderer.auth.domain"})
 public class JpaConfiguration {}

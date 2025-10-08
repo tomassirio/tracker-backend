@@ -49,7 +49,6 @@ class AuthControllerTest {
         LoginRequest request = new LoginRequest("testuser", "password123");
         String token = "jwt.token.here";
         long expiresIn = 3600000L;
-        LoginResponse expectedResponse = new LoginResponse(token, "Bearer", expiresIn);
 
         when(authService.login(request.username(), request.password())).thenReturn(token);
         when(jwtService.getExpirationMs()).thenReturn(expiresIn);
@@ -77,7 +76,8 @@ class AuthControllerTest {
 
     @Test
     void register_whenValidRequest_shouldReturnCreated() throws Exception {
-        RegisterRequest request = new RegisterRequest("testuser", "test@example.com", "password123");
+        RegisterRequest request =
+                new RegisterRequest("testuser", "test@example.com", "password123");
         LoginResponse response = new LoginResponse("jwt.token", "Bearer", 3600000L);
 
         when(authService.register(any(RegisterRequest.class))).thenReturn(response);

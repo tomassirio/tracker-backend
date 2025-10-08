@@ -11,8 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for user query operations.
- * Handles user retrieval requests.
+ * REST controller for user query operations. Handles user retrieval requests.
  *
  * @since 0.1.8
  */

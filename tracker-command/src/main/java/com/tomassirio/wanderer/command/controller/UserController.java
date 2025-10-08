@@ -14,8 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for user command operations.
- * Handles user creation requests.
+ * REST controller for user command operations. Handles user creation requests.
  *
  * @since 0.1.8
  */

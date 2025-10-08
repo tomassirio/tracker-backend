@@ -28,11 +28,12 @@ class UserQueryServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        testUser = User.builder()
-                .id(UUID.randomUUID())
-                .username("testuser")
-                .email("test@example.com")
-                .build();
+        testUser =
+                User.builder()
+                        .id(UUID.randomUUID())
+                        .username("testuser")
+                        .email("test@example.com")
+                        .build();
     }
 
     @Test
@@ -51,12 +52,14 @@ class UserQueryServiceImplTest {
         UUID nonExistentId = UUID.randomUUID();
         when(userRepository.findById(nonExistentId)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> userQueryService.getUserById(nonExistentId));
+        assertThrows(
+                EntityNotFoundException.class, () -> userQueryService.getUserById(nonExistentId));
     }
 
     @Test
     void getUserByUsername_whenUserExists_shouldReturnUserResponse() {
-        when(userRepository.findByUsername(testUser.getUsername())).thenReturn(Optional.of(testUser));
+        when(userRepository.findByUsername(testUser.getUsername()))
+                .thenReturn(Optional.of(testUser));
 
         UserResponse result = userQueryService.getUserByUsername(testUser.getUsername());
 
@@ -70,7 +73,9 @@ class UserQueryServiceImplTest {
         String nonExistentUsername = "nonexistent";
         when(userRepository.findByUsername(nonExistentUsername)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> userQueryService.getUserByUsername(nonExistentUsername));
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> userQueryService.getUserByUsername(nonExistentUsername));
     }
 
     @Test
@@ -89,6 +94,8 @@ class UserQueryServiceImplTest {
         String nonExistentEmail = "nonexistent@example.com";
         when(userRepository.findByEmail(nonExistentEmail)).thenReturn(Optional.empty());
 
-        assertThrows(EntityNotFoundException.class, () -> userQueryService.getUserByEmail(nonExistentEmail));
+        assertThrows(
+                EntityNotFoundException.class,
+                () -> userQueryService.getUserByEmail(nonExistentEmail));
     }
 }

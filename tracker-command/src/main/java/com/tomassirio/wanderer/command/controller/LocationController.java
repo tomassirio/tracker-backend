@@ -13,8 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST controller for location command operations.
- * Handles location update submissions for trips.
+ * REST controller for location command operations. Handles location update submissions for trips.
  *
  * @since 0.1.8
  */

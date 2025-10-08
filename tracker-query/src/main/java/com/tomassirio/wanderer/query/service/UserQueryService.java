@@ -4,8 +4,7 @@ import com.tomassirio.wanderer.query.dto.UserResponse;
 import java.util.UUID;
 
 /**
- * Service interface for user query operations.
- * Provides methods to retrieve user information.
+ * Service interface for user query operations. Provides methods to retrieve user information.
  *
  * @since 0.1.8
  */

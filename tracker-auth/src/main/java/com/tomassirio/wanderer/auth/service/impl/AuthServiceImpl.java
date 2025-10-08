@@ -17,8 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 /**
- * Service implementation for authentication operations.
- * Handles user login and registration using Feign clients for inter-service communication.
+ * Service implementation for authentication operations. Handles user login and registration using
+ * Feign clients for inter-service communication.
  */
 @Service
 @RequiredArgsConstructor
@@ -46,6 +46,10 @@ public class AuthServiceImpl implements AuthService {
             } else {
                 throw new IllegalStateException("Failed to contact user query service", e);
             }
+        }
+
+        if (user == null) {
+            throw new IllegalArgumentException("Invalid credentials");
         }
 
         // Find credentials by user id in the auth database

@@ -16,8 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Service implementation for JWT token operations.
- * Handles generation and parsing of JWT tokens using JJWT library.
+ * Service implementation for JWT token operations. Handles generation and parsing of JWT tokens
+ * using JJWT library.
  */
 @Service
 @RequiredArgsConstructor

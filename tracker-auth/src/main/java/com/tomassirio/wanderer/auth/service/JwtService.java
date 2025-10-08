@@ -4,16 +4,16 @@ import com.tomassirio.wanderer.commons.domain.User;
 import io.jsonwebtoken.Claims;
 
 /**
- * Service interface for JWT token operations.
- * Provides methods for generating and parsing JWT tokens.
+ * Service interface for JWT token operations. Provides methods for generating and parsing JWT
+ * tokens.
  *
  * @since 0.1.8
  */
 public interface JwtService {
 
     /**
-     * Generates a JWT token for the given user.
-     * The token includes user ID, username, email, and scopes as claims.
+     * Generates a JWT token for the given user. The token includes user ID, username, email, and
+     * scopes as claims.
      *
      * @param user the user for whom the token is generated
      * @return the generated JWT token as a String

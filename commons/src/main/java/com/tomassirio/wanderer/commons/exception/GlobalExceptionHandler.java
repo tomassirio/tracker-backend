@@ -28,9 +28,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<Void> handleIllegalArgumentException(IllegalArgumentException ex) {
+    public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException ex) {
         log.warn("Invalid request: {}", ex.getMessage());
-        return ResponseEntity.badRequest().build();
+        return ResponseEntity.badRequest().body(ex.getMessage());
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
@@ -52,8 +52,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ResponseEntity<Void> handleAllUncaughtException(Exception ex) {
+    public ResponseEntity<String> handleAllUncaughtException(Exception ex) {
         log.error("Unexpected error occurred", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ex.getMessage());
     }
 }

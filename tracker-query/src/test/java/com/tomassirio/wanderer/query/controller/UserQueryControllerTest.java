@@ -38,16 +38,18 @@ class UserQueryControllerTest {
                         .setControllerAdvice(new GlobalExceptionHandler())
                         .build();
 
-        testUser = User.builder()
-                .id(UUID.randomUUID())
-                .username("testuser")
-                .email("test@example.com")
-                .build();
+        testUser =
+                User.builder()
+                        .id(UUID.randomUUID())
+                        .username("testuser")
+                        .email("test@example.com")
+                        .build();
     }
 
     @Test
     void getUser_whenUserExists_shouldReturnUser() throws Exception {
-        UserResponse userResponse = new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
+        UserResponse userResponse =
+                new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
         when(userQueryService.getUserById(testUser.getId())).thenReturn(userResponse);
 
         mockMvc.perform(get("/api/1/users/{id}", testUser.getId()))
@@ -60,15 +62,16 @@ class UserQueryControllerTest {
     @Test
     void getUser_whenUserDoesNotExist_shouldReturnNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
-        when(userQueryService.getUserById(nonExistentId)).thenThrow(new EntityNotFoundException("User not found"));
+        when(userQueryService.getUserById(nonExistentId))
+                .thenThrow(new EntityNotFoundException("User not found"));
 
-        mockMvc.perform(get("/api/1/users/{id}", nonExistentId))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/1/users/{id}", nonExistentId)).andExpect(status().isNotFound());
     }
 
     @Test
     void getUserByUsername_whenUserExists_shouldReturnUser() throws Exception {
-        UserResponse userResponse = new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
+        UserResponse userResponse =
+                new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
         when(userQueryService.getUserByUsername(testUser.getUsername())).thenReturn(userResponse);
 
         mockMvc.perform(get("/api/1/users/username/{username}", testUser.getUsername()))
@@ -81,7 +84,8 @@ class UserQueryControllerTest {
     @Test
     void getUserByUsername_whenUserDoesNotExist_shouldReturnNotFound() throws Exception {
         String nonExistentUsername = "nonexistent";
-        when(userQueryService.getUserByUsername(nonExistentUsername)).thenThrow(new EntityNotFoundException("User not found"));
+        when(userQueryService.getUserByUsername(nonExistentUsername))
+                .thenThrow(new EntityNotFoundException("User not found"));
 
         mockMvc.perform(get("/api/1/users/username/{username}", nonExistentUsername))
                 .andExpect(status().isNotFound());
@@ -89,7 +93,8 @@ class UserQueryControllerTest {
 
     @Test
     void getUserByEmail_whenUserExists_shouldReturnUser() throws Exception {
-        UserResponse userResponse = new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
+        UserResponse userResponse =
+                new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
         when(userQueryService.getUserByEmail(testUser.getEmail())).thenReturn(userResponse);
 
         mockMvc.perform(get("/api/1/users/email/{email}", testUser.getEmail()))
@@ -102,7 +107,8 @@ class UserQueryControllerTest {
     @Test
     void getUserByEmail_whenUserDoesNotExist_shouldReturnNotFound() throws Exception {
         String nonExistentEmail = "nonexistent@example.com";
-        when(userQueryService.getUserByEmail(nonExistentEmail)).thenThrow(new EntityNotFoundException("User not found"));
+        when(userQueryService.getUserByEmail(nonExistentEmail))
+                .thenThrow(new EntityNotFoundException("User not found"));
 
         mockMvc.perform(get("/api/1/users/email/{email}", nonExistentEmail))
                 .andExpect(status().isNotFound());

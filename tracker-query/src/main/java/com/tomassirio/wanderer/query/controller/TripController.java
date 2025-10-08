@@ -13,8 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for trip query operations.
- * Handles trip retrieval requests.
+ * REST controller for trip query operations. Handles trip retrieval requests.
  *
  * @since 0.1.8
  */

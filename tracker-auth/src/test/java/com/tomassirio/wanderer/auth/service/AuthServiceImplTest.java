@@ -18,7 +18,6 @@ import com.tomassirio.wanderer.commons.domain.User;
 import feign.FeignException;
 import feign.FeignException.NotFound;
 import feign.Request;
-import feign.RequestTemplate;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
@@ -52,16 +51,18 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        testUser = User.builder()
-                .id(UUID.randomUUID())
-                .username("testuser")
-                .email("test@example.com")
-                .build();
-        testCredential = Credential.builder()
-                .userId(testUser.getId())
-                .passwordHash("hashedPassword")
-                .enabled(true)
-                .build();
+        testUser =
+                User.builder()
+                        .id(UUID.randomUUID())
+                        .username("testuser")
+                        .email("test@example.com")
+                        .build();
+        testCredential =
+                Credential.builder()
+                        .userId(testUser.getId())
+                        .passwordHash("hashedPassword")
+                        .enabled(true)
+                        .build();
     }
 
     @Test
@@ -70,7 +71,8 @@ class AuthServiceImplTest {
         String token = "jwt.token";
 
         when(trackerQueryClient.getUserByUsername(testUser.getUsername())).thenReturn(testUser);
-        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.of(testCredential));
+        when(credentialRepository.findById(testUser.getId()))
+                .thenReturn(Optional.of(testCredential));
         when(passwordEncoder.matches(password, testCredential.getPasswordHash())).thenReturn(true);
         when(jwtService.generateToken(testUser)).thenReturn(token);
 
@@ -82,10 +84,18 @@ class AuthServiceImplTest {
 
     @Test
     void login_whenUserNotFound_shouldThrowIllegalArgumentException() {
-        Request dummyRequest = Request.create(Request.HttpMethod.GET, "http://dummy", Map.of(), null, StandardCharsets.UTF_8);
-        when(trackerQueryClient.getUserByUsername("nonexistent")).thenThrow(new NotFound("User not found", dummyRequest, null, null));
+        Request dummyRequest =
+                Request.create(
+                        Request.HttpMethod.GET,
+                        "http://dummy",
+                        Map.of(),
+                        null,
+                        StandardCharsets.UTF_8);
+        when(trackerQueryClient.getUserByUsername("nonexistent"))
+                .thenThrow(new NotFound("User not found", dummyRequest, null, null));
 
-        assertThrows(IllegalArgumentException.class, () -> authService.login("nonexistent", "password"));
+        assertThrows(
+                IllegalArgumentException.class, () -> authService.login("nonexistent", "password"));
     }
 
     @Test
@@ -93,7 +103,9 @@ class AuthServiceImplTest {
         when(trackerQueryClient.getUserByUsername(testUser.getUsername())).thenReturn(testUser);
         when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () -> authService.login(testUser.getUsername(), "password"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.login(testUser.getUsername(), "password"));
     }
 
     @Test
@@ -101,23 +113,31 @@ class AuthServiceImplTest {
         testCredential.setEnabled(false);
 
         when(trackerQueryClient.getUserByUsername(testUser.getUsername())).thenReturn(testUser);
-        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.of(testCredential));
+        when(credentialRepository.findById(testUser.getId()))
+                .thenReturn(Optional.of(testCredential));
 
-        assertThrows(IllegalArgumentException.class, () -> authService.login(testUser.getUsername(), "password"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.login(testUser.getUsername(), "password"));
     }
 
     @Test
     void login_whenPasswordIncorrect_shouldThrowIllegalArgumentException() {
         when(trackerQueryClient.getUserByUsername(testUser.getUsername())).thenReturn(testUser);
-        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.of(testCredential));
-        when(passwordEncoder.matches("wrongpassword", testCredential.getPasswordHash())).thenReturn(false);
+        when(credentialRepository.findById(testUser.getId()))
+                .thenReturn(Optional.of(testCredential));
+        when(passwordEncoder.matches("wrongpassword", testCredential.getPasswordHash()))
+                .thenReturn(false);
 
-        assertThrows(IllegalArgumentException.class, () -> authService.login(testUser.getUsername(), "wrongpassword"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.login(testUser.getUsername(), "wrongpassword"));
     }
 
     @Test
     void register_whenValidRequest_shouldReturnLoginResponse() {
-        RegisterRequest request = new RegisterRequest("testuser", "test@example.com", "password123");
+        RegisterRequest request =
+                new RegisterRequest("testuser", "test@example.com", "password123");
         String token = "jwt.token";
         long expiresIn = 3600000L;
 
@@ -138,7 +158,8 @@ class AuthServiceImplTest {
 
     @Test
     void register_whenUserCreationFails_shouldThrowIllegalStateException() {
-        RegisterRequest request = new RegisterRequest("testuser", "test@example.com", "password123");
+        RegisterRequest request =
+                new RegisterRequest("testuser", "test@example.com", "password123");
 
         when(trackerCommandClient.createUser(any())).thenThrow(FeignException.class);
 
@@ -148,10 +169,12 @@ class AuthServiceImplTest {
 
     @Test
     void register_whenCredentialsAlreadyExist_shouldThrowIllegalStateException() {
-        RegisterRequest request = new RegisterRequest("testuser", "test@example.com", "password123");
+        RegisterRequest request =
+                new RegisterRequest("testuser", "test@example.com", "password123");
 
         when(trackerCommandClient.createUser(any())).thenReturn(testUser);
-        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.of(testCredential));
+        when(credentialRepository.findById(testUser.getId()))
+                .thenReturn(Optional.of(testCredential));
 
         assertThrows(IllegalStateException.class, () -> authService.register(request));
         verify(credentialRepository, never()).save(any());
