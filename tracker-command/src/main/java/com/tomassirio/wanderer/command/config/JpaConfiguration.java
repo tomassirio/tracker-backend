@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.command.config;
 
-import com.tomassirio.wanderer.commons.config.CommonsJpaConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
@@ -13,4 +13,5 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Configuration
 @ConditionalOnMissingBean(name = "testJpaConfiguration")
 @EnableJpaRepositories(basePackages = "com.tomassirio.wanderer.command.repository")
-public class JpaConfiguration extends CommonsJpaConfiguration {}
+@EntityScan("com.tomassirio.wanderer.commons.domain")
+public class JpaConfiguration {}
