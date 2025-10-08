@@ -1,7 +1,6 @@
-package com.tomassirio.wanderer.commons.test;
+package com.tomassirio.wanderer.commons.utils;
 
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
-import com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.MethodParameter;

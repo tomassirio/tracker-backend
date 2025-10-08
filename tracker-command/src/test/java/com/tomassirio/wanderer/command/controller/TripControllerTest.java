@@ -24,7 +24,7 @@ import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.LocationDTO;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
-import com.tomassirio.wanderer.commons.test.MockMvcTestUtils;
+import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.UUID;

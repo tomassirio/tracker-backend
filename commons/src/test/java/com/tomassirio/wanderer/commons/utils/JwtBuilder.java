@@ -1,58 +1,29 @@
-package com.tomassirio.wanderer.command.cucumber;
+package com.tomassirio.wanderer.commons.utils;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tomassirio.wanderer.command.repository.TripRepository;
-import com.tomassirio.wanderer.command.repository.UserRepository;
-import io.cucumber.spring.ScenarioScope;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.stereotype.Component;
 
-@Component
-@ScenarioScope
-public class TestScenarioContext {
+public class JwtBuilder {
 
-    @Autowired private TestRestTemplate restTemplate;
-    @Autowired private UserRepository userRepository;
-    @Autowired private TripRepository tripRepository;
+    private static final ObjectMapper mapper = new ObjectMapper();
 
-    private final ObjectMapper mapper = new ObjectMapper();
-
-    // per-scenario state
-    @Getter @Setter private String tempAuthHeader;
-    @Getter @Setter private String lastCreatedUsername;
-
-    public TestRestTemplate rest() {
-        return restTemplate;
+    static {
+        mapper.registerModule(new JavaTimeModule());
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
-    public UserRepository users() {
-        return userRepository;
-    }
-
-    public TripRepository trips() {
-        return tripRepository;
-    }
-
-    public String buildJwt(
-            String subject, String scopes, String secret, Map<String, Object> extraClaims)
+    public static String buildJwt(Map<String, Object> payload, String secret)
             throws NoSuchAlgorithmException, InvalidKeyException, JsonProcessingException {
         Map<String, Object> header = Map.of("alg", "HS256", "typ", "JWT");
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("sub", subject);
-        payload.put("scopes", scopes);
-        if (extraClaims != null) payload.putAll(extraClaims);
         String headerJson = mapper.writeValueAsString(header);
         String payloadJson = mapper.writeValueAsString(payload);
         String headerB64 = base64UrlEncode(headerJson.getBytes(StandardCharsets.UTF_8));
