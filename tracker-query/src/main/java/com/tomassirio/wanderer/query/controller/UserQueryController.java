@@ -1,8 +1,7 @@
 package com.tomassirio.wanderer.query.controller;
 
 import com.tomassirio.wanderer.query.dto.UserResponse;
-import com.tomassirio.wanderer.query.repository.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.tomassirio.wanderer.query.service.UserQueryService;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,35 +21,20 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class UserQueryController {
 
-    private final UserRepository userRepository;
+    private final UserQueryService userQueryService;
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
-        var user =
-                userRepository
-                        .findById(id)
-                        .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return ResponseEntity.ok(
-                new UserResponse(user.getId(), user.getUsername(), user.getEmail()));
+        return ResponseEntity.ok(userQueryService.getUserById(id));
     }
 
     @GetMapping("/username/{username}")
     public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
-        var user =
-                userRepository
-                        .findByUsername(username)
-                        .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return ResponseEntity.ok(
-                new UserResponse(user.getId(), user.getUsername(), user.getEmail()));
+        return ResponseEntity.ok(userQueryService.getUserByUsername(username));
     }
 
     @GetMapping("/email/{email}")
     public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
-        var user =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return ResponseEntity.ok(
-                new UserResponse(user.getId(), user.getUsername(), user.getEmail()));
+        return ResponseEntity.ok(userQueryService.getUserByEmail(email));
     }
 }
