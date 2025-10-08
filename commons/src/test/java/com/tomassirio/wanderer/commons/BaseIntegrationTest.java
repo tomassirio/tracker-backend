@@ -22,6 +22,17 @@ public abstract class BaseIntegrationTest {
                     .withUsername("test")
                     .withPassword("test");
 
+    static {
+        // Ensure the container is started eagerly so DynamicPropertySource can read mapped ports
+        try {
+            if (!postgres.isRunning()) {
+                postgres.start();
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to start Postgres testcontainer", e);
+        }
+    }
+
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         registry.add("db.url", postgres::getJdbcUrl);

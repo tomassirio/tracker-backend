@@ -10,6 +10,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestControllerAdvice
 @Slf4j
@@ -37,6 +38,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Void> handleEntityNotFoundException(EntityNotFoundException ex) {
         log.warn("Entity not found: {}", ex.getMessage());
         return ResponseEntity.notFound().build();
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Object> handleResponseStatusException(ResponseStatusException ex) {
+        String reason = ex.getReason();
+        log.warn("Returning {} due to: {}", ex.getStatusCode(), reason);
+        if (reason == null) {
+            return ResponseEntity.status(ex.getStatusCode()).build();
+        }
+        return ResponseEntity.status(ex.getStatusCode()).body(reason);
     }
 
     @ExceptionHandler(Exception.class)
