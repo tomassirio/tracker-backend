@@ -22,4 +22,3 @@ public class SpringTestContextProvider implements ApplicationContextAware {
         return context.getBean(clazz);
     }
 }
-

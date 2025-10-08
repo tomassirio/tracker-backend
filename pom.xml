@@ -30,7 +30,10 @@
         <!-- Docker image configuration -->
         <docker.image.prefix>ghcr.io/tomassirio</docker.image.prefix>
         <docker.base.image>eclipse-temurin:21-jre</docker.base.image>
-    </properties>
+
+        <!-- JJWT centralized version -->
+        <jjwt.version>0.11.5</jjwt.version>
+     </properties>
 
     <modules>
         <module>commons</module>

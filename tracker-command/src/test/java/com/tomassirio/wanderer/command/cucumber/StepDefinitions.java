@@ -7,17 +7,18 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import org.junit.jupiter.api.Assertions;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.Assertions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 public class StepDefinitions {
 
@@ -28,16 +29,14 @@ public class StepDefinitions {
 
     private ResponseEntity<String> latestResponse;
 
+    private static final Logger log = LoggerFactory.getLogger(StepDefinitions.class);
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     public StepDefinitions() {
-        // ensure LocalDate serializes as ISO-8601 strings, matching application's Jackson config
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
-
-    // keep track of the last created username so "that user" steps can refer to it
-    // stored in ctx (scenario-scoped)
 
     @Given("an empty system")
     public void an_empty_system() {
@@ -57,11 +56,12 @@ public class StepDefinitions {
         body.put("email", email);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<String> request =
-                new HttpEntity<>(mapper.writeValueAsString(body), headers);
+        HttpEntity<String> request = new HttpEntity<>(mapper.writeValueAsString(body), headers);
         latestResponse = ctx().rest().postForEntity("/api/1/users", request, String.class);
-        System.out.println("[Cucumber] POST /api/1/users response status: " + latestResponse.getStatusCode().value());
-        System.out.println("[Cucumber] POST /api/1/users response body: " + latestResponse.getBody());
+        log.info(
+                "[Cucumber] POST /api/1/users response status: {}",
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST /api/1/users response body: {}", latestResponse.getBody());
     }
 
     @When("I create a trip with name {string} using that token")
@@ -81,14 +81,17 @@ public class StepDefinitions {
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        if (ctx().getTempAuthHeader() != null) headers.set("Authorization", ctx().getTempAuthHeader());
+        if (ctx().getTempAuthHeader() != null)
+            headers.set("Authorization", ctx().getTempAuthHeader());
         HttpEntity<String> request = new HttpEntity<>(mapper.writeValueAsString(body), headers);
-        // debug: print request payload so test logs include what was sent
-        System.out.println("[Cucumber] POST /api/1/trips request: " + mapper.writeValueAsString(body));
+
+        log.info("[Cucumber] POST /api/1/trips request: {}", mapper.writeValueAsString(body));
         latestResponse = ctx().rest().postForEntity("/api/1/trips", request, String.class);
-        // debug: print response status and body for easier root-cause analysis
-        System.out.println("[Cucumber] POST /api/1/trips response status: " + latestResponse.getStatusCode().value());
-        System.out.println("[Cucumber] POST /api/1/trips response body: " + latestResponse.getBody());
+
+        log.info(
+                "[Cucumber] POST /api/1/trips response status: {}",
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST /api/1/trips response body: {}", latestResponse.getBody());
     }
 
     @Then("the response status should be {int}")
@@ -96,7 +99,15 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse, "No response recorded");
         int actual = latestResponse.getStatusCode().value();
         String body = latestResponse.getBody();
-        Assertions.assertEquals(expected, actual, "Expected HTTP status " + expected + " but was " + actual + ". Response body: " + body);
+        Assertions.assertEquals(
+                expected,
+                actual,
+                "Expected HTTP status "
+                        + expected
+                        + " but was "
+                        + actual
+                        + ". Response body: "
+                        + body);
     }
 
     @And("the response contains a user id")
@@ -111,14 +122,12 @@ public class StepDefinitions {
 
     @Given("a user exists with username {string} and email {string}")
     public void a_user_exists(String username, String email) throws Exception {
-        // create user through API for full flow
         i_create_a_user_with_username_and_email(username, email);
         Assertions.assertEquals(201, latestResponse.getStatusCode().value());
     }
 
     @Given("I have a valid token for that user with scopes {string}")
     public void i_have_a_valid_token_for_that_user_with_scopes(String scopes) throws Exception {
-        // determine user's id by the last created username (the "that user" reference)
         String username = ctx().getLastCreatedUsername();
         Assertions.assertNotNull(username, "No known user to create a token for");
         var opt = ctx().users().findByUsername(username);
@@ -128,7 +137,7 @@ public class StepDefinitions {
         } else {
             var list = ctx().users().findAll();
             Assertions.assertFalse(list.isEmpty(), "No users available to create token");
-            id = list.get(list.size() - 1).getId();
+            id = list.getLast().getId();
         }
         String token = ctx().buildJwt(id.toString(), scopes, "test-secret", null);
         ctx().setTempAuthHeader("Bearer " + token);
@@ -146,15 +155,15 @@ public class StepDefinitions {
         } else {
             var list = ctx().users().findAll();
             Assertions.assertFalse(list.isEmpty(), "No users available to create token");
-            id = list.get(list.size() - 1).getId();
+            id = list.getLast().getId();
         }
         String token = ctx().buildJwt(id.toString(), scopes, "bad-secret", null);
         ctx().setTempAuthHeader("Bearer " + token);
     }
 
     @Given("I have a token for that user that has an expired exp claim and scopes {string}")
-    public void i_have_a_token_for_that_user_that_has_an_expired_exp_claim_and_scopes(
-            String scopes) throws Exception {
+    public void i_have_a_token_for_that_user_that_has_an_expired_exp_claim_and_scopes(String scopes)
+            throws Exception {
         String username = ctx().getLastCreatedUsername();
         Assertions.assertNotNull(username, "No known user to create a token for");
         var opt = ctx().users().findByUsername(username);
@@ -164,9 +173,9 @@ public class StepDefinitions {
         } else {
             var list = ctx().users().findAll();
             Assertions.assertFalse(list.isEmpty(), "No users available to create token");
-            id = list.get(list.size() - 1).getId();
+            id = list.getLast().getId();
         }
-        // set exp to past
+
         long past = LocalDate.now().minusDays(10).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
         Map<String, Object> extra = Map.of("exp", past);
         String token = ctx().buildJwt(id.toString(), scopes, "test-secret", extra);
@@ -178,6 +187,4 @@ public class StepDefinitions {
         ctx().setTempAuthHeader(null);
         i_create_a_trip_with_name_using_that_token(name);
     }
-
-
 }

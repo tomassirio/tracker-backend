@@ -9,7 +9,4 @@ import org.springframework.test.context.TestPropertySource;
 @CucumberContextConfiguration
 @Import(TestConfig.class)
 @TestPropertySource(properties = {"jwt.secret=test-secret"})
-public class CucumberSpringConfiguration extends BaseIntegrationTest {
-    // Empty - BaseIntegrationTest already configures Testcontainers and SpringBootTest
-}
-
+public class CucumberSpringConfiguration extends BaseIntegrationTest {}
