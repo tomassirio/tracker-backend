@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.controller;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -57,7 +58,8 @@ class TripControllerTest {
                         1250.5,
                         startLocation,
                         endLocation,
-                        TripVisibility.PUBLIC);
+                        TripVisibility.PUBLIC,
+                        USER_ID);
 
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
@@ -103,7 +105,8 @@ class TripControllerTest {
                         500.0,
                         startLocation,
                         null, // No ending location
-                        TripVisibility.PRIVATE);
+                        TripVisibility.PRIVATE,
+                        USER_ID);
 
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
@@ -132,7 +135,8 @@ class TripControllerTest {
                         200.0,
                         startLocation,
                         endLocation,
-                        TripVisibility.PUBLIC);
+                        TripVisibility.PUBLIC,
+                        USER_ID);
 
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
@@ -162,7 +166,8 @@ class TripControllerTest {
                         500.0,
                         location1,
                         location2,
-                        TripVisibility.PUBLIC);
+                        TripVisibility.PUBLIC,
+                        USER_ID);
 
         TripDTO trip2 =
                 new TripDTO(
@@ -173,7 +178,8 @@ class TripControllerTest {
                         300.0,
                         location2,
                         location1,
-                        TripVisibility.PRIVATE);
+                        TripVisibility.PRIVATE,
+                        USER_ID);
 
         when(tripService.getAllTrips()).thenReturn(List.of(trip1, trip2));
 
@@ -247,6 +253,7 @@ class TripControllerTest {
                 1000.0,
                 startLocation,
                 endLocation,
-                TripVisibility.PUBLIC);
+                TripVisibility.PUBLIC,
+                USER_ID);
     }
 }

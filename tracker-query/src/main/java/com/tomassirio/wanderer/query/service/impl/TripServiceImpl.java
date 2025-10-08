@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.service.impl;
 
+import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import com.tomassirio.wanderer.query.repository.TripRepository;
@@ -30,6 +31,13 @@ public class TripServiceImpl implements TripService {
     @Override
     public List<TripDTO> getAllTrips() {
         return tripRepository.findAll().stream()
+                .map(tripMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TripDTO> getPublicTrips() {
+        return tripRepository.findByVisibility(TripVisibility.PUBLIC).stream()
                 .map(tripMapper::toDTO)
                 .collect(Collectors.toList());
     }
