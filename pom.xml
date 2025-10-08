@@ -40,7 +40,7 @@
         <module>commons</module>
         <module>tracker-command</module>
         <module>tracker-query</module>
-        <module>tracker-auth</module>
+<!--        <module>tracker-auth</module>-->
     </modules>
 
     <dependencyManagement>
