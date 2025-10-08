@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.cucumber;
+package com.tomassirio.wanderer.commons.cucumber;
 
 import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationContext;

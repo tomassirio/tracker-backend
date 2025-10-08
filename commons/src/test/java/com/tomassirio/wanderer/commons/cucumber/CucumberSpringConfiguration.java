@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.cucumber;
+package com.tomassirio.wanderer.commons.cucumber;
 
 import com.tomassirio.wanderer.commons.BaseIntegrationTest;
 import com.tomassirio.wanderer.commons.config.TestConfig;
