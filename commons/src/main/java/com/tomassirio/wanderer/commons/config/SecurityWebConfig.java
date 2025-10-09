@@ -2,7 +2,7 @@ package com.tomassirio.wanderer.commons.config;
 
 import com.tomassirio.wanderer.commons.security.CurrentUserIdArgumentResolver;
 import com.tomassirio.wanderer.commons.security.JwtUtils;
-import com.tomassirio.wanderer.commons.security.ScopeInterceptor;
+import com.tomassirio.wanderer.commons.security.RequiredScopeInterceptor;
 import java.util.List;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -30,6 +30,6 @@ public class SecurityWebConfig implements WebMvcConfigurer, ApplicationContextAw
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         JwtUtils jwtUtils = applicationContext.getBean(JwtUtils.class);
-        registry.addInterceptor(new ScopeInterceptor(jwtUtils));
+        registry.addInterceptor(new RequiredScopeInterceptor(jwtUtils));
     }
 }

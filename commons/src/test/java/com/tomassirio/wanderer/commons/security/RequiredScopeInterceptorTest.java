@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.commons.security;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -18,15 +19,15 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.server.ResponseStatusException;
 
-class ScopeInterceptorTest {
+class RequiredScopeInterceptorTest {
 
     private JwtUtils jwtUtils;
-    private ScopeInterceptor interceptor;
+    private RequiredScopeInterceptor interceptor;
     private MockHttpServletRequest request;
     private MockHttpServletResponse response;
 
     static class TestController {
-        @Scope("login")
+        @RequiredScope("login")
         public void protectedEndpoint() {}
 
         public void publicEndpoint() {}
@@ -35,7 +36,7 @@ class ScopeInterceptorTest {
     @BeforeEach
     void setup() {
         jwtUtils = mock(JwtUtils.class);
-        interceptor = new ScopeInterceptor(jwtUtils);
+        interceptor = new RequiredScopeInterceptor(jwtUtils);
         request = new MockHttpServletRequest();
         response = new MockHttpServletResponse();
     }
@@ -91,6 +92,6 @@ class ScopeInterceptorTest {
         when(jwtUtils.getScopesFromClaims(anyMap())).thenReturn(List.of("login", "other"));
 
         boolean allowed = interceptor.preHandle(request, response, handler);
-        assertEquals(true, allowed);
+        assertTrue(allowed);
     }
 }

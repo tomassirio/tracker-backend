@@ -6,7 +6,7 @@ import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
-import com.tomassirio.wanderer.commons.security.Scope;
+import com.tomassirio.wanderer.commons.security.RequiredScope;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +36,7 @@ public class TripController {
     private final TripService tripService;
 
     @PostMapping
-    @Scope("login")
+    @RequiredScope("login")
     public ResponseEntity<TripResponse> createTrip(
             @CurrentUserId UUID userId, @Valid @RequestBody TripCreationRequest request) {
 

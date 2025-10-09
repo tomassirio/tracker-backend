@@ -10,11 +10,11 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.HandlerInterceptor;
 
-public class ScopeInterceptor implements HandlerInterceptor {
+public class RequiredScopeInterceptor implements HandlerInterceptor {
 
     private final JwtUtils jwtUtils;
 
-    public ScopeInterceptor(JwtUtils jwtUtils) {
+    public RequiredScopeInterceptor(JwtUtils jwtUtils) {
         this.jwtUtils = jwtUtils;
     }
 
@@ -34,20 +34,11 @@ public class ScopeInterceptor implements HandlerInterceptor {
                             hm.getBeanType(), RequiredScope.class);
         }
 
-        Scope scopeAnn = null;
         if (requiredAnn == null) {
-            scopeAnn = AnnotatedElementUtils.findMergedAnnotation(hm.getMethod(), Scope.class);
-            if (scopeAnn == null) {
-                scopeAnn =
-                        AnnotatedElementUtils.findMergedAnnotation(hm.getBeanType(), Scope.class);
-            }
-        }
-
-        if (requiredAnn == null && scopeAnn == null) {
             return true;
         }
 
-        String needed = requiredAnn != null ? requiredAnn.value() : scopeAnn.value();
+        String needed = requiredAnn.value();
 
         String auth = request.getHeader("Authorization");
         if (auth == null || auth.isBlank()) {
