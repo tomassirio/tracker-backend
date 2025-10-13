@@ -118,22 +118,21 @@ public class JwtUtils {
         }
     }
 
-    public List<String> getScopesFromClaims(Map<String, Object> claims) {
-        Object scopesObj = claims.get("scopes");
-        if (scopesObj == null) {
-            scopesObj = claims.get("scope");
+    public List<String> getRolesFromClaims(Map<String, Object> claims) {
+        Object rolesObj = claims.get("roles");
+        if (rolesObj == null) {
+            rolesObj = claims.get("role");
         }
-        List<String> scopes = new ArrayList<>();
-        if (scopesObj instanceof String) {
-            String s = (String) scopesObj;
+        List<String> roles = new ArrayList<>();
+        if (rolesObj instanceof String s) {
             for (String part : s.split("[, ]+")) {
-                if (!part.isBlank()) scopes.add(part.trim());
+                if (!part.isBlank()) roles.add(part.trim());
             }
-        } else if (scopesObj instanceof Collection) {
-            for (Object o : (Collection<?>) scopesObj) {
-                if (o != null) scopes.add(o.toString());
+        } else if (rolesObj instanceof Collection) {
+            for (Object o : (Collection<?>) rolesObj) {
+                if (o != null) roles.add(o.toString());
             }
         }
-        return scopes;
+        return roles;
     }
 }

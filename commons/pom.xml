@@ -74,7 +74,6 @@
             <artifactId>mapstruct</artifactId>
         </dependency>
 
-        <!-- JWT (JJWT) - added so commons can parse tokens for argument resolver and scope checks -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>

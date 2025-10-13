@@ -59,7 +59,7 @@ class JwtServiceImplTest {
         assertEquals(testUser.getId().toString(), claims.getSubject());
         assertEquals(testUser.getUsername(), claims.get("username"));
         assertEquals(testUser.getEmail(), claims.get("email"));
-        assertNotNull(claims.get("scopes"));
+        assertNotNull(claims.get("roles"));
     }
 
     @Test

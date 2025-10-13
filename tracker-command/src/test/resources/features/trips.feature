@@ -5,7 +5,7 @@ Feature: Trips
 
   Scenario: Create a trip with valid token
     Given a user exists with username "bob" and email "bob@example.com"
-    And I have a valid token for that user with scopes "USER"
+    And I have a valid token for that user with roles "USER"
     When I create a trip with name "Test Trip" using that token
     Then the response status should be 201
 
@@ -16,12 +16,12 @@ Feature: Trips
 
   Scenario: Create a trip with token missing scope results in 403
     Given a user exists with username "dave" and email "dave@example.com"
-    And I have a valid token for that user with scopes "NOT_USER"
+    And I have a valid token for that user with roles "NOT_USER"
     When I create a trip with name "No Scope Trip" using that token
     Then the response status should be 403
 
   Scenario: Create a trip with invalid signature token results in 401
     Given a user exists with username "eve" and email "eve@example.com"
-    And I have an invalidly signed token for that user with scopes "USER"
+    And I have an invalidly signed token for that user with roles "USER"
     When I create a trip with name "BadSig Trip" using that token
     Then the response status should be 401

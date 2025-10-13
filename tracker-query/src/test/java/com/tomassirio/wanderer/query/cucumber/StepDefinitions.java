@@ -10,7 +10,6 @@ import com.tomassirio.wanderer.commons.domain.Location;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
-import com.tomassirio.wanderer.commons.security.Role;
 import com.tomassirio.wanderer.commons.utils.JwtBuilder;
 import com.tomassirio.wanderer.query.repository.TripRepository;
 import com.tomassirio.wanderer.query.repository.UserRepository;
@@ -21,11 +20,9 @@ import io.cucumber.java.en.When;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import org.junit.jupiter.api.Assertions;
@@ -128,9 +125,9 @@ public class StepDefinitions {
         when(tripRepository.findAll()).thenReturn(new ArrayList<>(trips.values()));
     }
 
-    @Given("I have a valid token for that user with scopes {string}")
-    public void i_have_a_valid_token_for_that_user_with_scopes(String scopes) throws Exception {
-        String token = buildTokenForLastUser(scopes, TEST_SECRET, null);
+    @Given("I have a valid token for that user with roles {string}")
+    public void i_have_a_valid_token_for_that_user_with_roles(String roles) throws Exception {
+        String token = buildTokenForLastUser(roles, TEST_SECRET, null);
         setTempAuthHeader("Bearer " + token);
     }
 
@@ -222,7 +219,7 @@ public class StepDefinitions {
     }
 
     private String buildTokenForLastUser(
-            String scopes, String secret, Map<String, Object> extraClaims) throws Exception {
+            String roles, String secret, Map<String, Object> extraClaims) throws Exception {
         String username = getLastCreatedUsername();
         Assertions.assertNotNull(username, "No known user to create a token for");
         Optional<User> opt = userRepository.findByUsername(username);
@@ -236,19 +233,9 @@ public class StepDefinitions {
         }
         Map<String, Object> payload = new HashMap<>();
         payload.put("sub", id.toString());
-        payload.put("scopes", scopes);
 
-        List<String> roles = deriveRolesFrom_scopes(scopes);
         payload.put("roles", roles);
         if (extraClaims != null) payload.putAll(extraClaims);
         return JwtBuilder.buildJwt(payload, secret != null ? secret : TEST_SECRET);
-    }
-
-    private List<String> deriveRolesFrom_scopes(String scopes) {
-        if (scopes == null || scopes.isBlank()) return List.of();
-        return Stream.of(scopes.split("\\s+"))
-                .map(s -> Role.fromScope(s).map(Role::name).orElse(s.toUpperCase()))
-                .distinct()
-                .toList();
     }
 }

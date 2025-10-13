@@ -106,8 +106,6 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-
-        <!-- Cucumber (test scope) - versions centralized in parent dependencyManagement -->
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>

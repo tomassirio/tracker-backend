@@ -24,7 +24,7 @@ class JwtUtilsTest {
         UUID id = UUID.randomUUID();
         Map<String, Object> payload = new HashMap<>();
         payload.put("sub", id.toString());
-        payload.put("scopes", "login admin");
+        payload.put("roles", "login admin");
 
         String token = JwtBuilder.buildJwt(payload, "any-secret");
 
@@ -64,7 +64,7 @@ class JwtUtilsTest {
         UUID id = UUID.randomUUID();
         Map<String, Object> payload = new HashMap<>();
         payload.put("sub", id.toString());
-        payload.put("scopes", List.of("login"));
+        payload.put("roles", List.of("user"));
 
         String token = JwtBuilder.buildJwt(payload, secret);
         UUID extracted = jwtUtils.getUserIdFromAuthorizationHeader("Bearer " + token);
@@ -72,14 +72,14 @@ class JwtUtilsTest {
     }
 
     @Test
-    void getScopesFromClaims_handles_string_and_collection() {
+    void getRolesFromClaims_handles_string_and_collection() {
         JwtUtils jwtUtils = new JwtUtils();
-        Map<String, Object> claims1 = Map.of("scopes", "login admin");
-        List<String> scopes1 = jwtUtils.getScopesFromClaims(claims1);
-        assertIterableEquals(List.of("login", "admin"), scopes1);
+        Map<String, Object> claims1 = Map.of("roles", "user admin");
+        List<String> roles1 = jwtUtils.getRolesFromClaims(claims1);
+        assertIterableEquals(List.of("user", "admin"), roles1);
 
-        Map<String, Object> claims2 = Map.of("scopes", List.of("login", "admin"));
-        List<String> scopes2 = jwtUtils.getScopesFromClaims(claims2);
-        assertIterableEquals(List.of("login", "admin"), scopes2);
+        Map<String, Object> claims2 = Map.of("roles", List.of("user", "admin"));
+        List<String> roles2 = jwtUtils.getRolesFromClaims(claims2);
+        assertIterableEquals(List.of("user", "admin"), roles2);
     }
 }

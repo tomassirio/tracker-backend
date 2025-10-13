@@ -13,7 +13,7 @@ public interface JwtService {
 
     /**
      * Generates a JWT token for the given user. The token includes user ID, username, email, and
-     * scopes as claims.
+     * roles as claims.
      *
      * @param user the user for whom the token is generated
      * @return the generated JWT token as a String

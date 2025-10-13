@@ -7,7 +7,6 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.User;
-import com.tomassirio.wanderer.commons.security.Role;
 import com.tomassirio.wanderer.commons.utils.JwtBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -16,11 +15,9 @@ import io.cucumber.java.en.When;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import org.junit.jupiter.api.Assertions;
@@ -141,25 +138,25 @@ public class StepDefinitions {
         Assertions.assertEquals(201, latestResponse.getStatusCode().value());
     }
 
-    @Given("I have a valid token for that user with scopes {string}")
-    public void i_have_a_valid_token_for_that_user_with_scopes(String scopes) throws Exception {
-        String token = buildTokenForLastUser(scopes, TEST_SECRET, null);
+    @Given("I have a valid token for that user with roles {string}")
+    public void i_have_a_valid_token_for_that_user_with_roles(String roles) throws Exception {
+        String token = buildTokenForLastUser(roles, TEST_SECRET, null);
         setTempAuthHeader("Bearer " + token);
     }
 
-    @Given("I have an invalidly signed token for that user with scopes {string}")
-    public void i_have_an_invalidly_signed_token_for_that_user_with_scopes(String scopes)
+    @Given("I have an invalidly signed token for that user with roles {string}")
+    public void i_have_an_invalidly_signed_token_for_that_user_with_roles(String roles)
             throws Exception {
-        String token = buildTokenForLastUser(scopes, "bad-secret", null);
+        String token = buildTokenForLastUser(roles, "bad-secret", null);
         setTempAuthHeader("Bearer " + token);
     }
 
-    @Given("I have a token for that user that has an expired exp claim and scopes {string}")
-    public void i_have_a_token_for_that_user_that_has_an_expired_exp_claim_and_scopes(String scopes)
+    @Given("I have a token for that user that has an expired exp claim and roles {string}")
+    public void i_have_a_token_for_that_user_that_has_an_expired_exp_claim_and_roles(String roles)
             throws Exception {
         long past = LocalDate.now().minusDays(10).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
         Map<String, Object> extra = Map.of("exp", past);
-        String token = buildTokenForLastUser(scopes, TEST_SECRET, extra);
+        String token = buildTokenForLastUser(roles, TEST_SECRET, extra);
         setTempAuthHeader("Bearer " + token);
     }
 
@@ -183,7 +180,7 @@ public class StepDefinitions {
     }
 
     private String buildTokenForLastUser(
-            String scopes, String secret, Map<String, Object> extraClaims) throws Exception {
+            String roles, String secret, Map<String, Object> extraClaims) throws Exception {
         String username = getLastCreatedUsername();
         Assertions.assertNotNull(username, "No known user to create a token for");
         Optional<?> opt = userRepository.findByUsername(username);
@@ -197,19 +194,8 @@ public class StepDefinitions {
         }
         Map<String, Object> payload = new HashMap<>();
         payload.put("sub", id.toString());
-        payload.put("scopes", scopes);
-
-        List<String> roles = deriveRolesFromScopes(scopes);
         payload.put("roles", roles);
         if (extraClaims != null) payload.putAll(extraClaims);
         return JwtBuilder.buildJwt(payload, secret);
-    }
-
-    private List<String> deriveRolesFromScopes(String scopes) {
-        if (scopes == null || scopes.isBlank()) return List.of();
-        return Stream.of(scopes.split("\\s+"))
-                .map(s -> Role.fromScope(s).map(Role::name).orElse(s.toUpperCase()))
-                .distinct()
-                .toList();
     }
 }
