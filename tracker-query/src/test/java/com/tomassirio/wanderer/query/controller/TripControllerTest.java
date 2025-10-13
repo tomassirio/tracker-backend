@@ -10,6 +10,7 @@ import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.LocationDTO;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
+import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import com.tomassirio.wanderer.query.service.TripService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
@@ -23,10 +24,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class TripControllerTest {
+
+    private static final String TRIPS_BASE_URL = "/api/1/trips";
+    private static final String TRIPS_ME_URL = TRIPS_BASE_URL + "/me";
 
     private MockMvc mockMvc;
 
@@ -37,9 +40,8 @@ class TripControllerTest {
     @BeforeEach
     void setUp() {
         mockMvc =
-                MockMvcBuilders.standaloneSetup(tripController)
-                        .setControllerAdvice(new GlobalExceptionHandler())
-                        .build();
+                MockMvcTestUtils.buildMockMvcWithCurrentUserResolver(
+                        tripController, new GlobalExceptionHandler());
     }
 
     @Test
@@ -64,7 +66,7 @@ class TripControllerTest {
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
         // When & Then
-        mockMvc.perform(get("/api/1/trips/{id}", tripId))
+        mockMvc.perform(get(TRIPS_BASE_URL + "/{id}", tripId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Summer Road Trip"))
@@ -85,7 +87,7 @@ class TripControllerTest {
                 .thenThrow(new EntityNotFoundException("Trip not found"));
 
         // When & Then
-        mockMvc.perform(get("/api/1/trips/{id}", nonExistentTripId))
+        mockMvc.perform(get(TRIPS_BASE_URL + "/{id}", nonExistentTripId))
                 .andExpect(status().isNotFound());
     }
 
@@ -111,7 +113,7 @@ class TripControllerTest {
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
         // When & Then
-        mockMvc.perform(get("/api/1/trips/{id}", tripId))
+        mockMvc.perform(get(TRIPS_BASE_URL + "/{id}", tripId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("One Way Trip"))
@@ -141,7 +143,7 @@ class TripControllerTest {
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
         // When & Then
-        mockMvc.perform(get("/api/1/trips/{id}", tripId))
+        mockMvc.perform(get(TRIPS_BASE_URL + "/{id}", tripId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.startingLocation.altitude").isEmpty())
@@ -184,7 +186,7 @@ class TripControllerTest {
         when(tripService.getAllTrips()).thenReturn(List.of(trip1, trip2));
 
         // When & Then
-        mockMvc.perform(get("/api/1/trips"))
+        mockMvc.perform(get(TRIPS_BASE_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -204,7 +206,7 @@ class TripControllerTest {
         when(tripService.getAllTrips()).thenReturn(List.of());
 
         // When & Then
-        mockMvc.perform(get("/api/1/trips"))
+        mockMvc.perform(get(TRIPS_BASE_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
@@ -224,10 +226,37 @@ class TripControllerTest {
         when(tripService.getAllTrips()).thenReturn(trips);
 
         // When & Then
-        mockMvc.perform(get("/api/1/trips"))
+        mockMvc.perform(get(TRIPS_BASE_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(5));
+    }
+
+    // Added: tests for /me endpoint
+    @Test
+    void getMyTrips_whenTripsExist_shouldReturnListOfTrips() throws Exception {
+        // Given
+        List<TripDTO> trips = List.of(createTripDTO(UUID.randomUUID(), "My Trip"));
+        when(tripService.getTripsForUser(USER_ID)).thenReturn(trips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_ME_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("My Trip"));
+    }
+
+    @Test
+    void getMyTrips_whenNoTripsExist_shouldReturnEmptyList() throws Exception {
+        // Given
+        when(tripService.getTripsForUser(USER_ID)).thenReturn(List.of());
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_ME_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 
     // Helper methods to create test data

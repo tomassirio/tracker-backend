@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.query.controller;
 
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import com.tomassirio.wanderer.query.service.TripService;
 import java.util.List;
 import java.util.UUID;
@@ -38,13 +39,24 @@ public class TripController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @PreAuthorize("hasAnyRole('ADMIN')")
     public ResponseEntity<List<TripDTO>> getAllTrips() {
         log.info("Received request to retrieve all trips");
 
         List<TripDTO> trips = tripService.getAllTrips();
 
         log.info("Successfully retrieved {} trips", trips.size());
+        return ResponseEntity.ok(trips);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public ResponseEntity<List<TripDTO>> getMyTrips(@CurrentUserId UUID userId) {
+        log.info("Received request to retrieve trips for current user: {}", userId);
+
+        List<TripDTO> trips = tripService.getTripsForUser(userId);
+
+        log.info("Successfully retrieved {} trips for user {}", trips.size(), userId);
         return ResponseEntity.ok(trips);
     }
 }

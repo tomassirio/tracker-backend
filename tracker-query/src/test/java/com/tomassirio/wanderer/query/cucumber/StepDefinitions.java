@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.query.cucumber;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -20,6 +21,7 @@ import io.cucumber.java.en.When;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -70,8 +72,8 @@ public class StepDefinitions {
     @Getter @Setter private UUID lastCreatedTripId;
 
     // In-memory data
-    private Map<String, User> users = new HashMap<>();
-    private Map<UUID, Trip> trips = new HashMap<>();
+    private final Map<String, User> users = new HashMap<>();
+    private final Map<UUID, Trip> trips = new HashMap<>();
 
     @Given("an empty system")
     public void an_empty_system() {
@@ -99,6 +101,8 @@ public class StepDefinitions {
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+        // By default, a new user has no trips; ensure findByOwnerId returns empty list unless overridden
+        when(tripRepository.findByOwnerId(user.getId())).thenReturn(new ArrayList<>());
     }
 
     @Given("a trip exists with name {string}")
@@ -123,6 +127,8 @@ public class StepDefinitions {
 
         when(tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
         when(tripRepository.findAll()).thenReturn(new ArrayList<>(trips.values()));
+        // Also stub findByOwnerId so /trips/me will return the user's trips
+        when(tripRepository.findByOwnerId(owner.getId())).thenReturn(List.of(trip));
     }
 
     @Given("I have a valid token for that user with roles {string}")
@@ -143,6 +149,18 @@ public class StepDefinitions {
         log.info("[Cucumber] GET {} response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
     }
 
+    @When("I get my trips")
+    public void i_get_my_trips() throws JsonProcessingException {
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(TRIPS_ENDPOINT + "/me", HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET {}/me response status: {}",
+                TRIPS_ENDPOINT,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] GET {}/me response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
+    }
+
     @When("I get the last created trip")
     public void i_get_the_last_created_trip() throws JsonProcessingException {
         String id = getLastCreatedTripId().toString();
@@ -160,6 +178,44 @@ public class StepDefinitions {
                 TRIPS_ENDPOINT,
                 id,
                 latestResponse.getBody());
+    }
+
+    @Then("the response contains at least one trip id")
+    public void the_response_contains_at_least_one_trip_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json =
+                mapper.readValue(body, new TypeReference<List<Map<String, Object>>>() {});
+        Assertions.assertFalse(json.isEmpty(), "Expected at least one trip in response");
+        Object maybeId = json.get(0).get("id");
+        Assertions.assertNotNull(maybeId);
+        UUID parsed = UUID.fromString(maybeId.toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the response owner id should match user {string}")
+    public void the_response_owner_id_should_match_user(String username) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json =
+                mapper.readValue(body, new TypeReference<List<Map<String, Object>>>() {});
+        Assertions.assertFalse(json.isEmpty(), "Expected at least one trip in response");
+        Object ownerIdObj = json.get(0).get("ownerId");
+        Assertions.assertNotNull(ownerIdObj, "Trip does not contain ownerId");
+        UUID ownerId = UUID.fromString(ownerIdObj.toString());
+        User expected = users.get(username);
+        Assertions.assertNotNull(expected, "No such user in test state: " + username);
+        Assertions.assertEquals(expected.getId(), ownerId);
+    }
+
+    @Then("the response should be empty")
+    public void the_response_should_be_empty() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json =
+                mapper.readValue(body, new TypeReference<>() {
+                });
+        Assertions.assertTrue(json.isEmpty(), "Expected response array to be empty");
     }
 
     @When("I get user by username {string}")

@@ -41,4 +41,11 @@ public class TripServiceImpl implements TripService {
                 .map(tripMapper::toDTO)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public List<TripDTO> getTripsForUser(UUID userId) {
+        return tripRepository.findByOwnerId(userId).stream()
+                .map(tripMapper::toDTO)
+                .collect(Collectors.toList());
+    }
 }

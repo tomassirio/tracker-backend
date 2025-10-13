@@ -45,4 +45,13 @@ public interface TripService {
      *     no public trips exist
      */
     List<TripDTO> getPublicTrips();
+
+    /**
+     * Retrieves all trips that belong to the given user.
+     *
+     * @param userId the UUID of the owner/user
+     * @return a list of {@link TripDTO} objects representing trips owned by the user, or an empty
+     *     list if none exist
+     */
+    List<TripDTO> getTripsForUser(UUID userId);
 }
