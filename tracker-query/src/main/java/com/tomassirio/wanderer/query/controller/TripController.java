@@ -3,6 +3,8 @@ package com.tomassirio.wanderer.query.controller;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import com.tomassirio.wanderer.query.service.TripService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +29,7 @@ public class TripController {
 
     private final TripService tripService;
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9a-fA-F\\-]{36}}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<TripDTO> getTrip(@PathVariable UUID id) {
         log.info("Received request to retrieve trip: {}", id);
@@ -51,7 +53,9 @@ public class TripController {
 
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<List<TripDTO>> getMyTrips(@CurrentUserId UUID userId) {
+    @Operation(summary = "Get trips for current authenticated user")
+    public ResponseEntity<List<TripDTO>> getMyTrips(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
         log.info("Received request to retrieve trips for current user: {}", userId);
 
         List<TripDTO> trips = tripService.getTripsForUser(userId);

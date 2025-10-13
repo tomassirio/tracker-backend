@@ -3,6 +3,8 @@ package com.tomassirio.wanderer.query.controller;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import com.tomassirio.wanderer.query.dto.UserResponse;
 import com.tomassirio.wanderer.query.service.UserQueryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,7 +26,7 @@ public class UserQueryController {
 
     private final UserQueryService userQueryService;
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:[0-9a-fA-F\\-]{36}}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
         return ResponseEntity.ok(userQueryService.getUserById(id));
@@ -44,7 +46,9 @@ public class UserQueryController {
 
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<UserResponse> getMyUser(@CurrentUserId UUID userId) {
+    @Operation(summary = "Get current authenticated user's profile")
+    public ResponseEntity<UserResponse> getMyUser(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
         return ResponseEntity.ok(userQueryService.getUserById(userId));
     }
 }

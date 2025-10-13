@@ -6,7 +6,9 @@ import com.tomassirio.wanderer.query.service.UserQueryService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * Service implementation for user query operations. Handles user retrieval logic using the user
@@ -22,6 +24,12 @@ public class UserQueryServiceImpl implements UserQueryService {
 
     @Override
     public UserResponse getUserById(UUID id) {
+        if (id == null) {
+            // Defensive: if argument resolver didn't run or returned null, return 401 instead of
+            // 500
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED, "Missing or invalid authenticated user id");
+        }
         var user =
                 userRepository
                         .findById(id)
