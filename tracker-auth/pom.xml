@@ -17,6 +17,8 @@
 
     <properties>
         <start-class>com.tomassirio.wanderer.auth.AuthApplication</start-class>
+        <docker.image.name>${docker.image.prefix}/tracker-command</docker.image.name>
+        <docker.image.port>8081</docker.image.port>
     </properties>
 
     <dependencies>
@@ -36,6 +38,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- OAuth2 Resource Server (JWT support) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
 
         <!-- Spring Data JPA -->
@@ -92,6 +100,14 @@
         </dependency>
 
         <!-- Testing -->
+        <!-- Commons test-jar provides BaseIntegrationTest -->
+        <dependency>
+            <groupId>com.tomassirio.wanderer</groupId>
+            <artifactId>commons</artifactId>
+            <version>${project.parent.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -107,14 +123,6 @@
             <artifactId>postgresql</artifactId>
             <scope>test</scope>
         </dependency>
-        <!-- Commons test-jar provides BaseIntegrationTest -->
-        <dependency>
-            <groupId>com.tomassirio.wanderer</groupId>
-            <artifactId>commons</artifactId>
-            <version>0.2.0-SNAPSHOT</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-spring</artifactId>
@@ -123,11 +131,6 @@
         <dependency>
             <groupId>io.cucumber</groupId>
             <artifactId>cucumber-java</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.cucumber</groupId>
-            <artifactId>cucumber-junit-platform-engine</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -143,6 +146,28 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <configuration>
+                    <to>
+                        <image>${docker.image.name}:${project.version}</image>
+                        <tags>
+                            <tag>latest</tag>
+                        </tags>
+                    </to>
+                    <container>
+                        <mainClass>${start-class}</mainClass>
+                        <ports>
+                            <port>${docker.image.port}</port>
+                        </ports>
+                    </container>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
-</project>
+ </project>

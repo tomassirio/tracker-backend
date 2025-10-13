@@ -25,6 +25,7 @@
         <jib.version>3.4.0</jib.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
         <google-java-format.version>1.17.0</google-java-format.version>
+        <junit-platform.version>1.10.2</junit-platform.version>
 
         <!-- Docker image configuration -->
         <docker.image.prefix>ghcr.io/tomassirio</docker.image.prefix>
@@ -33,6 +34,7 @@
         <!-- JJWT centralized version -->
         <jjwt.version>0.11.5</jjwt.version>
         <cucumber.version>7.23.0</cucumber.version>
+        <maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
      </properties>
 
     <modules>
@@ -118,6 +120,13 @@
                 <version>${cucumber.version}</version>
                 <scope>test</scope>
             </dependency>
+            <!-- JUnit Platform Suite API used for @ConfigurationParameter -->
+            <dependency>
+                <groupId>org.junit.platform</groupId>
+                <artifactId>junit-platform-suite-api</artifactId>
+                <version>${junit-platform.version}</version>
+                <scope>test</scope>
+            </dependency>
          </dependencies>
      </dependencyManagement>
 
@@ -139,6 +148,30 @@
                     <execution>
                         <goals>
                             <goal>apply</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Centralized test plugins for children -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <testFailureIgnore>false</testFailureIgnore>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <!-- version controlled in pluginManagement -->
+                <configuration>
+                    <testFailureIgnore>false</testFailureIgnore>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -195,8 +228,8 @@
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>3.5.4</version>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven-failsafe-plugin.version}</version>
                 </plugin>
             </plugins>
         </pluginManagement>

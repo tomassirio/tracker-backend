@@ -1,18 +1,29 @@
 package com.tomassirio.wanderer.query.config;
 
+import com.tomassirio.wanderer.commons.config.JwtConfig;
+import com.tomassirio.wanderer.commons.config.JwtConverterConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
+@Import({JwtConfig.class, JwtConverterConfig.class})
 public class SecurityConfig {
+
+    private final Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -26,7 +37,13 @@ public class SecurityConfig {
                                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                                         .permitAll()
                                         .anyRequest()
-                                        .authenticated());
+                                        .authenticated())
+                .oauth2ResourceServer(
+                        oauth ->
+                                oauth.jwt(
+                                        jwt ->
+                                                jwt.jwtAuthenticationConverter(
+                                                        jwtAuthenticationConverter)));
         return http.build();
     }
 }

@@ -7,6 +7,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.security.Role;
 import com.tomassirio.wanderer.commons.utils.JwtBuilder;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -15,9 +16,11 @@ import io.cucumber.java.en.When;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.Getter;
 import lombok.Setter;
 import org.junit.jupiter.api.Assertions;
@@ -30,6 +33,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public class StepDefinitions {
 
     @Autowired private TestRestTemplate restTemplate;
@@ -41,6 +45,14 @@ public class StepDefinitions {
     private static final Logger log = LoggerFactory.getLogger(StepDefinitions.class);
 
     private static final ObjectMapper mapper = new ObjectMapper();
+
+    private static final String TEST_SECRET =
+            "test-secret-that-is-long-enough-for-jwt-hmac-sha-algorithm-256-bits-minimum";
+
+    // URL constants for endpoints used in tests
+    private static final String API_BASE = "/api/1";
+    private static final String USERS_ENDPOINT = API_BASE + "/users";
+    private static final String TRIPS_ENDPOINT = API_BASE + "/trips";
 
     static {
         mapper.registerModule(new JavaTimeModule());
@@ -66,11 +78,12 @@ public class StepDefinitions {
         setLastCreatedUsername(username);
         Map<String, Object> body = Map.of("username", username, "email", email);
         HttpEntity<String> request = createJsonRequest(body);
-        latestResponse = restTemplate.postForEntity("/api/1/users", request, String.class);
+        latestResponse = restTemplate.postForEntity(USERS_ENDPOINT, request, String.class);
         log.info(
-                "[Cucumber] POST /api/1/users response status: {}",
+                "[Cucumber] POST {} response status: {}",
+                USERS_ENDPOINT,
                 latestResponse.getStatusCode().value());
-        log.info("[Cucumber] POST /api/1/users response body: {}", latestResponse.getBody());
+        log.info("[Cucumber] POST {} response body: {}", USERS_ENDPOINT, latestResponse.getBody());
     }
 
     @When("I create a trip with name {string} using that token")
@@ -86,13 +99,14 @@ public class StepDefinitions {
         body.put("endingLocation", loc);
 
         HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
-        log.info("[Cucumber] POST /api/1/trips request: {}", mapper.writeValueAsString(body));
-        latestResponse = restTemplate.postForEntity("/api/1/trips", request, String.class);
+        log.info("[Cucumber] POST {} request: {}", TRIPS_ENDPOINT, mapper.writeValueAsString(body));
+        latestResponse = restTemplate.postForEntity(TRIPS_ENDPOINT, request, String.class);
 
         log.info(
-                "[Cucumber] POST /api/1/trips response status: {}",
+                "[Cucumber] POST {} response status: {}",
+                TRIPS_ENDPOINT,
                 latestResponse.getStatusCode().value());
-        log.info("[Cucumber] POST /api/1/trips response body: {}", latestResponse.getBody());
+        log.info("[Cucumber] POST {} response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
     }
 
     @Then("the response status should be {int}")
@@ -129,7 +143,7 @@ public class StepDefinitions {
 
     @Given("I have a valid token for that user with scopes {string}")
     public void i_have_a_valid_token_for_that_user_with_scopes(String scopes) throws Exception {
-        String token = buildTokenForLastUser(scopes, "test-secret", null);
+        String token = buildTokenForLastUser(scopes, TEST_SECRET, null);
         setTempAuthHeader("Bearer " + token);
     }
 
@@ -145,7 +159,7 @@ public class StepDefinitions {
             throws Exception {
         long past = LocalDate.now().minusDays(10).atStartOfDay().toEpochSecond(ZoneOffset.UTC);
         Map<String, Object> extra = Map.of("exp", past);
-        String token = buildTokenForLastUser(scopes, "test-secret", extra);
+        String token = buildTokenForLastUser(scopes, TEST_SECRET, extra);
         setTempAuthHeader("Bearer " + token);
     }
 
@@ -184,7 +198,18 @@ public class StepDefinitions {
         Map<String, Object> payload = new HashMap<>();
         payload.put("sub", id.toString());
         payload.put("scopes", scopes);
+
+        List<String> roles = deriveRolesFromScopes(scopes);
+        payload.put("roles", roles);
         if (extraClaims != null) payload.putAll(extraClaims);
         return JwtBuilder.buildJwt(payload, secret);
+    }
+
+    private List<String> deriveRolesFromScopes(String scopes) {
+        if (scopes == null || scopes.isBlank()) return List.of();
+        return Stream.of(scopes.split("\\s+"))
+                .map(s -> Role.fromScope(s).map(Role::name).orElse(s.toUpperCase()))
+                .distinct()
+                .toList();
     }
 }

@@ -6,13 +6,13 @@ import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
-import com.tomassirio.wanderer.commons.security.RequiredScope;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,7 +36,7 @@ public class TripController {
     private final TripService tripService;
 
     @PostMapping
-    @RequiredScope("login")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<TripResponse> createTrip(
             @CurrentUserId UUID userId, @Valid @RequestBody TripCreationRequest request) {
 
@@ -50,6 +50,7 @@ public class TripController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<TripResponse> updateTrip(
             @PathVariable UUID id, @Valid @RequestBody TripUpdateRequest request) {
         log.info("Received request to update trip {} with name: {}", id, request.name());
@@ -62,6 +63,7 @@ public class TripController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<Void> deleteTrip(@PathVariable UUID id) {
         log.info("Received request to delete trip: {}", id);
 

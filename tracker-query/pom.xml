@@ -40,6 +40,17 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- OAuth2 resource server (for JWT parsing) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+        </dependency>
+        <!-- Nimbus / JOSE support used by JwtDecoder -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-oauth2-jose</artifactId>
+        </dependency>
+
         <!-- Spring Boot Actuator for management endpoints -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -91,8 +102,30 @@
         <dependency>
             <groupId>com.tomassirio.wanderer</groupId>
             <artifactId>commons</artifactId>
-            <version>0.2.0-SNAPSHOT</version>
+            <version>${project.parent.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Cucumber (test scope) - versions centralized in parent dependencyManagement -->
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-java</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-junit-platform-engine</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.cucumber</groupId>
+            <artifactId>cucumber-spring</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-suite-api</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -125,6 +158,6 @@
                     </container>
                 </configuration>
             </plugin>
-        </plugins>
-    </build>
-</project>
+         </plugins>
+     </build>
+ </project>
