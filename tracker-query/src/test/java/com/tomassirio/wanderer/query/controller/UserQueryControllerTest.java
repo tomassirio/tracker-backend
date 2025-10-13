@@ -1,12 +1,13 @@
 package com.tomassirio.wanderer.query.controller;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
+import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import com.tomassirio.wanderer.query.dto.UserResponse;
 import com.tomassirio.wanderer.query.service.UserQueryService;
 import jakarta.persistence.EntityNotFoundException;
@@ -18,10 +19,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class UserQueryControllerTest {
+
+    private static final String USERS_BASE_URL = "/api/1/users";
+    private static final String USERS_ME_URL = USERS_BASE_URL + "/me";
 
     private MockMvc mockMvc;
 
@@ -29,88 +32,80 @@ class UserQueryControllerTest {
 
     @InjectMocks private UserQueryController userQueryController;
 
-    private User testUser;
-
     @BeforeEach
     void setUp() {
         mockMvc =
-                MockMvcBuilders.standaloneSetup(userQueryController)
-                        .setControllerAdvice(new GlobalExceptionHandler())
-                        .build();
-
-        testUser =
-                User.builder()
-                        .id(UUID.randomUUID())
-                        .username("testuser")
-                        .email("test@example.com")
-                        .build();
+                MockMvcTestUtils.buildMockMvcWithCurrentUserResolver(
+                        userQueryController, new GlobalExceptionHandler());
     }
 
     @Test
     void getUser_whenUserExists_shouldReturnUser() throws Exception {
-        UserResponse userResponse =
-                new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
-        when(userQueryService.getUserById(testUser.getId())).thenReturn(userResponse);
+        UUID id = UUID.randomUUID();
+        UserResponse resp = new UserResponse(id, "johndoe", "john@example.com");
 
-        mockMvc.perform(get("/api/1/users/{id}", testUser.getId()))
+        when(userQueryService.getUserById(id)).thenReturn(resp);
+
+        mockMvc.perform(get(USERS_BASE_URL + "/{id}", id))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testUser.getId().toString()))
-                .andExpect(jsonPath("$.username").value(testUser.getUsername()))
-                .andExpect(jsonPath("$.email").value(testUser.getEmail()));
+                .andExpect(jsonPath("$.id").value(id.toString()))
+                .andExpect(jsonPath("$.username").value("johndoe"))
+                .andExpect(jsonPath("$.email").value("john@example.com"));
     }
 
     @Test
     void getUser_whenUserDoesNotExist_shouldReturnNotFound() throws Exception {
-        UUID nonExistentId = UUID.randomUUID();
-        when(userQueryService.getUserById(nonExistentId))
+        UUID id = UUID.randomUUID();
+        when(userQueryService.getUserById(id))
                 .thenThrow(new EntityNotFoundException("User not found"));
 
-        mockMvc.perform(get("/api/1/users/{id}", nonExistentId)).andExpect(status().isNotFound());
+        mockMvc.perform(get(USERS_BASE_URL + "/{id}", id)).andExpect(status().isNotFound());
     }
 
     @Test
     void getUserByUsername_whenUserExists_shouldReturnUser() throws Exception {
-        UserResponse userResponse =
-                new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
-        when(userQueryService.getUserByUsername(testUser.getUsername())).thenReturn(userResponse);
+        String username = "alice";
+        UserResponse resp = new UserResponse(UUID.randomUUID(), username, "alice@example.com");
 
-        mockMvc.perform(get("/api/1/users/username/{username}", testUser.getUsername()))
+        when(userQueryService.getUserByUsername(username)).thenReturn(resp);
+
+        mockMvc.perform(get(USERS_BASE_URL + "/username/{username}", username))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testUser.getId().toString()))
-                .andExpect(jsonPath("$.username").value(testUser.getUsername()))
-                .andExpect(jsonPath("$.email").value(testUser.getEmail()));
-    }
-
-    @Test
-    void getUserByUsername_whenUserDoesNotExist_shouldReturnNotFound() throws Exception {
-        String nonExistentUsername = "nonexistent";
-        when(userQueryService.getUserByUsername(nonExistentUsername))
-                .thenThrow(new EntityNotFoundException("User not found"));
-
-        mockMvc.perform(get("/api/1/users/username/{username}", nonExistentUsername))
-                .andExpect(status().isNotFound());
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.email").value("alice@example.com"));
     }
 
     @Test
     void getUserByEmail_whenUserExists_shouldReturnUser() throws Exception {
-        UserResponse userResponse =
-                new UserResponse(testUser.getId(), testUser.getUsername(), testUser.getEmail());
-        when(userQueryService.getUserByEmail(testUser.getEmail())).thenReturn(userResponse);
+        String email = "bob@example.com";
+        UserResponse resp = new UserResponse(UUID.randomUUID(), "bob", email);
 
-        mockMvc.perform(get("/api/1/users/email/{email}", testUser.getEmail()))
+        when(userQueryService.getUserByEmail(email)).thenReturn(resp);
+
+        mockMvc.perform(get(USERS_BASE_URL + "/email/{email}", email))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(testUser.getId().toString()))
-                .andExpect(jsonPath("$.username").value(testUser.getUsername()))
-                .andExpect(jsonPath("$.email").value(testUser.getEmail()));
+                .andExpect(jsonPath("$.username").value("bob"))
+                .andExpect(jsonPath("$.email").value(email));
     }
 
     @Test
-    void getUserByEmail_whenUserDoesNotExist_shouldReturnNotFound() throws Exception {
-        String nonExistentEmail = "nonexistent@example.com";
-        when(userQueryService.getUserByEmail(nonExistentEmail))
+    void getMyUser_whenUserExists_shouldReturnUser() throws Exception {
+        UserResponse resp = new UserResponse(USER_ID, "currentuser", "me@example.com");
+
+        when(userQueryService.getUserById(USER_ID)).thenReturn(resp);
+
+        mockMvc.perform(get(USERS_ME_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(USER_ID.toString()))
+                .andExpect(jsonPath("$.username").value("currentuser"))
+                .andExpect(jsonPath("$.email").value("me@example.com"));
+    }
+
+    @Test
+    void getMyUser_whenUserDoesNotExist_shouldReturnNotFound() throws Exception {
+        when(userQueryService.getUserById(USER_ID))
                 .thenThrow(new EntityNotFoundException("User not found"));
 
-        mockMvc.perform(get("/api/1/users/email/{email}", nonExistentEmail))
-                .andExpect(status().isNotFound());
+        mockMvc.perform(get(USERS_ME_URL)).andExpect(status().isNotFound());
     }
 }

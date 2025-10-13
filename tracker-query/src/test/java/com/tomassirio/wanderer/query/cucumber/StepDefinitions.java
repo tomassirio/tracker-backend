@@ -60,6 +60,7 @@ public class StepDefinitions {
     private static final String API_BASE = "/api/1";
     private static final String TRIPS_ENDPOINT = API_BASE + "/trips";
     private static final String USERS_BY_USERNAME_ENDPOINT = API_BASE + "/users/username/";
+    private static final String USERS_ME_ENDPOINT = API_BASE + "/users/me";
 
     static {
         mapper.registerModule(new JavaTimeModule());
@@ -101,7 +102,8 @@ public class StepDefinitions {
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
-        // By default, a new user has no trips; ensure findByOwnerId returns empty list unless overridden
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findAll()).thenReturn(List.of(user));
         when(tripRepository.findByOwnerId(user.getId())).thenReturn(new ArrayList<>());
     }
 
@@ -127,7 +129,6 @@ public class StepDefinitions {
 
         when(tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
         when(tripRepository.findAll()).thenReturn(new ArrayList<>(trips.values()));
-        // Also stub findByOwnerId so /trips/me will return the user's trips
         when(tripRepository.findByOwnerId(owner.getId())).thenReturn(List.of(trip));
     }
 
@@ -153,12 +154,14 @@ public class StepDefinitions {
     public void i_get_my_trips() throws JsonProcessingException {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
-                restTemplate.exchange(TRIPS_ENDPOINT + "/me", HttpMethod.GET, request, String.class);
+                restTemplate.exchange(
+                        TRIPS_ENDPOINT + "/me", HttpMethod.GET, request, String.class);
         log.info(
                 "[Cucumber] GET {}/me response status: {}",
                 TRIPS_ENDPOINT,
                 latestResponse.getStatusCode().value());
-        log.info("[Cucumber] GET {}/me response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
+        log.info(
+                "[Cucumber] GET {}/me response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
     }
 
     @When("I get the last created trip")
@@ -184,10 +187,9 @@ public class StepDefinitions {
     public void the_response_contains_at_least_one_trip_id() throws Exception {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
-        List<Map<String, Object>> json =
-                mapper.readValue(body, new TypeReference<List<Map<String, Object>>>() {});
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
         Assertions.assertFalse(json.isEmpty(), "Expected at least one trip in response");
-        Object maybeId = json.get(0).get("id");
+        Object maybeId = json.getFirst().get("id");
         Assertions.assertNotNull(maybeId);
         UUID parsed = UUID.fromString(maybeId.toString());
         Assertions.assertNotNull(parsed);
@@ -197,10 +199,9 @@ public class StepDefinitions {
     public void the_response_owner_id_should_match_user(String username) throws Exception {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
-        List<Map<String, Object>> json =
-                mapper.readValue(body, new TypeReference<List<Map<String, Object>>>() {});
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
         Assertions.assertFalse(json.isEmpty(), "Expected at least one trip in response");
-        Object ownerIdObj = json.get(0).get("ownerId");
+        Object ownerIdObj = json.getFirst().get("ownerId");
         Assertions.assertNotNull(ownerIdObj, "Trip does not contain ownerId");
         UUID ownerId = UUID.fromString(ownerIdObj.toString());
         User expected = users.get(username);
@@ -212,9 +213,7 @@ public class StepDefinitions {
     public void the_response_should_be_empty() throws Exception {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
-        List<Map<String, Object>> json =
-                mapper.readValue(body, new TypeReference<>() {
-                });
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
         Assertions.assertTrue(json.isEmpty(), "Expected response array to be empty");
     }
 
@@ -237,6 +236,19 @@ public class StepDefinitions {
                 USERS_BY_USERNAME_ENDPOINT,
                 username,
                 latestResponse.getBody());
+    }
+
+    @When("I get my user")
+    public void i_get_my_user() throws JsonProcessingException {
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(USERS_ME_ENDPOINT, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET {} response status: {}",
+                USERS_ME_ENDPOINT,
+                latestResponse.getStatusCode().value());
+        log.info(
+                "[Cucumber] GET {} response body: {}", USERS_ME_ENDPOINT, latestResponse.getBody());
     }
 
     @Then("the response status should be {int}")
@@ -263,6 +275,28 @@ public class StepDefinitions {
         Assertions.assertTrue(json.containsKey("id"));
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the response contains a user id")
+    public void the_response_contains_a_user_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("id"), "Response does not contain id");
+        UUID parsed = UUID.fromString(json.get("id").toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the response username should match user {string}")
+    public void the_response_username_should_match_user(String username) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("username"), "Response does not contain username");
+        String actualUsername = json.get("username").toString();
+        User expected = users.get(username);
+        Assertions.assertNotNull(expected, "No such user in test state: " + username);
+        Assertions.assertEquals(expected.getUsername(), actualUsername);
     }
 
     private HttpEntity<String> createJsonRequest(Map<String, Object> body, String authHeader)

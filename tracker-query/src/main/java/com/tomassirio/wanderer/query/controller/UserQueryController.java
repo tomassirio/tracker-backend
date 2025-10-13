@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.controller;
 
+import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import com.tomassirio.wanderer.query.dto.UserResponse;
 import com.tomassirio.wanderer.query.service.UserQueryService;
 import java.util.UUID;
@@ -39,5 +40,11 @@ public class UserQueryController {
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
         return ResponseEntity.ok(userQueryService.getUserByEmail(email));
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    public ResponseEntity<UserResponse> getMyUser(@CurrentUserId UUID userId) {
+        return ResponseEntity.ok(userQueryService.getUserById(userId));
     }
 }
