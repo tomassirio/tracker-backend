@@ -33,7 +33,6 @@ public class UserQueryController {
     }
 
     @GetMapping("/username/{username}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
         return ResponseEntity.ok(userQueryService.getUserByUsername(username));
     }

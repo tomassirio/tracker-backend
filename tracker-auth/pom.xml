@@ -17,8 +17,8 @@
 
     <properties>
         <start-class>com.tomassirio.wanderer.auth.AuthApplication</start-class>
-        <docker.image.name>${docker.image.prefix}/tracker-command</docker.image.name>
-        <docker.image.port>8081</docker.image.port>
+        <docker.image.name>${docker.image.prefix}/tracker-auth</docker.image.name>
+        <docker.image.port>8083</docker.image.port>
     </properties>
 
     <dependencies>

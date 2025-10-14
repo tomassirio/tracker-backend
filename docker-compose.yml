@@ -110,7 +110,7 @@ services:
       DB_USERNAME: ${AUTH_DB_USER:-wanderer_auth}
       DB_PASSWORD: ${AUTH_DB_PASSWORD:-password}
       DB_DRIVERCLASSNAME: org.postgresql.Driver
-      JWT_SECRET: ${JWT_SECRET:-ChangeMeInProdReplaceWithEnvVarOrKMS}
+      JWT_SECRET: ${JWT_SECRET:-0123456789ABCDEF0123456789ABCDEF}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
       TRACKER_QUERY_URL: ${TRACKER_QUERY_URL:-http://tracker-query:8082}
       TRACKER_COMMAND_URL: ${TRACKER_COMMAND_URL:-http://tracker-command:8081}
