@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.commons.security;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.jsonwebtoken.SignatureAlgorithm;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -49,9 +50,11 @@ public class JwtUtils {
         }
         try {
             String data = headerB64 + "." + payloadB64;
-            Mac mac = Mac.getInstance("HmacSHA256");
+            Mac mac = Mac.getInstance(SignatureAlgorithm.HS256.getJcaName());
             SecretKeySpec keySpec =
-                    new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+                    new SecretKeySpec(
+                            secret.getBytes(StandardCharsets.UTF_8),
+                            SignatureAlgorithm.HS256.getJcaName());
             mac.init(keySpec);
             byte[] computed = mac.doFinal(data.getBytes(StandardCharsets.US_ASCII));
             byte[] provided = base64UrlDecode(signatureB64);

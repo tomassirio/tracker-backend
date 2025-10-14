@@ -4,17 +4,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 import jakarta.persistence.EntityNotFoundException;
+import java.lang.reflect.Method;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.validation.BindingResult;
@@ -22,13 +30,15 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
 class GlobalExceptionHandlerTest {
 
-    @InjectMocks private GlobalExceptionHandler globalExceptionHandler;
-
     private MockMvc mockMvc;
+    private Level previousLogLevel;
+
+    @InjectMocks private GlobalExceptionHandler globalExceptionHandler;
 
     @BeforeEach
     void setUp() {
@@ -37,6 +47,28 @@ class GlobalExceptionHandlerTest {
                 MockMvcBuilders.standaloneSetup(testController)
                         .setControllerAdvice(globalExceptionHandler)
                         .build();
+
+        // Silence the GlobalExceptionHandler logger for these tests so the handled
+        // exception does not produce a noisy stacktrace in the test output.
+        Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        previousLogLevel = logger.getLevel();
+        logger.setLevel(Level.OFF);
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Restore previous log level
+        Logger logger = (Logger) LoggerFactory.getLogger(GlobalExceptionHandler.class);
+        logger.setLevel(previousLogLevel);
+    }
+
+    private MethodParameter createDummyMethodParameter() {
+        try {
+            Method method = TestController.class.getMethod("dummy", String.class);
+            return new MethodParameter(method, 0);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -50,7 +82,7 @@ class GlobalExceptionHandlerTest {
                                 new FieldError("object", "email", "Field 'email' must be valid")));
 
         MethodArgumentNotValidException exception =
-                new MethodArgumentNotValidException(null, bindingResult);
+                new MethodArgumentNotValidException(createDummyMethodParameter(), bindingResult);
 
         // When
         ResponseEntity<Object> response =
@@ -70,7 +102,7 @@ class GlobalExceptionHandlerTest {
                 .thenReturn(List.of(new FieldError("object", "field", "Single field error")));
 
         MethodArgumentNotValidException exception =
-                new MethodArgumentNotValidException(null, bindingResult);
+                new MethodArgumentNotValidException(createDummyMethodParameter(), bindingResult);
 
         // When
         ResponseEntity<Object> response =
@@ -150,6 +182,46 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleAccessDeniedException_shouldReturnForbidden() {
+        // Given
+        AccessDeniedException ex = new AccessDeniedException("forbidden");
+
+        // When
+        ResponseEntity<String> response = globalExceptionHandler.handleAccessDeniedException(ex);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+        assertThat(response.getBody()).isEqualTo("forbidden");
+    }
+
+    @Test
+    void handleResponseStatusException_withReason_shouldReturnStatusAndReason() {
+        // Given
+        ResponseStatusException ex =
+                new ResponseStatusException(HttpStatus.CONFLICT, "conflict reason");
+
+        // When
+        ResponseEntity<Object> response = globalExceptionHandler.handleResponseStatusException(ex);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isEqualTo("conflict reason");
+    }
+
+    @Test
+    void handleResponseStatusException_withoutReason_shouldReturnStatusNoBody() {
+        // Given
+        ResponseStatusException ex = new ResponseStatusException(HttpStatus.CONFLICT);
+
+        // When
+        ResponseEntity<Object> response = globalExceptionHandler.handleResponseStatusException(ex);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody()).isNull();
+    }
+
+    @Test
     void handleIllegalArgumentException_throughMockMvc_shouldReturnBadRequest() throws Exception {
         // When & Then
         mockMvc.perform(get("/test/illegal-argument-exception")).andExpect(status().isBadRequest());
@@ -167,6 +239,29 @@ class GlobalExceptionHandlerTest {
         // When & Then
         mockMvc.perform(get("/test/unexpected-exception"))
                 .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    void handleAccessDeniedException_throughMockMvc_shouldReturnForbidden() throws Exception {
+        mockMvc.perform(get("/test/access-denied"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string("forbidden"));
+    }
+
+    @Test
+    void handleResponseStatusException_withReason_throughMockMvc_shouldReturnStatusAndReason()
+            throws Exception {
+        mockMvc.perform(get("/test/response-status-with-reason"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string("conflict reason"));
+    }
+
+    @Test
+    void handleResponseStatusException_withoutReason_throughMockMvc_shouldReturnStatusNoBody()
+            throws Exception {
+        mockMvc.perform(get("/test/response-status-no-reason"))
+                .andExpect(status().isConflict())
+                .andExpect(content().string(""));
     }
 
     // Test controller to simulate exceptions
@@ -187,5 +282,23 @@ class GlobalExceptionHandlerTest {
         public void throwUnexpectedException() {
             throw new RuntimeException("Unexpected error occurred");
         }
+
+        @GetMapping("/test/access-denied")
+        public void throwAccessDenied() {
+            throw new AccessDeniedException("forbidden");
+        }
+
+        @GetMapping("/test/response-status-with-reason")
+        public void throwResponseStatusWithReason() {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "conflict reason");
+        }
+
+        @GetMapping("/test/response-status-no-reason")
+        public void throwResponseStatusNoReason() {
+            throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
+        @SuppressWarnings("unused")
+        public void dummy(String param) {}
     }
 }

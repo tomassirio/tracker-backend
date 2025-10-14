@@ -24,7 +24,7 @@
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <jib.version>3.4.0</jib.version>
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
-        <google-java-format.version>1.17.0</google-java-format.version>
+        <google-java-format.version>1.19.2</google-java-format.version>
         <junit-platform.version>1.10.2</junit-platform.version>
         <swagger-models.version>2.2.36</swagger-models.version>
 

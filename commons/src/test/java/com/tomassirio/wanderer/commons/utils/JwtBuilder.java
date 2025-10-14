@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.jsonwebtoken.SignatureAlgorithm;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -30,7 +31,7 @@ public class JwtBuilder {
         String payloadB64 = base64UrlEncode(payloadJson.getBytes(StandardCharsets.UTF_8));
         String signingInput = headerB64 + "." + payloadB64;
 
-        Mac mac = Mac.getInstance("HmacSHA256");
+        Mac mac = Mac.getInstance(SignatureAlgorithm.HS256.getJcaName());
         SecretKeySpec keySpec =
                 new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
         mac.init(keySpec);
