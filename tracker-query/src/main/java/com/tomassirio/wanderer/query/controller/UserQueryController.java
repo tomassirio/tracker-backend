@@ -38,12 +38,6 @@ public class UserQueryController {
         return ResponseEntity.ok(userQueryService.getUserByUsername(username));
     }
 
-    @GetMapping("/email/{email}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
-        return ResponseEntity.ok(userQueryService.getUserByEmail(email));
-    }
-
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Get current authenticated user's profile")

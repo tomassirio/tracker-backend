@@ -24,12 +24,7 @@ class JwtServiceImplTest {
     @BeforeEach
     void setUp() throws Exception {
         jwtService = new JwtServiceImpl();
-        testUser =
-                User.builder()
-                        .id(UUID.randomUUID())
-                        .username("testuser")
-                        .email("test@example.com")
-                        .build();
+        testUser = User.builder().id(UUID.randomUUID()).username("testuser").build();
 
         // Set secret via reflection
         Field secretField = JwtServiceImpl.class.getDeclaredField("secret");
@@ -58,7 +53,6 @@ class JwtServiceImplTest {
 
         assertEquals(testUser.getId().toString(), claims.getSubject());
         assertEquals(testUser.getUsername(), claims.get("username"));
-        assertEquals(testUser.getEmail(), claims.get("email"));
         assertNotNull(claims.get("roles"));
     }
 

@@ -28,17 +28,10 @@ public class UserServiceImpl implements UserService {
             throw new IllegalArgumentException("Username already in use");
         }
 
-        log.debug("Checking email uniqueness for {}", request.email());
-        Optional<User> byEmail = userRepository.findByEmail(request.email());
-        if (byEmail.isPresent()) {
-            log.warn("Email already in use: {}", request.email());
-            throw new IllegalArgumentException("Email already in use");
-        }
-
-        User user = User.builder().username(request.username()).email(request.email()).build();
+        User user = User.builder().username(request.username()).build();
         User saved = userRepository.save(user);
 
         log.info("User created with id={}", saved.getId());
-        return new UserResponse(saved.getId(), saved.getUsername(), saved.getEmail());
+        return new UserResponse(saved.getId(), saved.getUsername());
     }
 }

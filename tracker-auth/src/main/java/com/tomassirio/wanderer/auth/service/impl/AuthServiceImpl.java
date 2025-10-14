@@ -9,9 +9,11 @@ import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.service.AuthService;
 import com.tomassirio.wanderer.auth.service.JwtService;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.security.Role;
 import feign.FeignException;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -91,12 +93,19 @@ public class AuthServiceImpl implements AuthService {
                 throw new IllegalArgumentException(
                         "Credentials already exist for user: " + createdUser.getId());
             }
+
+            if (credentialRepository.findByEmail(request.email()).isPresent()) {
+                throw new IllegalStateException("Email already in use: " + request.email());
+            }
+
             String hash = passwordEncoder.encode(request.password());
             Credential credential =
                     Credential.builder()
                             .userId(createdUser.getId())
                             .passwordHash(hash)
                             .enabled(true)
+                            .email(request.email())
+                            .roles(Set.of(Role.USER))
                             .build();
             credentialRepository.save(credential);
         } catch (Exception e) {

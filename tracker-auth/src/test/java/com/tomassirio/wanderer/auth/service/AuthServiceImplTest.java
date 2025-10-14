@@ -15,12 +15,14 @@ import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.service.impl.AuthServiceImpl;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.security.Role;
 import feign.FeignException;
 import feign.FeignException.NotFound;
 import feign.Request;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,17 +53,14 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        testUser =
-                User.builder()
-                        .id(UUID.randomUUID())
-                        .username("testuser")
-                        .email("test@example.com")
-                        .build();
+        testUser = User.builder().id(UUID.randomUUID()).username("testuser").build();
         testCredential =
                 Credential.builder()
                         .userId(testUser.getId())
                         .passwordHash("hashedPassword")
                         .enabled(true)
+                        .email("user@email.com")
+                        .roles(Set.of(Role.USER))
                         .build();
     }
 
@@ -174,6 +173,21 @@ class AuthServiceImplTest {
 
         when(trackerCommandClient.createUser(any())).thenReturn(testUser);
         when(credentialRepository.findById(testUser.getId()))
+                .thenReturn(Optional.of(testCredential));
+
+        assertThrows(IllegalStateException.class, () -> authService.register(request));
+        verify(credentialRepository, never()).save(any());
+        verify(trackerCommandClient).deleteUser(testUser.getId());
+    }
+
+    @Test
+    void register_whenEmailAlreadyExists_shouldThrowIllegalStateException() {
+        RegisterRequest request =
+                new RegisterRequest("newuser", testCredential.getEmail(), "password123");
+
+        when(trackerCommandClient.createUser(any())).thenReturn(testUser);
+        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
+        when(credentialRepository.findByEmail(testCredential.getEmail()))
                 .thenReturn(Optional.of(testCredential));
 
         assertThrows(IllegalStateException.class, () -> authService.register(request));

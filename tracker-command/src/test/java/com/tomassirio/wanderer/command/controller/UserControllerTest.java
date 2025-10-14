@@ -50,7 +50,7 @@ class UserControllerTest {
     void createUser_whenValidRequest_shouldReturnCreated() throws Exception {
         UserCreationRequest req = new UserCreationRequest("johndoe", "john@example.com");
         UUID id = UUID.randomUUID();
-        UserResponse resp = new UserResponse(id, "johndoe", "john@example.com");
+        UserResponse resp = new UserResponse(id, "johndoe");
 
         doReturn(resp).when(userService).createUser(any(UserCreationRequest.class));
 
@@ -60,8 +60,7 @@ class UserControllerTest {
                                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.username").value("johndoe"))
-                .andExpect(jsonPath("$.email").value("john@example.com"));
+                .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
     @Test

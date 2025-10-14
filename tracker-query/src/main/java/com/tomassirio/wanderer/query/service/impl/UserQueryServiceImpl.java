@@ -25,8 +25,6 @@ public class UserQueryServiceImpl implements UserQueryService {
     @Override
     public UserResponse getUserById(UUID id) {
         if (id == null) {
-            // Defensive: if argument resolver didn't run or returned null, return 401 instead of
-            // 500
             throw new ResponseStatusException(
                     HttpStatus.UNAUTHORIZED, "Missing or invalid authenticated user id");
         }
@@ -34,7 +32,7 @@ public class UserQueryServiceImpl implements UserQueryService {
                 userRepository
                         .findById(id)
                         .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
+        return new UserResponse(user.getId(), user.getUsername());
     }
 
     @Override
@@ -43,15 +41,6 @@ public class UserQueryServiceImpl implements UserQueryService {
                 userRepository
                         .findByUsername(username)
                         .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
-    }
-
-    @Override
-    public UserResponse getUserByEmail(String email) {
-        var user =
-                userRepository
-                        .findByEmail(email)
-                        .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
+        return new UserResponse(user.getId(), user.getUsername());
     }
 }

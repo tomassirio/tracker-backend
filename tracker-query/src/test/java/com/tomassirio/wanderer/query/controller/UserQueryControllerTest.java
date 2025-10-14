@@ -42,15 +42,14 @@ class UserQueryControllerTest {
     @Test
     void getUser_whenUserExists_shouldReturnUser() throws Exception {
         UUID id = UUID.randomUUID();
-        UserResponse resp = new UserResponse(id, "johndoe", "john@example.com");
+        UserResponse resp = new UserResponse(id, "johndoe");
 
         when(userQueryService.getUserById(id)).thenReturn(resp);
 
         mockMvc.perform(get(USERS_BASE_URL + "/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.username").value("johndoe"))
-                .andExpect(jsonPath("$.email").value("john@example.com"));
+                .andExpect(jsonPath("$.username").value("johndoe"));
     }
 
     @Test
@@ -65,40 +64,25 @@ class UserQueryControllerTest {
     @Test
     void getUserByUsername_whenUserExists_shouldReturnUser() throws Exception {
         String username = "alice";
-        UserResponse resp = new UserResponse(UUID.randomUUID(), username, "alice@example.com");
+        UserResponse resp = new UserResponse(UUID.randomUUID(), username);
 
         when(userQueryService.getUserByUsername(username)).thenReturn(resp);
 
         mockMvc.perform(get(USERS_BASE_URL + "/username/{username}", username))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value(username))
-                .andExpect(jsonPath("$.email").value("alice@example.com"));
-    }
-
-    @Test
-    void getUserByEmail_whenUserExists_shouldReturnUser() throws Exception {
-        String email = "bob@example.com";
-        UserResponse resp = new UserResponse(UUID.randomUUID(), "bob", email);
-
-        when(userQueryService.getUserByEmail(email)).thenReturn(resp);
-
-        mockMvc.perform(get(USERS_BASE_URL + "/email/{email}", email))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("bob"))
-                .andExpect(jsonPath("$.email").value(email));
+                .andExpect(jsonPath("$.username").value(username));
     }
 
     @Test
     void getMyUser_whenUserExists_shouldReturnUser() throws Exception {
-        UserResponse resp = new UserResponse(USER_ID, "currentuser", "me@example.com");
+        UserResponse resp = new UserResponse(USER_ID, "currentuser");
 
         when(userQueryService.getUserById(USER_ID)).thenReturn(resp);
 
         mockMvc.perform(get(USERS_ME_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(USER_ID.toString()))
-                .andExpect(jsonPath("$.username").value("currentuser"))
-                .andExpect(jsonPath("$.email").value("me@example.com"));
+                .andExpect(jsonPath("$.username").value("currentuser"));
     }
 
     @Test

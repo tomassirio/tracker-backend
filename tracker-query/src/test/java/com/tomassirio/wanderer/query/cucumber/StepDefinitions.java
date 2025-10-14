@@ -96,12 +96,10 @@ public class StepDefinitions {
         User user = new User();
         user.setId(UUID.randomUUID());
         user.setUsername(username);
-        user.setEmail(email);
         users.put(username, user);
         setLastCreatedUsername(username);
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(userRepository.findAll()).thenReturn(List.of(user));
         when(tripRepository.findByOwnerId(user.getId())).thenReturn(new ArrayList<>());

@@ -6,6 +6,7 @@ import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +39,7 @@ public class TripController {
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     public ResponseEntity<TripResponse> createTrip(
-            @CurrentUserId UUID userId, @Valid @RequestBody TripCreationRequest request) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId, @Valid @RequestBody TripCreationRequest request) {
 
         log.info("Received request to create trip: {} by user {}", request.name(), userId);
 

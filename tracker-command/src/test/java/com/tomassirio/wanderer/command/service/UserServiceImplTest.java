@@ -32,50 +32,22 @@ class UserServiceImplTest {
     @Test
     void createUser_whenValid_shouldReturnUserResponse() {
         UserCreationRequest req = new UserCreationRequest("johndoe", "john@example.com");
-        User saved =
-                User.builder()
-                        .id(UUID.randomUUID())
-                        .username("johndoe")
-                        .email("john@example.com")
-                        .build();
+        User saved = User.builder().id(UUID.randomUUID()).username("johndoe").build();
 
         when(userRepository.findByUsername(req.username())).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(req.email())).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(saved);
 
         UserResponse resp = userService.createUser(req);
         assertEquals(saved.getId(), resp.id());
         assertEquals(saved.getUsername(), resp.username());
-        assertEquals(saved.getEmail(), resp.email());
     }
 
     @Test
     void createUser_whenUsernameExists_shouldThrow() {
         UserCreationRequest req = new UserCreationRequest("johndoe", "john@example.com");
-        User existing =
-                User.builder()
-                        .id(UUID.randomUUID())
-                        .username("johndoe")
-                        .email("other@example.com")
-                        .build();
+        User existing = User.builder().id(UUID.randomUUID()).username("johndoe").build();
 
         when(userRepository.findByUsername(req.username())).thenReturn(Optional.of(existing));
-
-        assertThrows(IllegalArgumentException.class, () -> userService.createUser(req));
-    }
-
-    @Test
-    void createUser_whenEmailExists_shouldThrow() {
-        UserCreationRequest req = new UserCreationRequest("johndoe", "john@example.com");
-        User existing =
-                User.builder()
-                        .id(UUID.randomUUID())
-                        .username("other")
-                        .email("john@example.com")
-                        .build();
-
-        when(userRepository.findByUsername(req.username())).thenReturn(Optional.empty());
-        when(userRepository.findByEmail(req.email())).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class, () -> userService.createUser(req));
     }

@@ -27,13 +27,4 @@ public interface UserQueryService {
      * @throws jakarta.persistence.EntityNotFoundException if the user is not found
      */
     UserResponse getUserByUsername(String username);
-
-    /**
-     * Retrieves a user by their email address.
-     *
-     * @param email the user's email address
-     * @return the user response containing user details
-     * @throws jakarta.persistence.EntityNotFoundException if the user is not found
-     */
-    UserResponse getUserByEmail(String email);
 }

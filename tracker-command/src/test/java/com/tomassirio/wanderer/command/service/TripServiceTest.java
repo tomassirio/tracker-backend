@@ -47,12 +47,7 @@ class TripServiceTest {
                 .thenAnswer(
                         invocation -> {
                             UUID id = invocation.getArgument(0);
-                            return Optional.of(
-                                    User.builder()
-                                            .id(id)
-                                            .username("test-user")
-                                            .email("test@example.com")
-                                            .build());
+                            return Optional.of(User.builder().id(id).username("test-user").build());
                         });
     }
 

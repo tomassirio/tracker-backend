@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.auth.service.impl;
 
 import com.tomassirio.wanderer.auth.service.JwtService;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.security.Role;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -38,8 +39,7 @@ public class JwtServiceImpl implements JwtService {
         return Jwts.builder()
                 .setSubject(user.getId().toString())
                 .claim("username", user.getUsername())
-                .claim("email", user.getEmail())
-                .claim("roles", List.of("USER"))
+                .claim("roles", List.of(Role.USER))
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
