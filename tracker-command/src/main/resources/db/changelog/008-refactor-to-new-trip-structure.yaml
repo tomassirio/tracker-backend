@@ -56,6 +56,11 @@ databaseChangeLog:
               - column:
                   name: timestamp
 
+        # Drop foreign key constraint from messages table that references locations
+        - dropForeignKeyConstraint:
+            baseTableName: messages
+            constraintName: fk_messages_location_id
+
         # Drop old columns from trips table
         - dropColumn:
             tableName: trips
@@ -148,5 +153,6 @@ databaseChangeLog:
                   name: user_id
 
         # Drop locations table (no longer needed as a separate entity)
+        # Now it can be dropped safely since we removed the foreign key constraint
         - dropTable:
             tableName: locations

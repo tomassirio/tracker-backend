@@ -13,4 +13,3 @@ public class GeoLocation {
     private Double lat;
     private Double lon;
 }
-

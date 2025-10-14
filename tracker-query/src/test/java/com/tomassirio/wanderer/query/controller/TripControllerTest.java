@@ -6,15 +6,14 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import com.tomassirio.wanderer.commons.dto.LocationDTO;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import com.tomassirio.wanderer.query.service.TripService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,20 +47,7 @@ class TripControllerTest {
     void getTrip_whenTripExists_shouldReturnTrip() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        LocationDTO startLocation = createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903);
-        LocationDTO endLocation = createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194);
-
-        TripDTO trip =
-                new TripDTO(
-                        tripId,
-                        "Summer Road Trip",
-                        LocalDate.now().minusDays(5),
-                        LocalDate.now().plusDays(10),
-                        1250.5,
-                        startLocation,
-                        endLocation,
-                        TripVisibility.PUBLIC,
-                        USER_ID);
+        TripDTO trip = createTripDTO(tripId, "Summer Road Trip", TripVisibility.PUBLIC);
 
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
@@ -70,12 +56,9 @@ class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Summer Road Trip"))
-                .andExpect(jsonPath("$.totalDistance").value(1250.5))
                 .andExpect(jsonPath("$.visibility").value("PUBLIC"))
-                .andExpect(jsonPath("$.startingLocation.latitude").value(39.7392))
-                .andExpect(jsonPath("$.startingLocation.longitude").value(-104.9903))
-                .andExpect(jsonPath("$.endingLocation.latitude").value(37.7749))
-                .andExpect(jsonPath("$.endingLocation.longitude").value(-122.4194));
+                .andExpect(jsonPath("$.tripStatus").value("CREATED"))
+                .andExpect(jsonPath("$.enabled").value(true));
     }
 
     @Test
@@ -92,23 +75,10 @@ class TripControllerTest {
     }
 
     @Test
-    void getTrip_whenTripHasNoEndingLocation_shouldReturnTripWithNullEndingLocation()
-            throws Exception {
+    void getTrip_whenTripIsPrivate_shouldReturnPrivateTrip() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        LocationDTO startLocation = createLocationDTO(UUID.randomUUID(), 40.7128, -74.0060);
-
-        TripDTO trip =
-                new TripDTO(
-                        tripId,
-                        "One Way Trip",
-                        LocalDate.now().minusDays(1),
-                        LocalDate.now().plusDays(5),
-                        500.0,
-                        startLocation,
-                        null, // No ending location
-                        TripVisibility.PRIVATE,
-                        USER_ID);
+        TripDTO trip = createTripDTO(tripId, "Private Trip", TripVisibility.PRIVATE);
 
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
@@ -116,29 +86,15 @@ class TripControllerTest {
         mockMvc.perform(get(TRIPS_BASE_URL + "/{id}", tripId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
-                .andExpect(jsonPath("$.name").value("One Way Trip"))
-                .andExpect(jsonPath("$.startingLocation").exists())
-                .andExpect(jsonPath("$.endingLocation").isEmpty());
+                .andExpect(jsonPath("$.name").value("Private Trip"))
+                .andExpect(jsonPath("$.visibility").value("PRIVATE"));
     }
 
     @Test
-    void getTrip_whenLocationHasNoAltitude_shouldReturnTripWithNullAltitude() throws Exception {
+    void getTrip_whenTripHasNoTimestamps_shouldReturnTripWithNullTimestamps() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        LocationDTO startLocation = createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903, null);
-        LocationDTO endLocation = createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, null);
-
-        TripDTO trip =
-                new TripDTO(
-                        tripId,
-                        "Flat Trip",
-                        LocalDate.now(),
-                        LocalDate.now().plusDays(3),
-                        200.0,
-                        startLocation,
-                        endLocation,
-                        TripVisibility.PUBLIC,
-                        USER_ID);
+        TripDTO trip = createTripDTO(tripId, "New Trip", TripVisibility.PUBLIC);
 
         when(tripService.getTrip(tripId)).thenReturn(trip);
 
@@ -146,8 +102,9 @@ class TripControllerTest {
         mockMvc.perform(get(TRIPS_BASE_URL + "/{id}", tripId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
-                .andExpect(jsonPath("$.startingLocation.altitude").isEmpty())
-                .andExpect(jsonPath("$.endingLocation.altitude").isEmpty());
+                .andExpect(jsonPath("$.name").value("New Trip"))
+                .andExpect(jsonPath("$.startTimestamp").isEmpty())
+                .andExpect(jsonPath("$.endTimestamp").isEmpty());
     }
 
     @Test
@@ -156,32 +113,8 @@ class TripControllerTest {
         UUID tripId1 = UUID.randomUUID();
         UUID tripId2 = UUID.randomUUID();
 
-        LocationDTO location1 = createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903);
-        LocationDTO location2 = createLocationDTO(UUID.randomUUID(), 40.7128, -74.0060);
-
-        TripDTO trip1 =
-                new TripDTO(
-                        tripId1,
-                        "Trip 1",
-                        LocalDate.now().minusDays(10),
-                        LocalDate.now().minusDays(5),
-                        500.0,
-                        location1,
-                        location2,
-                        TripVisibility.PUBLIC,
-                        USER_ID);
-
-        TripDTO trip2 =
-                new TripDTO(
-                        tripId2,
-                        "Trip 2",
-                        LocalDate.now().minusDays(3),
-                        LocalDate.now().plusDays(2),
-                        300.0,
-                        location2,
-                        location1,
-                        TripVisibility.PRIVATE,
-                        USER_ID);
+        TripDTO trip1 = createTripDTO(tripId1, "Trip 1", TripVisibility.PUBLIC);
+        TripDTO trip2 = createTripDTO(tripId2, "Trip 2", TripVisibility.PRIVATE);
 
         when(tripService.getAllTrips()).thenReturn(List.of(trip1, trip2));
 
@@ -192,11 +125,9 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(tripId1.toString()))
                 .andExpect(jsonPath("$[0].name").value("Trip 1"))
-                .andExpect(jsonPath("$[0].totalDistance").value(500.0))
                 .andExpect(jsonPath("$[0].visibility").value("PUBLIC"))
                 .andExpect(jsonPath("$[1].id").value(tripId2.toString()))
                 .andExpect(jsonPath("$[1].name").value("Trip 2"))
-                .andExpect(jsonPath("$[1].totalDistance").value(300.0))
                 .andExpect(jsonPath("$[1].visibility").value("PRIVATE"));
     }
 
@@ -217,11 +148,11 @@ class TripControllerTest {
         // Given
         List<TripDTO> trips =
                 List.of(
-                        createTripDTO(UUID.randomUUID(), "Trip A"),
-                        createTripDTO(UUID.randomUUID(), "Trip B"),
-                        createTripDTO(UUID.randomUUID(), "Trip C"),
-                        createTripDTO(UUID.randomUUID(), "Trip D"),
-                        createTripDTO(UUID.randomUUID(), "Trip E"));
+                        createTripDTO(UUID.randomUUID(), "Trip A", TripVisibility.PUBLIC),
+                        createTripDTO(UUID.randomUUID(), "Trip B", TripVisibility.PRIVATE),
+                        createTripDTO(UUID.randomUUID(), "Trip C", TripVisibility.PROTECTED),
+                        createTripDTO(UUID.randomUUID(), "Trip D", TripVisibility.PUBLIC),
+                        createTripDTO(UUID.randomUUID(), "Trip E", TripVisibility.PUBLIC));
 
         when(tripService.getAllTrips()).thenReturn(trips);
 
@@ -232,11 +163,11 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.length()").value(5));
     }
 
-    // Added: tests for /me endpoint
     @Test
     void getMyTrips_whenTripsExist_shouldReturnListOfTrips() throws Exception {
         // Given
-        List<TripDTO> trips = List.of(createTripDTO(UUID.randomUUID(), "My Trip"));
+        List<TripDTO> trips =
+                List.of(createTripDTO(UUID.randomUUID(), "My Trip", TripVisibility.PUBLIC));
         when(tripService.getTripsForUser(USER_ID)).thenReturn(trips);
 
         // When & Then
@@ -259,30 +190,39 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
+    @Test
+    void getMyTrips_withMultipleTrips_shouldReturnAllMyTrips() throws Exception {
+        // Given
+        List<TripDTO> trips =
+                List.of(
+                        createTripDTO(UUID.randomUUID(), "My Trip 1", TripVisibility.PUBLIC),
+                        createTripDTO(UUID.randomUUID(), "My Trip 2", TripVisibility.PRIVATE),
+                        createTripDTO(UUID.randomUUID(), "My Trip 3", TripVisibility.PROTECTED));
+        when(tripService.getTripsForUser(USER_ID)).thenReturn(trips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_ME_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].name").value("My Trip 1"))
+                .andExpect(jsonPath("$[1].name").value("My Trip 2"))
+                .andExpect(jsonPath("$[2].name").value("My Trip 3"));
+    }
+
     // Helper methods to create test data
-    private LocationDTO createLocationDTO(UUID id, double latitude, double longitude) {
-        return createLocationDTO(id, latitude, longitude, 1500.0);
-    }
-
-    private LocationDTO createLocationDTO(
-            UUID id, double latitude, double longitude, Double altitude) {
-        return new LocationDTO(
-                id, latitude, longitude, Instant.now(), altitude, 10.0, 85, "TEST_SOURCE");
-    }
-
-    private TripDTO createTripDTO(UUID tripId, String name) {
-        LocationDTO startLocation = createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903);
-        LocationDTO endLocation = createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194);
-
+    private TripDTO createTripDTO(UUID tripId, String name, TripVisibility visibility) {
         return new TripDTO(
                 tripId,
                 name,
-                LocalDate.now().minusDays(1),
-                LocalDate.now().plusDays(5),
-                1000.0,
-                startLocation,
-                endLocation,
-                TripVisibility.PUBLIC,
-                USER_ID);
+                USER_ID,
+                TripStatus.CREATED,
+                visibility,
+                null, // updateRefresh
+                null, // startTimestamp
+                null, // endTimestamp
+                null, // tripPlanId
+                Instant.now(),
+                true);
     }
 }

@@ -9,7 +9,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.tomassirio.wanderer.command.dto.LocationRequest;
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.repository.TripRepository;
@@ -17,11 +16,14 @@ import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.impl.TripServiceImpl;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripSettings;
+import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import jakarta.persistence.EntityNotFoundException;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,13 +56,9 @@ class TripServiceTest {
     @Test
     void createTrip_whenValidRequest_shouldCreateAndSaveTrip() {
         // Given
-        LocationRequest startLocation =
-                TestEntityFactory.createLocationRequest(39.7392, -104.9903, 1609.3);
-        LocationRequest endLocation =
-                TestEntityFactory.createLocationRequest(37.7749, -122.4194, 16.0);
         TripCreationRequest request =
                 TestEntityFactory.createTripCreationRequest(
-                        "Summer Road Trip", startLocation, endLocation);
+                        "Summer Road Trip", TripVisibility.PUBLIC);
 
         when(tripRepository.save(any(Trip.class)))
                 .thenAnswer(
@@ -77,27 +75,21 @@ class TripServiceTest {
         assertThat(createdTrip).isNotNull();
         assertThat(createdTrip.id()).isNotNull();
         assertThat(createdTrip.name()).isEqualTo("Summer Road Trip");
+        assertThat(createdTrip.userId()).isEqualTo(USER_ID);
+        assertThat(createdTrip.tripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(createdTrip.visibility()).isEqualTo(TripVisibility.PUBLIC);
-        assertThat(createdTrip.startingLocation()).isNotNull();
-        assertThat(createdTrip.startingLocation().latitude()).isEqualTo(39.7392);
-        assertThat(createdTrip.startingLocation().longitude()).isEqualTo(-104.9903);
-        assertThat(createdTrip.endingLocation()).isNotNull();
-        assertThat(createdTrip.endingLocation().latitude()).isEqualTo(37.7749);
-        assertThat(createdTrip.endingLocation().longitude()).isEqualTo(-122.4194);
+        assertThat(createdTrip.enabled()).isTrue();
+        assertThat(createdTrip.creationTimestamp()).isNotNull();
 
         verify(tripRepository).save(any(Trip.class));
+        verify(userRepository).findById(USER_ID);
     }
 
     @Test
-    void createTrip_whenLocationRequestsHaveNoAltitude_shouldCreateTripSuccessfully() {
+    void createTrip_whenPrivateVisibility_shouldCreatePrivateTrip() {
         // Given
-        LocationRequest startLocation =
-                TestEntityFactory.createLocationRequest(39.7392, -104.9903, null);
-        LocationRequest endLocation =
-                TestEntityFactory.createLocationRequest(37.7749, -122.4194, null);
         TripCreationRequest request =
-                TestEntityFactory.createTripCreationRequest(
-                        "Road Trip Without Altitude", startLocation, endLocation);
+                TestEntityFactory.createTripCreationRequest("Private Trip", TripVisibility.PRIVATE);
 
         when(tripRepository.save(any(Trip.class)))
                 .thenAnswer(
@@ -112,22 +104,18 @@ class TripServiceTest {
 
         // Then
         assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.id()).isNotNull();
-        assertThat(createdTrip.name()).isEqualTo("Road Trip Without Altitude");
-        assertThat(createdTrip.startingLocation()).isNotNull();
-        assertThat(createdTrip.startingLocation().altitude()).isNull();
-        assertThat(createdTrip.endingLocation()).isNotNull();
-        assertThat(createdTrip.endingLocation().altitude()).isNull();
+        assertThat(createdTrip.name()).isEqualTo("Private Trip");
+        assertThat(createdTrip.visibility()).isEqualTo(TripVisibility.PRIVATE);
+        assertThat(createdTrip.tripStatus()).isEqualTo(TripStatus.CREATED);
 
         verify(tripRepository).save(any(Trip.class));
     }
 
     @Test
-    void createTrip_whenOnlyStartingLocationProvided_shouldCreateTripWithStartingLocationOnly() {
+    void createTrip_shouldInitializeWithNullTimestampsAndLocations() {
         // Given
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest();
         TripCreationRequest request =
-                TestEntityFactory.createTripCreationRequest("One Way Trip", startLocation, null);
+                TestEntityFactory.createTripCreationRequest("New Trip", TripVisibility.PUBLIC);
 
         when(tripRepository.save(any(Trip.class)))
                 .thenAnswer(
@@ -142,37 +130,66 @@ class TripServiceTest {
 
         // Then
         assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.startingLocation()).isNotNull();
-        assertThat(createdTrip.endingLocation()).isNull();
+        assertThat(createdTrip.startTimestamp()).isNull();
+        assertThat(createdTrip.endTimestamp()).isNull();
+        assertThat(createdTrip.tripPlanId()).isNull();
+        assertThat(createdTrip.updateRefresh()).isNull();
 
         verify(tripRepository).save(any(Trip.class));
+    }
+
+    @Test
+    void createTrip_whenUserNotFound_shouldThrowException() {
+        // Given
+        UUID nonExistentUserId = UUID.randomUUID();
+        TripCreationRequest request =
+                TestEntityFactory.createTripCreationRequest("Test Trip", TripVisibility.PUBLIC);
+
+        when(userRepository.findById(nonExistentUserId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> tripService.createTrip(nonExistentUserId, request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("User not found");
+
+        verify(userRepository).findById(nonExistentUserId);
+        verify(tripRepository, never()).save(any(Trip.class));
     }
 
     @Test
     void updateTrip_whenTripExists_shouldUpdateAndSaveTrip() {
         // Given
         UUID tripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PRIVATE)
+                        .updateRefresh(null)
+                        .build();
+
+        TripDetails existingDetails =
+                TripDetails.builder()
+                        .startTimestamp(null)
+                        .endTimestamp(null)
+                        .startLocation(null)
+                        .endLocation(null)
+                        .build();
+
         Trip existingTrip =
                 Trip.builder()
                         .id(tripId)
                         .name("Old Trip Name")
-                        .startDate(LocalDate.now().minusDays(20))
-                        .endDate(LocalDate.now().minusDays(10))
-                        .totalDistance(500.0)
-                        .visibility(TripVisibility.PRIVATE)
+                        .userId(USER_ID)
+                        .tripSettings(existingSettings)
+                        .tripDetails(existingDetails)
+                        .creationTimestamp(Instant.now().minusSeconds(3600))
+                        .enabled(true)
                         .build();
 
-        LocationRequest newStartLocation =
-                TestEntityFactory.createLocationRequest(40.7128, -74.0060, 10.0);
-        LocationRequest newEndLocation =
-                TestEntityFactory.createLocationRequest(34.0522, -118.2437, 71.0);
         TripUpdateRequest request =
                 TestEntityFactory.createTripUpdateRequest(
-                        "Updated Trip Name",
-                        newStartLocation,
-                        newEndLocation,
-                        2000.0,
-                        TripVisibility.PRIVATE);
+                        "Updated Trip Name", TripVisibility.PUBLIC);
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
         when(tripRepository.save(any(Trip.class)))
@@ -185,12 +202,7 @@ class TripServiceTest {
         assertThat(updatedTrip).isNotNull();
         assertThat(updatedTrip.id()).isEqualTo(tripId);
         assertThat(updatedTrip.name()).isEqualTo("Updated Trip Name");
-        assertThat(updatedTrip.totalDistance()).isEqualTo(2000.0);
-        assertThat(updatedTrip.visibility()).isEqualTo(TripVisibility.PRIVATE);
-        assertThat(updatedTrip.startingLocation()).isNotNull();
-        assertThat(updatedTrip.startingLocation().latitude()).isEqualTo(40.7128);
-        assertThat(updatedTrip.endingLocation()).isNotNull();
-        assertThat(updatedTrip.endingLocation().latitude()).isEqualTo(34.0522);
+        assertThat(updatedTrip.visibility()).isEqualTo(TripVisibility.PUBLIC);
 
         verify(tripRepository).findById(tripId);
         verify(tripRepository).save(any(Trip.class));
@@ -200,9 +212,8 @@ class TripServiceTest {
     void updateTrip_whenTripDoesNotExist_shouldThrowException() {
         // Given
         UUID nonExistentTripId = UUID.randomUUID();
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest();
         TripUpdateRequest request =
-                TestEntityFactory.createTripUpdateRequest("Updated Trip", startLocation, null);
+                TestEntityFactory.createTripUpdateRequest("Updated Trip", TripVisibility.PUBLIC);
 
         when(tripRepository.findById(nonExistentTripId)).thenReturn(Optional.empty());
 
@@ -216,25 +227,38 @@ class TripServiceTest {
     }
 
     @Test
-    void updateTrip_whenUpdatingLocations_shouldReplaceExistingLocations() {
+    void updateTrip_whenChangingVisibility_shouldUpdateVisibility() {
         // Given
         UUID tripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PRIVATE)
+                        .updateRefresh(null)
+                        .build();
+
+        TripDetails existingDetails =
+                TripDetails.builder()
+                        .startTimestamp(null)
+                        .endTimestamp(null)
+                        .startLocation(null)
+                        .endLocation(null)
+                        .build();
+
         Trip existingTrip =
                 Trip.builder()
                         .id(tripId)
                         .name("Trip Name")
-                        .startDate(LocalDate.now().minusDays(5))
-                        .endDate(LocalDate.now().plusDays(5))
-                        .visibility(TripVisibility.PUBLIC)
+                        .userId(USER_ID)
+                        .tripSettings(existingSettings)
+                        .tripDetails(existingDetails)
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
                         .build();
 
-        LocationRequest newStartLocation =
-                TestEntityFactory.createLocationRequest(50.0, -100.0, 500.0);
-        LocationRequest newEndLocation =
-                TestEntityFactory.createLocationRequest(45.0, -95.0, 450.0);
         TripUpdateRequest request =
-                TestEntityFactory.createTripUpdateRequest(
-                        "Trip Name", newStartLocation, newEndLocation);
+                TestEntityFactory.createTripUpdateRequest("Trip Name", TripVisibility.PUBLIC);
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
         when(tripRepository.save(any(Trip.class)))
@@ -244,12 +268,8 @@ class TripServiceTest {
         TripDTO updatedTrip = tripService.updateTrip(tripId, request);
 
         // Then
-        assertThat(updatedTrip.startingLocation()).isNotNull();
-        assertThat(updatedTrip.startingLocation().latitude()).isEqualTo(50.0);
-        assertThat(updatedTrip.startingLocation().altitude()).isEqualTo(500.0);
-        assertThat(updatedTrip.endingLocation()).isNotNull();
-        assertThat(updatedTrip.endingLocation().latitude()).isEqualTo(45.0);
-        assertThat(updatedTrip.endingLocation().altitude()).isEqualTo(450.0);
+        assertThat(updatedTrip.visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(updatedTrip.name()).isEqualTo("Trip Name");
 
         verify(tripRepository).save(any(Trip.class));
     }
@@ -267,16 +287,46 @@ class TripServiceTest {
     }
 
     @Test
-    void createTrip_whenNoEndingLocation_shouldCreateTripWithoutEndingLocation() {
+    void createTrip_shouldSetStatusToCreated() {
         // Given
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest();
         TripCreationRequest request =
-                TestEntityFactory.createTripCreationRequest("Trip to Nowhere", startLocation, null);
+                TestEntityFactory.createTripCreationRequest("Test Trip", TripVisibility.PUBLIC);
 
         when(tripRepository.save(any(Trip.class)))
                 .thenAnswer(
                         invocation -> {
                             Trip trip = invocation.getArgument(0);
+                            trip.setId(UUID.randomUUID());
+                            return trip;
+                        });
+
+        // When
+        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
+
+        // Then
+        assertThat(createdTrip.tripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(createdTrip.enabled()).isTrue();
+
+        verify(tripRepository).save(any(Trip.class));
+    }
+
+    @Test
+    void createTrip_shouldInitializeEmbeddedObjects() {
+        // Given
+        TripCreationRequest request =
+                TestEntityFactory.createTripCreationRequest("Test Trip", TripVisibility.PROTECTED);
+
+        when(tripRepository.save(any(Trip.class)))
+                .thenAnswer(
+                        invocation -> {
+                            Trip trip = invocation.getArgument(0);
+                            // Verify embedded objects are properly initialized
+                            assertThat(trip.getTripSettings()).isNotNull();
+                            assertThat(trip.getTripSettings().getTripStatus())
+                                    .isEqualTo(TripStatus.CREATED);
+                            assertThat(trip.getTripSettings().getVisibility())
+                                    .isEqualTo(TripVisibility.PROTECTED);
+                            assertThat(trip.getTripDetails()).isNotNull();
                             trip.setId(UUID.randomUUID());
                             return trip;
                         });
@@ -286,34 +336,7 @@ class TripServiceTest {
 
         // Then
         assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.name()).isEqualTo("Trip to Nowhere");
-        assertThat(createdTrip.startingLocation()).isNotNull();
-        assertThat(createdTrip.endingLocation()).isNull();
-
-        verify(tripRepository).save(any(Trip.class));
-    }
-
-    @Test
-    void createTrip_shouldSetSourceAsTrip_ENDPOINT() {
-        // Given
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest();
-        TripCreationRequest request =
-                TestEntityFactory.createTripCreationRequest("Test Trip", startLocation, null);
-
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(
-                        invocation -> {
-                            Trip trip = invocation.getArgument(0);
-                            trip.setId(UUID.randomUUID());
-                            return trip;
-                        });
-
-        // When
-        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
-
-        // Then
-        assertThat(createdTrip.startingLocation()).isNotNull();
-        assertThat(createdTrip.startingLocation().source()).isEqualTo("TRIP_STARTPOINT");
+        assertThat(createdTrip.visibility()).isEqualTo(TripVisibility.PROTECTED);
 
         verify(tripRepository).save(any(Trip.class));
     }

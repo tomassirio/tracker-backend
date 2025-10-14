@@ -7,8 +7,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.commons.domain.Location;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripSettings;
+import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.utils.JwtBuilder;
@@ -18,7 +20,7 @@ import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -102,32 +104,46 @@ public class StepDefinitions {
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(userRepository.findAll()).thenReturn(List.of(user));
-        when(tripRepository.findByOwnerId(user.getId())).thenReturn(new ArrayList<>());
+        when(tripRepository.findByUserId(user.getId())).thenReturn(new ArrayList<>());
     }
 
     @Given("a trip exists with name {string}")
     public void a_trip_exists_with_name(String name) {
         User owner = users.get(getLastCreatedUsername());
         Assertions.assertNotNull(owner, "No user exists to own the trip");
-        Location loc = Location.builder().latitude(10.0).longitude(20.0).altitude(0.0).build();
+
+        TripSettings tripSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .updateRefresh(null)
+                        .build();
+
+        TripDetails tripDetails =
+                TripDetails.builder()
+                        .startTimestamp(Instant.now())
+                        .endTimestamp(null)
+                        .startLocation(null)
+                        .endLocation(null)
+                        .build();
+
         Trip trip =
                 Trip.builder()
                         .id(UUID.randomUUID())
                         .name(name)
-                        .startDate(LocalDate.now())
-                        .endDate(LocalDate.now().plusDays(5))
-                        .totalDistance(100.0)
-                        .startingLocation(loc)
-                        .endingLocation(loc)
-                        .visibility(TripVisibility.PUBLIC)
-                        .owner(owner)
+                        .userId(owner.getId())
+                        .tripSettings(tripSettings)
+                        .tripDetails(tripDetails)
+                        .tripPlanId(null)
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
                         .build();
         trips.put(trip.getId(), trip);
         setLastCreatedTripId(trip.getId());
 
         when(tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
         when(tripRepository.findAll()).thenReturn(new ArrayList<>(trips.values()));
-        when(tripRepository.findByOwnerId(owner.getId())).thenReturn(List.of(trip));
+        when(tripRepository.findByUserId(owner.getId())).thenReturn(List.of(trip));
     }
 
     @Given("I have a valid token for that user with roles {string}")
@@ -199,8 +215,8 @@ public class StepDefinitions {
         String body = latestResponse.getBody();
         List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
         Assertions.assertFalse(json.isEmpty(), "Expected at least one trip in response");
-        Object ownerIdObj = json.getFirst().get("ownerId");
-        Assertions.assertNotNull(ownerIdObj, "Trip does not contain ownerId");
+        Object ownerIdObj = json.getFirst().get("userId");
+        Assertions.assertNotNull(ownerIdObj, "Trip does not contain userId");
         UUID ownerId = UUID.fromString(ownerIdObj.toString());
         User expected = users.get(username);
         Assertions.assertNotNull(expected, "No such user in test state: " + username);

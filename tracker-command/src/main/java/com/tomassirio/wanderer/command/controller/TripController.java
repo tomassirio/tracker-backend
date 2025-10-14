@@ -1,7 +1,6 @@
 package com.tomassirio.wanderer.command.controller;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripResponse;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
@@ -38,29 +37,28 @@ public class TripController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<TripResponse> createTrip(
-            @Parameter(hidden = true) @CurrentUserId UUID userId, @Valid @RequestBody TripCreationRequest request) {
+    public ResponseEntity<TripDTO> createTrip(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody TripCreationRequest request) {
 
         log.info("Received request to create trip: {} by user {}", request.name(), userId);
 
         TripDTO createdTrip = tripService.createTrip(userId, request);
-        TripResponse response = new TripResponse(createdTrip.id());
 
         log.info("Successfully created trip with ID: {}", createdTrip.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    public ResponseEntity<TripResponse> updateTrip(
+    public ResponseEntity<TripDTO> updateTrip(
             @PathVariable UUID id, @Valid @RequestBody TripUpdateRequest request) {
         log.info("Received request to update trip {} with name: {}", id, request.name());
 
         TripDTO updatedTrip = tripService.updateTrip(id, request);
-        TripResponse response = new TripResponse(updatedTrip.id());
 
         log.info("Successfully updated trip with ID: {}", updatedTrip.id());
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(updatedTrip);
     }
 
     @DeleteMapping("/{id}")

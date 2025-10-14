@@ -1,16 +1,19 @@
 package com.tomassirio.wanderer.commons.dto;
 
+import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.UUID;
 
 public record TripDTO(
         UUID id,
         String name,
-        LocalDate startDate,
-        LocalDate endDate,
-        Double totalDistance,
-        LocationDTO startingLocation,
-        LocationDTO endingLocation,
+        UUID userId,
+        TripStatus tripStatus,
         TripVisibility visibility,
-        UUID ownerId) {}
+        Integer updateRefresh,
+        Instant startTimestamp,
+        Instant endTimestamp,
+        UUID tripPlanId,
+        Instant creationTimestamp,
+        Boolean enabled) {}

@@ -12,6 +12,5 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
 
     List<Trip> findByVisibility(TripVisibility visibility);
 
-    // Added: find all trips that belong to a specific owner (by owner id)
-    List<Trip> findByOwnerId(UUID ownerId);
+    List<Trip> findByUserId(UUID userId);
 }

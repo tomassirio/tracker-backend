@@ -1,0 +1,74 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-rename-messages-to-comments
+      author: tomassirio
+      changes:
+        # Rename messages table to comments
+        - renameTable:
+            oldTableName: messages
+            newTableName: comments
+
+        # Rename text column to message
+        - renameColumn:
+            tableName: comments
+            oldColumnName: text
+            newColumnName: message
+            columnDataType: text
+
+        # Add user_id column for comment author
+        - addColumn:
+            tableName: comments
+            columns:
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+
+        # Add reactions column as JSONB
+        - addColumn:
+            tableName: comments
+            columns:
+              - column:
+                  name: reactions
+                  type: jsonb
+
+        # Add foreign key for user_id
+        - addForeignKeyConstraint:
+            baseTableName: comments
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_comments_user_id
+
+        # Create index on comments.user_id
+        - createIndex:
+            tableName: comments
+            indexName: idx_comments_user_id
+            columns:
+              - column:
+                  name: user_id
+
+        # Update the existing index name
+        - dropIndex:
+            tableName: comments
+            indexName: idx_messages_trip_id_timestamp
+        - createIndex:
+            tableName: comments
+            indexName: idx_comments_trip_id_timestamp
+            columns:
+              - column:
+                  name: trip_id
+              - column:
+                  name: timestamp
+
+        # Update foreign key constraint name
+        - dropForeignKeyConstraint:
+            baseTableName: comments
+            constraintName: fk_messages_trip_id
+        - addForeignKeyConstraint:
+            baseTableName: comments
+            baseColumnNames: trip_id
+            referencedTableName: trips
+            referencedColumnNames: id
+            constraintName: fk_comments_trip_id

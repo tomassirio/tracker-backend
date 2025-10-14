@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.commons.domain;
 
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -9,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Instant;
 import java.util.UUID;
@@ -17,41 +19,37 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Type;
 
 @Entity
-@Table(name = "locations")
+@Table(name = "responses")
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class Location {
+public class Response {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @NotNull
+    @Column(name = "user_id", nullable = false)
+    private UUID userId; // Author of the response
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "trip_id", nullable = false)
-    private Trip trip;
+    @JoinColumn(name = "comment_id", nullable = false)
+    private Comment comment;
 
-    @NotNull
-    @Column(name = "latitude", nullable = false)
-    private Double latitude;
+    @NotBlank
+    @Column(name = "message", nullable = false, columnDefinition = "TEXT")
+    private String message;
 
-    @NotNull
-    @Column(name = "longitude", nullable = false)
-    private Double longitude;
+    @Type(JsonBinaryType.class)
+    @Column(name = "reactions", columnDefinition = "jsonb")
+    private Reactions reactions;
 
     @NotNull
     @Column(nullable = false)
     private Instant timestamp;
-
-    @Column private Double altitude;
-
-    @Column private Double accuracy;
-
-    @Column(name = "battery_level")
-    private Integer batteryLevel;
-
-    @Column private String source;
 }

@@ -49,10 +49,9 @@ public class TripUpdate {
 
     @Type(JsonBinaryType.class)
     @Column(name = "reactions", columnDefinition = "jsonb")
-    private String reactions; // Can store JSON array of reactions
+    private Reactions reactions;
 
     @NotNull
     @Column(nullable = false)
     private Instant timestamp;
 }
-

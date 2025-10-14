@@ -6,4 +6,3 @@ public enum TripStatus {
     PAUSED,
     FINISHED
 }
-

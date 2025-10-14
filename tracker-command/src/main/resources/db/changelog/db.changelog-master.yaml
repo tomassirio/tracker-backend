@@ -15,3 +15,7 @@ databaseChangeLog:
       file: db/changelog/007-drop-email-from-users.yaml
   - include:
       file: db/changelog/008-refactor-to-new-trip-structure.yaml
+  - include:
+      file: db/changelog/009-rename-messages-to-comments.yaml
+  - include:
+      file: db/changelog/010-create-responses-table.yaml
