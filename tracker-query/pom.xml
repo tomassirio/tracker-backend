@@ -5,12 +5,12 @@
     <parent>
         <groupId>com.tomassirio.wanderer</groupId>
         <artifactId>tracker-backend</artifactId>
-        <version>0.2.0</version>
+        <version>0.2.1-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>tracker-query</artifactId>
-  <version>0.2.0</version>
+  <version>0.2.1-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>tracker-query</name>
     <description>Query side of CQRS - handles read operations</description>
