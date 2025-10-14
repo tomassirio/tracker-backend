@@ -13,3 +13,5 @@ databaseChangeLog:
       file: db/changelog/006-add-users-and-owner-to-trips.yaml
   - include:
       file: db/changelog/007-drop-email-from-users.yaml
+  - include:
+      file: db/changelog/008-refactor-to-new-trip-structure.yaml

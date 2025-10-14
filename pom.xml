@@ -27,6 +27,7 @@
         <google-java-format.version>1.19.2</google-java-format.version>
         <junit-platform.version>1.10.2</junit-platform.version>
         <swagger-models.version>2.2.36</swagger-models.version>
+        <hypersistence-utils.version>3.7.0</hypersistence-utils.version>
 
         <!-- Docker image configuration -->
         <docker.image.prefix>ghcr.io/tomassirio</docker.image.prefix>
@@ -81,6 +82,13 @@
                 <groupId>org.mapstruct</groupId>
                 <artifactId>mapstruct</artifactId>
                 <version>${mapstruct.version}</version>
+            </dependency>
+
+            <!-- Hypersistence Utils for JSONB support -->
+            <dependency>
+                <groupId>io.hypersistence</groupId>
+                <artifactId>hypersistence-utils-hibernate-63</artifactId>
+                <version>${hypersistence-utils.version}</version>
             </dependency>
 
             <!-- JJWT (centralized) -->

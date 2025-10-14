@@ -1,0 +1,152 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-refactor-to-new-trip-structure
+      author: tomassirio
+      changes:
+        # Create trip_updates table
+        - createTable:
+            tableName: trip_updates
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: trip_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: location
+                  type: jsonb
+                  constraints:
+                    nullable: false
+              - column:
+                  name: battery
+                  type: integer
+              - column:
+                  name: message
+                  type: text
+              - column:
+                  name: reactions
+                  type: jsonb
+              - column:
+                  name: timestamp
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+
+        # Add foreign key for trip_updates
+        - addForeignKeyConstraint:
+            baseTableName: trip_updates
+            baseColumnNames: trip_id
+            referencedTableName: trips
+            referencedColumnNames: id
+            constraintName: fk_trip_updates_trip_id
+
+        # Create index on trip_updates
+        - createIndex:
+            tableName: trip_updates
+            indexName: idx_trip_updates_trip_id_timestamp
+            columns:
+              - column:
+                  name: trip_id
+              - column:
+                  name: timestamp
+
+        # Drop old columns from trips table
+        - dropColumn:
+            tableName: trips
+            columnName: start_date
+        - dropColumn:
+            tableName: trips
+            columnName: end_date
+        - dropColumn:
+            tableName: trips
+            columnName: total_distance
+        - dropColumn:
+            tableName: trips
+            columnName: starting_location_id
+        - dropColumn:
+            tableName: trips
+            columnName: ending_location_id
+        - dropColumn:
+            tableName: trips
+            columnName: visibility
+        - dropColumn:
+            tableName: trips
+            columnName: owner_id
+
+        # Add new columns to trips table (embedded TripSettings and TripDetails)
+        - addColumn:
+            tableName: trips
+            columns:
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              # TripSettings fields (embedded)
+              - column:
+                  name: trip_status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: visibility
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: update_refresh
+                  type: integer
+              # TripDetails fields (embedded)
+              - column:
+                  name: start_timestamp
+                  type: timestamp with time zone
+              - column:
+                  name: end_timestamp
+                  type: timestamp with time zone
+              - column:
+                  name: start_location
+                  type: jsonb
+              - column:
+                  name: end_location
+                  type: jsonb
+              # Other Trip fields
+              - column:
+                  name: trip_plan_id
+                  type: uuid
+              - column:
+                  name: creation_timestamp
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: boolean
+                  constraints:
+                    nullable: false
+                  defaultValueBoolean: true
+
+        # Add foreign key to users table
+        - addForeignKeyConstraint:
+            baseTableName: trips
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_trips_user_id
+
+        # Create index on trips.user_id for better query performance
+        - createIndex:
+            tableName: trips
+            indexName: idx_trips_user_id
+            columns:
+              - column:
+                  name: user_id
+
+        # Drop locations table (no longer needed as a separate entity)
+        - dropTable:
+            tableName: locations
