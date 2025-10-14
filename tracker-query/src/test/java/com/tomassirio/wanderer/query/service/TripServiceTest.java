@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.query.repository.TripRepository;
 import com.tomassirio.wanderer.query.service.impl.TripServiceImpl;
@@ -152,5 +153,44 @@ class TripServiceTest {
         assertThat(tripDTO.visibility()).isEqualTo(TripVisibility.PROTECTED);
 
         verify(tripRepository).findAll();
+    }
+
+    @Test
+    void getTripsForUser_whenTripsExist_shouldReturnTripDTOs() {
+        // Given
+        UUID userId = TestEntityFactory.USER_ID;
+        UUID tripId = UUID.randomUUID();
+        Trip trip = TestEntityFactory.createTrip(tripId, "Owned Trip");
+        trip.setOwner(User.builder().id(userId).build());
+
+        when(tripRepository.findByOwnerId(userId)).thenReturn(List.of(trip));
+
+        // When
+        List<TripDTO> result = tripService.getTripsForUser(userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+        TripDTO dto = result.getFirst();
+        assertThat(dto.id()).isEqualTo(tripId);
+        assertThat(dto.ownerId()).isEqualTo(userId);
+
+        verify(tripRepository).findByOwnerId(userId);
+    }
+
+    @Test
+    void getTripsForUser_whenNoTripsExist_shouldReturnEmptyList() {
+        // Given
+        UUID userId = TestEntityFactory.USER_ID;
+        when(tripRepository.findByOwnerId(userId)).thenReturn(Collections.emptyList());
+
+        // When
+        List<TripDTO> result = tripService.getTripsForUser(userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        verify(tripRepository).findByOwnerId(userId);
     }
 }

@@ -12,4 +12,5 @@ public record TripDTO(
         Double totalDistance,
         LocationDTO startingLocation,
         LocationDTO endingLocation,
-        TripVisibility visibility) {}
+        TripVisibility visibility,
+        UUID ownerId) {}

@@ -1,8 +1,10 @@
 package com.tomassirio.wanderer.command.controller;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -22,6 +24,7 @@ import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.LocationDTO;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
+import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -33,7 +36,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class TripControllerTest {
@@ -51,10 +53,10 @@ class TripControllerTest {
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
 
+        // Use shared test utility from commons to register @CurrentUserId resolver
         mockMvc =
-                MockMvcBuilders.standaloneSetup(tripController)
-                        .setControllerAdvice(new GlobalExceptionHandler())
-                        .build();
+                MockMvcTestUtils.buildMockMvcWithCurrentUserResolver(
+                        tripController, new GlobalExceptionHandler());
     }
 
     @Test
@@ -75,9 +77,11 @@ class TripControllerTest {
                 TestEntityFactory.createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, 16.0);
         TripDTO expectedResponse =
                 TestEntityFactory.createTripDTO(
-                        tripId, "Summer Road Trip 2025", startLocationDTO, endLocationDTO);
+                        tripId, USER_ID, "Summer Road Trip 2025", startLocationDTO, endLocationDTO);
 
-        when(tripService.createTrip(any(TripCreationRequest.class))).thenReturn(expectedResponse);
+        doReturn(expectedResponse)
+                .when(tripService)
+                .createTrip(any(UUID.class), any(TripCreationRequest.class));
 
         // When & Then
         mockMvc.perform(
@@ -106,9 +110,15 @@ class TripControllerTest {
                 TestEntityFactory.createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, null);
         TripDTO expectedResponse =
                 TestEntityFactory.createTripDTO(
-                        tripId, "Road Trip Without Altitude", startLocationDTO, endLocationDTO);
+                        tripId,
+                        USER_ID,
+                        "Road Trip Without Altitude",
+                        startLocationDTO,
+                        endLocationDTO);
 
-        when(tripService.createTrip(any(TripCreationRequest.class))).thenReturn(expectedResponse);
+        doReturn(expectedResponse)
+                .when(tripService)
+                .createTrip(any(UUID.class), any(TripCreationRequest.class));
 
         // When & Then
         mockMvc.perform(
@@ -254,7 +264,7 @@ class TripControllerTest {
                 TestEntityFactory.createLocationDTO(UUID.randomUUID(), 34.0522, -118.2437, 71.0);
         TripDTO expectedResponse =
                 TestEntityFactory.createTripDTO(
-                        tripId, "Updated Trip Name", startLocationDTO, endLocationDTO);
+                        tripId, USER_ID, "Updated Trip Name", startLocationDTO, endLocationDTO);
 
         when(tripService.updateTrip(eq(tripId), any(TripUpdateRequest.class)))
                 .thenReturn(expectedResponse);

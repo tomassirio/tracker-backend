@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
-      id: 4
-      author: wanderer
+      id: 004-add-visibility-to-trips
+      author: tomassirio
       changes:
         - addColumn:
             tableName: trips

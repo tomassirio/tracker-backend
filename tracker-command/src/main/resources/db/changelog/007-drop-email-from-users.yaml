@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-drop-email-from-users
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - columnExists:
+            tableName: users
+            columnName: email
+      changes:
+        - dropColumn:
+            columnName: email
+            tableName: users
+      rollback:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true

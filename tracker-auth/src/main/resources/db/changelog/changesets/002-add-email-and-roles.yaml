@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-add-email-and-roles
+      author: tomassirio
+      changes:
+        - addColumn:
+            tableName: user_credentials
+            columns:
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: roles
+                  type: varchar(1000)
+        - addUniqueConstraint:
+            tableName: user_credentials
+            columnNames: email
+            constraintName: uc_user_credentials_email
+      rollback:
+        - dropUniqueConstraint:
+            constraintName: uc_user_credentials_email
+            tableName: user_credentials
+        - dropColumn:
+            columnName: email
+            tableName: user_credentials
+        - dropColumn:
+            columnName: roles
+            tableName: user_credentials
