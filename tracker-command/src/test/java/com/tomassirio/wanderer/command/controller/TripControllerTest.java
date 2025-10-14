@@ -39,6 +39,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @ExtendWith(MockitoExtension.class)
 class TripControllerTest {
 
+    private static final String TRIPS_BASE_URL = "/api/1/trips";
+    private static final String TRIP_BY_ID_URL = TRIPS_BASE_URL + "/{id}";
+
     private MockMvc mockMvc;
 
     private ObjectMapper objectMapper;
@@ -86,15 +89,15 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Summer Road Trip 2025"))
                 .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
-                .andExpect(jsonPath("$.tripStatus").value("CREATED"))
-                .andExpect(jsonPath("$.visibility").value("PUBLIC"))
+                .andExpect(jsonPath("$.tripStatus").value(TripStatus.CREATED.name()))
+                .andExpect(jsonPath("$.visibility").value(TripVisibility.PUBLIC.name()))
                 .andExpect(jsonPath("$.enabled").value(true));
     }
 
@@ -126,12 +129,12 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
-                .andExpect(jsonPath("$.visibility").value("PRIVATE"));
+                .andExpect(jsonPath("$.visibility").value(TripVisibility.PRIVATE.name()));
     }
 
     @Test
@@ -141,7 +144,7 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -154,7 +157,7 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -168,7 +171,7 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -181,7 +184,7 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -215,11 +218,11 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.visibility").value("PROTECTED"));
+                .andExpect(jsonPath("$.visibility").value(TripVisibility.PROTECTED.name()));
     }
 
     @Test
@@ -244,18 +247,18 @@ class TripControllerTest {
                         Instant.now().minusSeconds(3600),
                         true);
 
-        when(tripService.updateTrip(eq(tripId), any(TripUpdateRequest.class)))
+        when(tripService.updateTrip(any(UUID.class), eq(tripId), any(TripUpdateRequest.class)))
                 .thenReturn(expectedResponse);
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Updated Trip Name"))
-                .andExpect(jsonPath("$.visibility").value("PUBLIC"));
+                .andExpect(jsonPath("$.visibility").value(TripVisibility.PUBLIC.name()));
     }
 
     @Test
@@ -279,16 +282,16 @@ class TripControllerTest {
                         Instant.now(),
                         true);
 
-        when(tripService.updateTrip(eq(tripId), any(TripUpdateRequest.class)))
+        when(tripService.updateTrip(any(UUID.class), eq(tripId), any(TripUpdateRequest.class)))
                 .thenReturn(expectedResponse);
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.visibility").value("PRIVATE"));
+                .andExpect(jsonPath("$.visibility").value(TripVisibility.PRIVATE.name()));
     }
 
     @Test
@@ -298,12 +301,12 @@ class TripControllerTest {
         TripUpdateRequest request =
                 TestEntityFactory.createTripUpdateRequest("Updated Trip", TripVisibility.PUBLIC);
 
-        when(tripService.updateTrip(eq(tripId), any(TripUpdateRequest.class)))
+        when(tripService.updateTrip(any(UUID.class), eq(tripId), any(TripUpdateRequest.class)))
                 .thenThrow(new EntityNotFoundException("Trip not found"));
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -317,7 +320,7 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -331,7 +334,7 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -345,7 +348,7 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -355,19 +358,21 @@ class TripControllerTest {
     void deleteTrip_whenTripExists_shouldReturnNoContent() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        doNothing().when(tripService).deleteTrip(tripId);
+        doNothing().when(tripService).deleteTrip(any(UUID.class), eq(tripId));
 
         // When & Then
-        mockMvc.perform(delete("/api/1/trips/{id}", tripId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete(TRIP_BY_ID_URL, tripId)).andExpect(status().isNoContent());
     }
 
     @Test
     void deleteTrip_whenTripNotFound_shouldReturnNotFound() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        doThrow(new EntityNotFoundException("Trip not found")).when(tripService).deleteTrip(tripId);
+        doThrow(new EntityNotFoundException("Trip not found"))
+                .when(tripService)
+                .deleteTrip(any(UUID.class), eq(tripId));
 
         // When & Then
-        mockMvc.perform(delete("/api/1/trips/{id}", tripId)).andExpect(status().isNotFound());
+        mockMvc.perform(delete(TRIP_BY_ID_URL, tripId)).andExpect(status().isNotFound());
     }
 }

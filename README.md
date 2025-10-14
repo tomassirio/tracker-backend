@@ -53,21 +53,56 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ## 🗄️ Data Model
 
+### User
+- `id` (UUID) 
+- `username` (unique)
+- Represents authenticated users in the system
+
 ### Trip
-- `id`, `name`, `startDate`, `endDate`, `totalDistance`
-- `startingLocation`, `endingLocation`
+- `id` (UUID)
+- `name`, 
+- `userId` (owner)
+- `tripSettings` (visibility, status) 
+- `tripDetails`
+- `tripPlanId` (optional reference to trip plan)
+- `comments` 
+- `tripUpdates` (collections)
+- `creationTimestamp`
+- `enabled`
 
-### Location
-- `id`, `tripId`, `lat`, `lon`, `timestamp`
-- `alt`, `acc`, `battery`, `source`
+### TripPlan
+- `id` (UUID) 
+- `name`
+- `planType` (SIMPLE, MULTI-DAY)
+- `userId` (owner)
+- `metadata` (JSONB for flexible plan data)
+- `creationTimestamp`
+- `updateTimestamp`
 
-### Message
-- `id`, `tripId`, `text`, `timestamp`
-- `locationId` (optional reference)
+### TripUpdate
+- `id` (UUID)
+- `tripId`
+- `location` (GeoLocation with lat/lon in JSONB)
+- `battery`
+- `message`
+- `reactions` (JSONB)
+- `timestamp`
 
-### Achievement
-- `id`, `tripId`, `type`, `unlockedAt`
-- `description`, `distanceThreshold`
+### Comment
+- `id` (UUID)
+- `tripId`
+- `userId`
+- `message`
+- `timestamp`
+
+### Supporting Types
+- **GeoLocation**: Latitude and longitude coordinates
+- **TripSettings**: Visibility (PUBLIC, PRIVATE, PROTECTED) and Status
+- **TripDetails**: Additional trip information
+- **TripVisibility**: PUBLIC, PRIVATE, PROTECTED
+- **TripStatus**: CREATED, IN_PROGRESS, PAUSED, FINISHED
+- **TripPlanType**: ITINERARY, ROUTE, CHECKLIST
+- **ReactionType**: Types of reactions to trip updates
 
 ## 🏆 Achievements System
 
@@ -83,20 +118,62 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ## 🌐 API Endpoints
 
-### Command Side (Write Operations) - Port 8081
+### Authentication API (tracker-auth) - Port 8083
 ```
-POST /api/1/{tripId}/location     → Submit location update
-POST /api/1/{tripId}/messages     → Submit status message
+POST /api/1/auth/login      → Login with username/password, returns JWT token
+POST /api/1/auth/register   → Register new user, returns JWT token
 ```
 
-### Query Side (Read Operations) - Port 8082
+### User APIs
+
+#### Command (tracker-command) - Port 8081
 ```
-GET /api/1/{tripId}/location/{locationId}  → Fetch specific location
-GET /api/1/{tripId}/locations              → Location history (with date filters)
-GET /api/1/{tripId}/location/latest        → Latest position
-GET /api/1/{tripId}/messages               → List status messages
-GET /api/1/{tripId}/achievements           → Unlocked achievements
-GET /api/1/{tripId}/weather/latest         → Live weather data
+POST /api/1/users           → Create new user
+```
+
+#### Query (tracker-query) - Port 8082
+```
+GET /api/1/users/{id}              → Get user by ID (Auth: ADMIN, USER)
+GET /api/1/users/username/{username} → Get user by username (Public)
+GET /api/1/users/me                → Get current authenticated user profile
+```
+
+### Trip APIs
+
+#### Command (tracker-command) - Port 8081
+```
+POST   /api/1/trips                    → Create new trip
+PUT    /api/1/trips/{id}               → Update trip
+PATCH  /api/1/trips/{id}/visibility    → Change trip visibility (PUBLIC/PRIVATE/PROTECTED)
+PATCH  /api/1/trips/{id}/status        → Change trip status (PLANNING/ACTIVE/COMPLETED/CANCELLED)
+DELETE /api/1/trips/{id}               → Delete trip
+POST   /api/1/trips/{tripId}/updates   → Create trip update (location, battery, message)
+```
+
+#### Query (tracker-query) - Port 8082
+```
+GET /api/1/trips/{id}      → Get trip by ID
+GET /api/1/trips           → Get all trips (Admin only)
+GET /api/1/trips/me        → Get current user's trips
+```
+
+### Trip Plan APIs (tracker-command) - Port 8081
+```
+POST   /api/1/trips/plans   → Create trip plan
+PUT    /api/1/trips/plans/{planId}   → Update trip plan
+DELETE /api/1/trips/plans/{planId}   → Delete trip plan
+```
+
+### Legacy/Planned Endpoints
+```
+POST /api/1/{tripId}/location          → Submit location update (planned)
+POST /api/1/{tripId}/messages          → Submit status message (planned)
+GET  /api/1/{tripId}/location/{locationId} → Fetch specific location (planned)
+GET  /api/1/{tripId}/locations         → Location history with filters (planned)
+GET  /api/1/{tripId}/location/latest   → Latest position (planned)
+GET  /api/1/{tripId}/messages          → List status messages (planned)
+GET  /api/1/{tripId}/achievements      → Unlocked achievements (planned)
+GET  /api/1/{tripId}/weather/latest    → Live weather data (planned)
 ```
 
 ## 📌 Functional Requirements
@@ -221,14 +298,31 @@ The companion frontend application will feature:
 - ✅ Multi-module CQRS structure
 - ✅ Basic Spring Boot applications
 - ✅ Application configuration
-- ⏳ Domain entities and CQRS infrastructure
-- ⏳ REST API implementation
-- ⏳ Database integration
-- ⏳ Security implementation
+- ✅ Domain entities and CQRS infrastructure
+- ✅ REST API implementation (User, Trip, TripPlan, TripUpdate)
+- ✅ Database integration (PostgreSQL with JPA/Hibernate)
+- ✅ Security implementation (JWT authentication, Role-based authorization)
+- ✅ User management (Create, Query by ID/username, Current user context)
+- ✅ Trip CRUD operations (Create, Read, Update, Delete)
+- ✅ Trip status and visibility management
+- ✅ Trip Plans (Create, Update, Delete)
+- ✅ Trip Updates with location tracking
+- ✅ Global exception handling
+- ✅ Docker configuration (Jib plugin, docker-compose)
+- ✅ CI/CD pipeline (GitHub Actions)
+- ✅ API documentation (Swagger/OpenAPI)
+- ✅ Unit and Integration tests
+- ✅ MapStruct DTO mapping
+- ✅ Code formatting (Spotless with Google Java Format)
+- ⏳ Trip Updates Query API
+- ⏳ Comments system (CRUD operations)
+- ⏳ Reactions system
 - ⏳ Weather API integration
 - ⏳ Achievement system
-- ⏳ Docker configuration
 - ⏳ Kubernetes manifests
+- ⏳ Real-time updates (WebSocket/SSE)
+- ⏳ Search and filtering
+- ⏳ Pagination support
 
 ## 🤝 Contributing
 

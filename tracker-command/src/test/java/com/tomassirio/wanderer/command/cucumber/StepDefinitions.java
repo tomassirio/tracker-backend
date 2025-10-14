@@ -51,6 +51,8 @@ public class StepDefinitions {
     private static final String USERS_ENDPOINT = API_BASE + "/users";
     private static final String TRIPS_ENDPOINT = API_BASE + "/trips";
 
+    @Getter @Setter private UUID lastCreatedTripId;
+
     static {
         mapper.registerModule(new JavaTimeModule());
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -67,6 +69,7 @@ public class StepDefinitions {
         userRepository.deleteAll();
         setTempAuthHeader(null);
         setLastCreatedUsername(null);
+        setLastCreatedTripId(null);
     }
 
     @When("I create a user with username {string} and email {string}")
@@ -104,6 +107,16 @@ public class StepDefinitions {
                 TRIPS_ENDPOINT,
                 latestResponse.getStatusCode().value());
         log.info("[Cucumber] POST {} response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
+
+        // Store trip ID if creation was successful
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                lastCreatedTripId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored trip ID: {}", lastCreatedTripId);
+            }
+        }
     }
 
     @Then("the response status should be {int}")
@@ -164,6 +177,139 @@ public class StepDefinitions {
     public void i_create_a_trip_without_token(String name) throws Exception {
         setTempAuthHeader(null);
         i_create_a_trip_with_name_using_that_token(name);
+    }
+
+    @When("I update that trip with name {string} using that token")
+    public void i_update_that_trip_with_name_using_that_token(String name) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to update");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        body.put("visibility", "PUBLIC");
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId;
+        log.info("[Cucumber] PUT {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.PUT, request, String.class);
+
+        log.info(
+                "[Cucumber] PUT {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] PUT {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I update that trip with name {string} without token")
+    public void i_update_that_trip_with_name_without_token(String name) throws Exception {
+        setTempAuthHeader(null);
+        i_update_that_trip_with_name_using_that_token(name);
+    }
+
+    @When("I delete that trip using that token")
+    public void i_delete_that_trip_using_that_token() {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to delete");
+
+        HttpHeaders headers = new HttpHeaders();
+        if (getTempAuthHeader() != null) {
+            headers.set("Authorization", getTempAuthHeader());
+        }
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId;
+        log.info("[Cucumber] DELETE {}", url);
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.DELETE, request, String.class);
+
+        log.info(
+                "[Cucumber] DELETE {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I delete that trip without token")
+    public void i_delete_that_trip_without_token() {
+        setTempAuthHeader(null);
+        i_delete_that_trip_using_that_token();
+    }
+
+    @When("I change that trip visibility to {string} using that token")
+    public void i_change_that_trip_visibility_using_that_token(String visibility) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to change visibility");
+
+        Map<String, Object> body = Map.of("visibility", visibility);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/visibility";
+        log.info("[Cucumber] PATCH {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.PATCH, request, String.class);
+
+        log.info(
+                "[Cucumber] PATCH {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] PATCH {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I change that trip status to {string} using that token")
+    public void i_change_that_trip_status_using_that_token(String status) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to change status");
+
+        Map<String, Object> body = Map.of("status", status);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/status";
+        log.info("[Cucumber] PATCH {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.PATCH, request, String.class);
+
+        log.info(
+                "[Cucumber] PATCH {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] PATCH {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I add a trip update with message {string} using that token")
+    public void i_add_a_trip_update_with_message_using_that_token(String message) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to add update");
+
+        Map<String, Object> body = new HashMap<>();
+        Map<String, Object> location = Map.of("latitude", 10.0, "longitude", 20.0, "altitude", 0.0);
+        body.put("location", location);
+        body.put("message", message);
+        body.put("battery", 75);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/updates";
+        log.info("[Cucumber] POST {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @Then("the trip name should be {string}")
+    public void the_trip_name_should_be(String expectedName) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
+        String actualName = json.get("name").toString();
+        Assertions.assertEquals(expectedName, actualName, "Trip name does not match");
     }
 
     private HttpEntity<String> createJsonRequest(Map<String, Object> body)

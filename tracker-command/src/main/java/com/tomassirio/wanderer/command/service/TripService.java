@@ -2,6 +2,8 @@ package com.tomassirio.wanderer.command.service;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
+import com.tomassirio.wanderer.commons.domain.TripStatus;
+import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import java.util.UUID;
 
@@ -34,13 +36,16 @@ public interface TripService {
      * locations. If new location coordinates are provided, new location entities will be created
      * and associated with the trip.
      *
+     * @param userId the UUID of the user making the request (for ownership validation)
      * @param id the UUID of the trip to update
      * @param request the trip update request containing the new trip details
      * @return a {@link TripDTO} containing the updated trip data
      * @throws jakarta.persistence.EntityNotFoundException if no trip exists with the given ID
      * @throws IllegalArgumentException if the request contains invalid data
+     * @throws org.springframework.security.access.AccessDeniedException if user doesn't own the
+     *     trip
      */
-    TripDTO updateTrip(UUID id, TripUpdateRequest request);
+    TripDTO updateTrip(UUID userId, UUID id, TripUpdateRequest request);
 
     /**
      * Deletes a trip by its ID.
@@ -48,8 +53,37 @@ public interface TripService {
      * <p>This operation will cascade and delete all associated data including locations and
      * messages related to this trip.
      *
+     * @param userId the UUID of the user making the request (for ownership validation)
      * @param id the UUID of the trip to delete
      * @throws jakarta.persistence.EntityNotFoundException if no trip exists with the given ID
+     * @throws org.springframework.security.access.AccessDeniedException if user doesn't own the
+     *     trip
      */
-    void deleteTrip(UUID id);
+    void deleteTrip(UUID userId, UUID id);
+
+    /**
+     * Changes the visibility of a trip.
+     *
+     * @param userId the UUID of the user making the request (for ownership validation)
+     * @param id the UUID of the trip to update
+     * @param visibility the new visibility setting
+     * @return a {@link TripDTO} containing the updated trip data
+     * @throws jakarta.persistence.EntityNotFoundException if no trip exists with the given ID
+     * @throws org.springframework.security.access.AccessDeniedException if user doesn't own the
+     *     trip
+     */
+    TripDTO changeVisibility(UUID userId, UUID id, TripVisibility visibility);
+
+    /**
+     * Changes the status of a trip (start, pause, finish).
+     *
+     * @param userId the UUID of the user making the request (for ownership validation)
+     * @param id the UUID of the trip to update
+     * @param status the new status
+     * @return a {@link TripDTO} containing the updated trip data
+     * @throws jakarta.persistence.EntityNotFoundException if no trip exists with the given ID
+     * @throws org.springframework.security.access.AccessDeniedException if user doesn't own the
+     *     trip
+     */
+    TripDTO changeStatus(UUID userId, UUID id, TripStatus status);
 }

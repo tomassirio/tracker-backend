@@ -39,9 +39,9 @@ public class Trip {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @NotNull @Embedded private TripSettings tripSettings;
+    @Embedded private TripSettings tripSettings;
 
-    @NotNull @Embedded private TripDetails tripDetails;
+    @Embedded private TripDetails tripDetails;
 
     @Column(name = "trip_plan_id")
     private UUID tripPlanId; // Optional reference to a trip plan

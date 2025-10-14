@@ -14,6 +14,9 @@ public record TripUpdateRequest(
                         max = 100,
                         message = "Trip name must be between 3 and 100 characters")
                 String name,
-        @Schema(description = "Trip visibility", example = "PUBLIC")
+        @Schema(
+                        description = "Trip visibility",
+                        example = "PUBLIC",
+                        allowableValues = {"PRIVATE", "PROTECTED", "PUBLIC"})
                 @NotNull(message = "Visibility is required")
                 TripVisibility visibility) {}

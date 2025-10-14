@@ -3,7 +3,6 @@ databaseChangeLog:
       id: 011-create-trip-plans-table
       author: tomassirio
       changes:
-        # Create trip_plans table with single table inheritance
         - createTable:
             tableName: trip_plans
             columns:
@@ -12,6 +11,11 @@ databaseChangeLog:
                   type: uuid
                   constraints:
                     primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
                     nullable: false
               - column:
                   name: plan_type
@@ -49,9 +53,9 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: distance_per_day
-                  type: double precision
-                  remarks: "Only used for MULTI_DAY plan type"
+                  name: metadata
+                  type: jsonb
+                  remarks: "Flexible metadata for plan-specific data (e.g., distance_per_day for MULTI_DAY)"
 
         # Add foreign key for user_id
         - addForeignKeyConstraint:
@@ -76,4 +80,3 @@ databaseChangeLog:
             columns:
               - column:
                   name: plan_type
-
