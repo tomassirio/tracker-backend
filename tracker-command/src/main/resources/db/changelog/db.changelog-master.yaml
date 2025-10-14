@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/009-rename-messages-to-comments.yaml
   - include:
       file: db/changelog/010-create-responses-table.yaml
+  - include:
+      file: db/changelog/011-create-trip-plans-table.yaml
