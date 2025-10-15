@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.service.impl;
 
+import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.mapper.TripMapper;
@@ -45,6 +46,24 @@ public class TripServiceImpl implements TripService {
     @Override
     public List<TripDTO> getTripsForUser(UUID userId) {
         return tripRepository.findByUserId(userId).stream()
+                .map(tripMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TripDTO> getTripsForUserWithVisibility(UUID userId) {
+        List<TripVisibility> visibilities =
+                List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED);
+        return tripRepository.findByUserIdAndVisibilityIn(userId, visibilities).stream()
+                .map(tripMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TripDTO> getOngoingPublicTrips() {
+        return tripRepository
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS)
+                .stream()
                 .map(tripMapper::toDTO)
                 .collect(Collectors.toList());
     }

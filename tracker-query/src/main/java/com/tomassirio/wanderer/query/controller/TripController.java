@@ -70,4 +70,32 @@ public class TripController {
         log.info("Successfully retrieved {} trips for user {}", trips.size(), userId);
         return ResponseEntity.ok(trips);
     }
+
+    @GetMapping("/users/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Get trips by another user",
+            description =
+                    "Retrieves trips by another user, respecting visibility (PUBLIC and PROTECTED)")
+    public ResponseEntity<List<TripDTO>> getTripsByUser(@PathVariable UUID userId) {
+        log.info("Received request to retrieve trips for user: {}", userId);
+
+        List<TripDTO> trips = tripService.getTripsForUserWithVisibility(userId);
+
+        log.info("Successfully retrieved {} trips for user {}", trips.size(), userId);
+        return ResponseEntity.ok(trips);
+    }
+
+    @GetMapping("/public")
+    @Operation(
+            summary = "Get ongoing public trips",
+            description = "Retrieves all public trips that are currently in progress")
+    public ResponseEntity<List<TripDTO>> getOngoingPublicTrips() {
+        log.info("Received request to retrieve ongoing public trips");
+
+        List<TripDTO> trips = tripService.getOngoingPublicTrips();
+
+        log.info("Successfully retrieved {} ongoing public trips", trips.size());
+        return ResponseEntity.ok(trips);
+    }
 }
