@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface TripRepository extends JpaRepository<Trip, UUID> {
 
-    List<Trip> findByVisibility(TripVisibility visibility);
+    List<Trip> findByTripSettingsVisibility(TripVisibility visibility);
 
     List<Trip> findByUserId(UUID userId);
 }

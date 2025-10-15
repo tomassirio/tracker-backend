@@ -37,7 +37,7 @@ public class TripServiceImpl implements TripService {
 
     @Override
     public List<TripDTO> getPublicTrips() {
-        return tripRepository.findByVisibility(TripVisibility.PUBLIC).stream()
+        return tripRepository.findByTripSettingsVisibility(TripVisibility.PUBLIC).stream()
                 .map(tripMapper::toDTO)
                 .collect(Collectors.toList());
     }
