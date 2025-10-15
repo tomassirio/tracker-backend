@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
@@ -38,6 +39,7 @@ public class StepDefinitions {
     @Autowired private UserRepository userRepository;
     @Autowired private TripRepository tripRepository;
     @Autowired private TripPlanRepository tripPlanRepository;
+    @Autowired private CommentRepository commentRepository;
 
     private ResponseEntity<String> latestResponse;
 
@@ -56,6 +58,7 @@ public class StepDefinitions {
 
     @Getter @Setter private UUID lastCreatedTripId;
     @Getter @Setter private UUID lastCreatedTripPlanId;
+    @Getter @Setter private UUID lastCreatedCommentId;
 
     static {
         mapper.registerModule(new JavaTimeModule());
@@ -69,6 +72,7 @@ public class StepDefinitions {
     @Given("an empty system")
     public void an_empty_system() {
         // clear repositories to ensure clean state
+        commentRepository.deleteAll();
         tripPlanRepository.deleteAll();
         tripRepository.deleteAll();
         userRepository.deleteAll();
@@ -76,6 +80,7 @@ public class StepDefinitions {
         setLastCreatedUsername(null);
         setLastCreatedTripId(null);
         setLastCreatedTripPlanId(null);
+        setLastCreatedCommentId(null);
     }
 
     @When("I create a user with username {string} and email {string}")
@@ -318,39 +323,6 @@ public class StepDefinitions {
         Assertions.assertEquals(expectedName, actualName, "Trip name does not match");
     }
 
-    private HttpEntity<String> createJsonRequest(Map<String, Object> body)
-            throws JsonProcessingException {
-        return createJsonRequest(body, null);
-    }
-
-    private HttpEntity<String> createJsonRequest(Map<String, Object> body, String authHeader)
-            throws JsonProcessingException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        if (authHeader != null) headers.set("Authorization", authHeader);
-        return new HttpEntity<>(mapper.writeValueAsString(body), headers);
-    }
-
-    private String buildTokenForLastUser(
-            String roles, String secret, Map<String, Object> extraClaims) throws Exception {
-        String username = getLastCreatedUsername();
-        Assertions.assertNotNull(username, "No known user to create a token for");
-        Optional<?> opt = userRepository.findByUsername(username);
-        UUID id;
-        if (opt.isPresent()) {
-            id = ((User) opt.get()).getId();
-        } else {
-            var list = userRepository.findAll();
-            Assertions.assertFalse(list.isEmpty(), "No users available to create token");
-            id = list.getLast().getId();
-        }
-        Map<String, Object> payload = new HashMap<>();
-        payload.put("sub", id.toString());
-        payload.put("roles", roles);
-        if (extraClaims != null) payload.putAll(extraClaims);
-        return JwtBuilder.buildJwt(payload, secret);
-    }
-
     // ========== Trip Plan Step Definitions ==========
 
     @When("I create a trip plan with name {string} using that token")
@@ -462,5 +434,184 @@ public class StepDefinitions {
         Assertions.assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
         String actualName = json.get("name").toString();
         Assertions.assertEquals(expectedName, actualName, "Trip plan name does not match");
+    }
+
+    // ========== Comment Step Definitions ==========
+
+    @When("I create a comment with message {string} on that trip using that token")
+    public void i_create_a_comment_with_message_on_that_trip_using_that_token(String message)
+            throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to add comment");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("message", message);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/comments";
+        log.info("[Cucumber] POST {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST {} response body: {}", url, latestResponse.getBody());
+
+        // Store comment ID if creation was successful
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                lastCreatedCommentId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored comment ID: {}", lastCreatedCommentId);
+            }
+        }
+    }
+
+    @When("I create a comment with message {string} on that trip without token")
+    public void i_create_a_comment_with_message_on_that_trip_without_token(String message)
+            throws Exception {
+        setTempAuthHeader(null);
+        i_create_a_comment_with_message_on_that_trip_using_that_token(message);
+    }
+
+    @When("I create a reply with message {string} on that comment using that token")
+    public void i_create_a_reply_with_message_on_that_comment_using_that_token(String message)
+            throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to add reply");
+        Assertions.assertNotNull(lastCreatedCommentId, "No comment ID stored to reply to");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("message", message);
+        body.put("parentCommentId", lastCreatedCommentId.toString());
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/comments";
+        log.info("[Cucumber] POST {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST {} response body: {}", url, latestResponse.getBody());
+
+        // Store reply ID if creation was successful
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                UUID replyId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored reply ID: {}", replyId);
+            }
+        }
+    }
+
+    @When("I create a reply with message {string} on that comment without token")
+    public void i_create_a_reply_with_message_on_that_comment_without_token(String message)
+            throws Exception {
+        setTempAuthHeader(null);
+        i_create_a_reply_with_message_on_that_comment_using_that_token(message);
+    }
+
+    @When("I add a reaction {string} to that comment using that token")
+    public void i_add_a_reaction_to_that_comment_using_that_token(String reactionType)
+            throws Exception {
+        Assertions.assertNotNull(lastCreatedCommentId, "No comment ID stored to add reaction");
+
+        Map<String, Object> body = Map.of("reactionType", reactionType);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/comments/" + lastCreatedCommentId + "/reactions";
+        log.info("[Cucumber] POST {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I add a reaction {string} to that comment without token")
+    public void i_add_a_reaction_to_that_comment_without_token(String reactionType)
+            throws Exception {
+        setTempAuthHeader(null);
+        i_add_a_reaction_to_that_comment_using_that_token(reactionType);
+    }
+
+    @When("I remove a reaction {string} from that comment using that token")
+    public void i_remove_a_reaction_from_that_comment_using_that_token(String reactionType)
+            throws Exception {
+        Assertions.assertNotNull(lastCreatedCommentId, "No comment ID stored to remove reaction");
+
+        Map<String, Object> body = Map.of("reactionType", reactionType);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/comments/" + lastCreatedCommentId + "/reactions";
+        log.info("[Cucumber] DELETE {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.DELETE, request, String.class);
+
+        log.info(
+                "[Cucumber] DELETE {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] DELETE {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I remove a reaction {string} from that comment without token")
+    public void i_remove_a_reaction_from_that_comment_without_token(String reactionType)
+            throws Exception {
+        setTempAuthHeader(null);
+        i_remove_a_reaction_from_that_comment_using_that_token(reactionType);
+    }
+
+    @And("the response contains a comment id")
+    public void the_response_contains_a_comment_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("id"), "Response does not contain 'id' field");
+        UUID parsed = UUID.fromString(json.get("id").toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    private HttpEntity<String> createJsonRequest(Map<String, Object> body)
+            throws JsonProcessingException {
+        return createJsonRequest(body, null);
+    }
+
+    private HttpEntity<String> createJsonRequest(Map<String, Object> body, String authHeader)
+            throws JsonProcessingException {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (authHeader != null) headers.set("Authorization", authHeader);
+        return new HttpEntity<>(mapper.writeValueAsString(body), headers);
+    }
+
+    private String buildTokenForLastUser(
+            String roles, String secret, Map<String, Object> extraClaims) throws Exception {
+        String username = getLastCreatedUsername();
+        Assertions.assertNotNull(username, "No known user to create a token for");
+        Optional<?> opt = userRepository.findByUsername(username);
+        UUID id;
+        if (opt.isPresent()) {
+            id = ((User) opt.get()).getId();
+        } else {
+            var list = userRepository.findAll();
+            Assertions.assertFalse(list.isEmpty(), "No users available to create token");
+            id = list.getLast().getId();
+        }
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("sub", id.toString());
+        payload.put("roles", roles);
+        if (extraClaims != null) payload.putAll(extraClaims);
+        return JwtBuilder.buildJwt(payload, secret);
     }
 }
