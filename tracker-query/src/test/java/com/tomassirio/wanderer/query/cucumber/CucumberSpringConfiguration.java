@@ -2,6 +2,8 @@ package com.tomassirio.wanderer.query.cucumber;
 
 import com.tomassirio.wanderer.commons.cucumber.BaseCucumberSpringConfiguration;
 import com.tomassirio.wanderer.query.TrackerQueryApplication;
+import com.tomassirio.wanderer.query.repository.CommentRepository;
+import com.tomassirio.wanderer.query.repository.TripPlanRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
 import com.tomassirio.wanderer.query.repository.UserRepository;
 import io.cucumber.spring.CucumberContextConfiguration;
@@ -17,4 +19,8 @@ public class CucumberSpringConfiguration extends BaseCucumberSpringConfiguration
     @MockitoBean public TripRepository tripRepository;
 
     @MockitoBean public UserRepository userRepository;
+
+    @MockitoBean public CommentRepository commentRepository;
+
+    @MockitoBean public TripPlanRepository tripPlanRepository;
 }
