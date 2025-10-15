@@ -5,6 +5,9 @@ import com.tomassirio.wanderer.auth.dto.LoginResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import com.tomassirio.wanderer.auth.service.AuthService;
 import com.tomassirio.wanderer.auth.service.JwtService;
+import com.tomassirio.wanderer.commons.constants.ApiConstants;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,21 +22,26 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping("/api/1/auth")
+@RequestMapping(ApiConstants.AUTH_PATH)
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Endpoints for user authentication and registration")
 public class AuthController {
 
     private final AuthService authService;
     private final JwtService jwtService;
 
-    @PostMapping("/login")
+    @PostMapping(ApiConstants.LOGIN_ENDPOINT)
+    @Operation(summary = "User login", description = "Authenticates a user and returns a JWT token")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         String token = authService.login(request.username(), request.password());
         long expiresIn = jwtService.getExpirationMs();
         return ResponseEntity.ok(new LoginResponse(token, "Bearer", expiresIn));
     }
 
-    @PostMapping("/register")
+    @PostMapping(ApiConstants.REGISTER_ENDPOINT)
+    @Operation(
+            summary = "User registration",
+            description = "Registers a new user and returns a JWT token")
     public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         LoginResponse resp = authService.register(request);
         return ResponseEntity.status(201).body(resp);

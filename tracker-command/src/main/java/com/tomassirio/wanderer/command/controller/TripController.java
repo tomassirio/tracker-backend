@@ -7,10 +7,13 @@ import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.dto.TripVisibilityRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
+import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.dto.TripUpdateDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -34,9 +37,10 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping("/api/1/trips")
+@RequestMapping(ApiConstants.TRIPS_PATH)
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Trips", description = "Endpoints for managing trips")
 public class TripController {
 
     private final TripService tripService;
@@ -44,6 +48,9 @@ public class TripController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Create a new trip",
+            description = "Creates a new trip with the provided details")
     public ResponseEntity<TripDTO> createTrip(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody TripCreationRequest request) {
@@ -56,8 +63,9 @@ public class TripController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping(ApiConstants.TRIP_BY_ID_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(summary = "Update a trip", description = "Updates an existing trip with new details")
     public ResponseEntity<TripDTO> updateTrip(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID id,
@@ -74,8 +82,11 @@ public class TripController {
         return ResponseEntity.ok(updatedTrip);
     }
 
-    @PatchMapping("/{id}/visibility")
+    @PatchMapping(ApiConstants.TRIP_VISIBILITY_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Change trip visibility",
+            description = "Updates the visibility setting of a trip (public/private)")
     public ResponseEntity<TripDTO> changeVisibility(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID id,
@@ -88,8 +99,11 @@ public class TripController {
         return ResponseEntity.ok(updatedTrip);
     }
 
-    @PatchMapping("/{id}/status")
+    @PatchMapping(ApiConstants.TRIP_STATUS_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Change trip status",
+            description = "Updates the status of a trip (planning/in_progress/completed/cancelled)")
     public ResponseEntity<TripDTO> changeStatus(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID id,
@@ -106,8 +120,9 @@ public class TripController {
         return ResponseEntity.ok(updatedTrip);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping(ApiConstants.TRIP_BY_ID_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(summary = "Delete a trip", description = "Deletes a trip and all associated data")
     public ResponseEntity<Void> deleteTrip(
             @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID id) {
         log.info("Received request to delete trip {} by user {}", id, userId);
@@ -118,8 +133,12 @@ public class TripController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{tripId}/updates")
+    @PostMapping(ApiConstants.TRIP_UPDATES_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Create a trip update",
+            description =
+                    "Adds a new update to a trip with location, battery, and optional message")
     public ResponseEntity<TripUpdateDTO> createTripUpdate(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID tripId,

@@ -98,10 +98,10 @@ class TripPlanServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(planId);
+        assertThat(result.id()).isEqualTo(planId.toString());
         assertThat(result.name()).isEqualTo("Europe Summer Trip");
         assertThat(result.planType()).isEqualTo(TripPlanType.SIMPLE);
-        assertThat(result.userId()).isEqualTo(userId);
+        assertThat(result.userId()).isEqualTo(userId.toString());
         assertThat(result.startDate()).isEqualTo(startDate);
         assertThat(result.endDate()).isEqualTo(endDate);
         assertThat(result.startLocation()).isEqualTo(startLocation);
@@ -286,7 +286,7 @@ class TripPlanServiceImplTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(planId);
+        assertThat(result.id()).isEqualTo(planId.toString());
         assertThat(result.name()).isEqualTo("Updated Plan Name");
         assertThat(result.startDate()).isEqualTo(startDate.plusDays(1));
         assertThat(result.endDate()).isEqualTo(endDate.plusDays(1));

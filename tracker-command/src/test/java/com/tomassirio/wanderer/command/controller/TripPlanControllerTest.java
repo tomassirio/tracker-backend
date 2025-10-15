@@ -27,6 +27,7 @@ import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,15 +76,16 @@ class TripPlanControllerTest {
 
         TripPlanDTO expectedResponse =
                 new TripPlanDTO(
-                        planId,
+                        planId.toString(),
+                        USER_ID.toString(),
                         "Europe Summer Trip 2025",
                         TripPlanType.SIMPLE,
-                        USER_ID,
-                        Instant.now(),
                         request.startDate(),
                         request.endDate(),
                         startLocation,
-                        endLocation);
+                        endLocation,
+                        List.of(),
+                        Instant.now());
 
         when(tripPlanService.createTripPlan(any(UUID.class), any(TripPlanCreationRequest.class)))
                 .thenReturn(expectedResponse);
@@ -124,15 +126,16 @@ class TripPlanControllerTest {
         UUID planId = UUID.randomUUID();
         TripPlanDTO expectedResponse =
                 new TripPlanDTO(
-                        planId,
+                        planId.toString(),
+                        USER_ID.toString(),
                         "Multi-Day Adventure",
                         TripPlanType.MULTI_DAY,
-                        USER_ID,
-                        Instant.now(),
                         startDate,
                         endDate,
                         startLocation,
-                        endLocation);
+                        endLocation,
+                        List.of(),
+                        Instant.now());
 
         when(tripPlanService.createTripPlan(any(UUID.class), any(TripPlanCreationRequest.class)))
                 .thenReturn(expectedResponse);
@@ -309,15 +312,16 @@ class TripPlanControllerTest {
 
         TripPlanDTO expectedResponse =
                 new TripPlanDTO(
-                        planId,
+                        planId.toString(),
+                        USER_ID.toString(),
                         "Updated Plan Name",
                         TripPlanType.SIMPLE,
-                        USER_ID,
-                        Instant.now(),
                         request.startDate(),
                         request.endDate(),
                         startLocation,
-                        endLocation);
+                        endLocation,
+                        List.of(),
+                        Instant.now());
 
         when(tripPlanService.updateTripPlan(
                         any(UUID.class), eq(planId), any(TripPlanUpdateRequest.class)))
@@ -348,15 +352,16 @@ class TripPlanControllerTest {
 
         TripPlanDTO expectedResponse =
                 new TripPlanDTO(
-                        planId,
+                        planId.toString(),
+                        USER_ID.toString(),
                         "Plan Name",
                         TripPlanType.SIMPLE,
-                        USER_ID,
-                        Instant.now(),
                         newStartDate,
                         newEndDate,
                         location,
-                        location);
+                        location,
+                        List.of(),
+                        Instant.now());
 
         when(tripPlanService.updateTripPlan(
                         any(UUID.class), eq(planId), any(TripPlanUpdateRequest.class)))

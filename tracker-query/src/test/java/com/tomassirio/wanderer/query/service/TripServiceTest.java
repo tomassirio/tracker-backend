@@ -43,11 +43,11 @@ class TripServiceTest {
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(tripId);
+        assertThat(result.id()).isEqualTo(tripId.toString());
         assertThat(result.name()).isEqualTo("Test Trip");
-        assertThat(result.userId()).isEqualTo(TestEntityFactory.USER_ID);
-        assertThat(result.visibility()).isEqualTo(TripVisibility.PUBLIC);
-        assertThat(result.tripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(result.userId()).isEqualTo(TestEntityFactory.USER_ID.toString());
+        assertThat(result.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(result.tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(result.enabled()).isTrue();
 
         verify(tripRepository).findById(tripId);
@@ -85,11 +85,11 @@ class TripServiceTest {
         assertThat(result).isNotNull();
         assertThat(result).hasSize(2);
         assertThat(result.getFirst().name()).isEqualTo("Trip 1");
-        assertThat(result.get(0).visibility()).isEqualTo(TripVisibility.PUBLIC);
-        assertThat(result.get(0).tripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(result.get(0).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(result.get(0).tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(result.get(1).name()).isEqualTo("Trip 2");
-        assertThat(result.get(1).visibility()).isEqualTo(TripVisibility.PRIVATE);
-        assertThat(result.get(1).tripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(result.get(1).tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
+        assertThat(result.get(1).tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
 
         verify(tripRepository).findAll();
     }
@@ -125,11 +125,11 @@ class TripServiceTest {
         // Then
         assertThat(result).hasSize(1);
         TripDTO tripDTO = result.getFirst();
-        assertThat(tripDTO.id()).isEqualTo(tripId);
+        assertThat(tripDTO.id()).isEqualTo(tripId.toString());
         assertThat(tripDTO.name()).isEqualTo("Summer Road Trip");
-        assertThat(tripDTO.userId()).isEqualTo(TestEntityFactory.USER_ID);
-        assertThat(tripDTO.visibility()).isEqualTo(TripVisibility.PROTECTED);
-        assertThat(tripDTO.tripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(tripDTO.userId()).isEqualTo(TestEntityFactory.USER_ID.toString());
+        assertThat(tripDTO.tripSettings().visibility()).isEqualTo(TripVisibility.PROTECTED);
+        assertThat(tripDTO.tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(tripDTO.enabled()).isTrue();
         assertThat(tripDTO.creationTimestamp()).isNotNull();
 
@@ -152,8 +152,8 @@ class TripServiceTest {
         assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
         TripDTO dto = result.getFirst();
-        assertThat(dto.id()).isEqualTo(tripId);
-        assertThat(dto.userId()).isEqualTo(userId);
+        assertThat(dto.id()).isEqualTo(tripId.toString());
+        assertThat(dto.userId()).isEqualTo(userId.toString());
         assertThat(dto.name()).isEqualTo("Owned Trip");
 
         verify(tripRepository).findByUserId(userId);

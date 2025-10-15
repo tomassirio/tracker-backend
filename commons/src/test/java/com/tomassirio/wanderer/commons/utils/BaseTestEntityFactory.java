@@ -2,7 +2,10 @@ package com.tomassirio.wanderer.commons.utils;
 
 import com.tomassirio.wanderer.commons.domain.*;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripDetailsDTO;
+import com.tomassirio.wanderer.commons.dto.TripSettingsDTO;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public class BaseTestEntityFactory {
@@ -64,16 +67,20 @@ public class BaseTestEntityFactory {
     }
 
     public static TripDTO createTripDTO(UUID tripId, UUID userId, String name) {
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PUBLIC, null);
+
+        TripDetailsDTO tripDetails = new TripDetailsDTO(Instant.now(), null, null, null);
+
         return new TripDTO(
-                tripId,
+                tripId.toString(),
                 name,
-                userId,
-                TripStatus.CREATED,
-                TripVisibility.PUBLIC,
+                userId.toString(),
+                tripSettings,
+                tripDetails,
                 null,
-                Instant.now(),
-                null,
-                null,
+                List.of(),
+                List.of(),
                 Instant.now(),
                 true);
     }
@@ -84,17 +91,6 @@ public class BaseTestEntityFactory {
                 .userId(userId)
                 .trip(trip)
                 .message("Test comment")
-                .reactions(new Reactions())
-                .timestamp(Instant.now())
-                .build();
-    }
-
-    public static Response createResponse(UUID responseId, UUID userId, Comment comment) {
-        return Response.builder()
-                .id(responseId)
-                .userId(userId)
-                .comment(comment)
-                .message("Test response")
                 .reactions(new Reactions())
                 .timestamp(Instant.now())
                 .build();

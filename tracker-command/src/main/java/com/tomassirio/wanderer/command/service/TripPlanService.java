@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * Service interface for managing trip plan operations in the command side.
  *
- * @since 0.2.0
+ * @since 0.3.0
  */
 public interface TripPlanService {
 

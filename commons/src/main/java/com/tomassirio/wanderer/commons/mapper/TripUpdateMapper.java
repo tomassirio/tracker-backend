@@ -11,9 +11,19 @@ public interface TripUpdateMapper {
 
     TripUpdateMapper INSTANCE = Mappers.getMapper(TripUpdateMapper.class);
 
-    @Mapping(target = "tripId", source = "trip.id")
+    @Mapping(
+            target = "id",
+            expression = "java(tripUpdate.getId() != null ? tripUpdate.getId().toString() : null)")
+    @Mapping(
+            target = "tripId",
+            expression =
+                    "java(tripUpdate.getTrip() != null && tripUpdate.getTrip().getId() != null ? tripUpdate.getTrip().getId().toString() : null)")
     TripUpdateDTO toDTO(TripUpdate tripUpdate);
 
+    @Mapping(
+            target = "id",
+            expression =
+                    "java(tripUpdateDTO.id() != null ? java.util.UUID.fromString(tripUpdateDTO.id()) : null)")
     @Mapping(target = "trip", ignore = true)
     @Mapping(target = "reactions", ignore = true)
     TripUpdate toEntity(TripUpdateDTO tripUpdateDTO);

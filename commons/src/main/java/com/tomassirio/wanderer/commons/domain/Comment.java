@@ -44,6 +44,14 @@ public class Comment {
     @JoinColumn(name = "trip_id", nullable = false)
     private Trip trip;
 
+    // Self-referential relationship: a comment can be a reply to another comment
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_comment_id")
+    private Comment parentComment;
+
+    @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Comment> replies;
+
     @NotBlank
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;
@@ -56,6 +64,21 @@ public class Comment {
     @Column(nullable = false)
     private Instant timestamp;
 
-    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<Response> responses;
+    /**
+     * Checks if this comment is a top-level comment (not a reply).
+     *
+     * @return true if this is a top-level comment, false if it's a reply
+     */
+    public boolean isTopLevel() {
+        return parentComment == null;
+    }
+
+    /**
+     * Checks if this comment is a reply to another comment.
+     *
+     * @return true if this is a reply, false if it's a top-level comment
+     */
+    public boolean isReply() {
+        return parentComment != null;
+    }
 }

@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripDetailsDTO;
+import com.tomassirio.wanderer.commons.dto.TripSettingsDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import com.tomassirio.wanderer.query.service.TripService;
@@ -56,8 +58,8 @@ class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Summer Road Trip"))
-                .andExpect(jsonPath("$.visibility").value("PUBLIC"))
-                .andExpect(jsonPath("$.tripStatus").value("CREATED"))
+                .andExpect(jsonPath("$.tripSettings.visibility").value("PUBLIC"))
+                .andExpect(jsonPath("$.tripSettings.tripStatus").value("CREATED"))
                 .andExpect(jsonPath("$.enabled").value(true));
     }
 
@@ -87,7 +89,7 @@ class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Private Trip"))
-                .andExpect(jsonPath("$.visibility").value("PRIVATE"));
+                .andExpect(jsonPath("$.tripSettings.visibility").value("PRIVATE"));
     }
 
     @Test
@@ -103,8 +105,8 @@ class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("New Trip"))
-                .andExpect(jsonPath("$.startTimestamp").isEmpty())
-                .andExpect(jsonPath("$.endTimestamp").isEmpty());
+                .andExpect(jsonPath("$.tripDetails.startTimestamp").isEmpty())
+                .andExpect(jsonPath("$.tripDetails.endTimestamp").isEmpty());
     }
 
     @Test
@@ -125,10 +127,10 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(tripId1.toString()))
                 .andExpect(jsonPath("$[0].name").value("Trip 1"))
-                .andExpect(jsonPath("$[0].visibility").value("PUBLIC"))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PUBLIC"))
                 .andExpect(jsonPath("$[1].id").value(tripId2.toString()))
                 .andExpect(jsonPath("$[1].name").value("Trip 2"))
-                .andExpect(jsonPath("$[1].visibility").value("PRIVATE"));
+                .andExpect(jsonPath("$[1].tripSettings.visibility").value("PRIVATE"));
     }
 
     @Test
@@ -210,18 +212,19 @@ class TripControllerTest {
                 .andExpect(jsonPath("$[2].name").value("My Trip 3"));
     }
 
-    // Helper methods to create test data
     private TripDTO createTripDTO(UUID tripId, String name, TripVisibility visibility) {
+        TripSettingsDTO tripSettings = new TripSettingsDTO(TripStatus.CREATED, visibility, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
         return new TripDTO(
-                tripId,
+                tripId.toString(),
                 name,
-                USER_ID,
-                TripStatus.CREATED,
-                visibility,
-                null, // updateRefresh
-                null, // startTimestamp
-                null, // endTimestamp
+                USER_ID.toString(),
+                tripSettings,
+                tripDetails,
                 null, // tripPlanId
+                List.of(), // comments
+                List.of(), // tripUpdates
                 Instant.now(),
                 true);
     }

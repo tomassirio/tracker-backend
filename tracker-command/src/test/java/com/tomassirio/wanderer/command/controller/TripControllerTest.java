@@ -22,6 +22,8 @@ import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripDetailsDTO;
+import com.tomassirio.wanderer.commons.dto.TripSettingsDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
@@ -69,17 +71,20 @@ class TripControllerTest {
                         "Summer Road Trip 2025", TripVisibility.PUBLIC);
 
         UUID tripId = UUID.randomUUID();
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PUBLIC, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
         TripDTO expectedResponse =
                 new TripDTO(
-                        tripId,
+                        tripId.toString(),
                         "Summer Road Trip 2025",
-                        USER_ID,
-                        TripStatus.CREATED,
-                        TripVisibility.PUBLIC,
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
                         null,
-                        null,
-                        null,
-                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
                         Instant.now(),
                         true);
 
@@ -96,8 +101,9 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Summer Road Trip 2025"))
                 .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
-                .andExpect(jsonPath("$.tripStatus").value(TripStatus.CREATED.name()))
-                .andExpect(jsonPath("$.visibility").value(TripVisibility.PUBLIC.name()))
+                .andExpect(jsonPath("$.tripSettings.tripStatus").value(TripStatus.CREATED.name()))
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility").value(TripVisibility.PUBLIC.name()))
                 .andExpect(jsonPath("$.enabled").value(true));
     }
 
@@ -109,17 +115,20 @@ class TripControllerTest {
                         "Private Road Trip", TripVisibility.PRIVATE);
 
         UUID tripId = UUID.randomUUID();
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PRIVATE, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
         TripDTO expectedResponse =
                 new TripDTO(
-                        tripId,
+                        tripId.toString(),
                         "Private Road Trip",
-                        USER_ID,
-                        TripStatus.CREATED,
-                        TripVisibility.PRIVATE,
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
                         null,
-                        null,
-                        null,
-                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
                         Instant.now(),
                         true);
 
@@ -134,7 +143,8 @@ class TripControllerTest {
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
-                .andExpect(jsonPath("$.visibility").value(TripVisibility.PRIVATE.name()));
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility").value(TripVisibility.PRIVATE.name()));
     }
 
     @Test
@@ -198,17 +208,20 @@ class TripControllerTest {
                         "Protected Trip", TripVisibility.PROTECTED);
 
         UUID tripId = UUID.randomUUID();
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PROTECTED, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
         TripDTO expectedResponse =
                 new TripDTO(
-                        tripId,
+                        tripId.toString(),
                         "Protected Trip",
-                        USER_ID,
-                        TripStatus.CREATED,
-                        TripVisibility.PROTECTED,
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
                         null,
-                        null,
-                        null,
-                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
                         Instant.now(),
                         true);
 
@@ -222,7 +235,9 @@ class TripControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.visibility").value(TripVisibility.PROTECTED.name()));
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility")
+                                .value(TripVisibility.PROTECTED.name()));
     }
 
     @Test
@@ -233,17 +248,20 @@ class TripControllerTest {
                 TestEntityFactory.createTripUpdateRequest(
                         "Updated Trip Name", TripVisibility.PUBLIC);
 
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.IN_PROGRESS, TripVisibility.PUBLIC, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(Instant.now(), null, null, null);
+
         TripDTO expectedResponse =
                 new TripDTO(
-                        tripId,
+                        tripId.toString(),
                         "Updated Trip Name",
-                        USER_ID,
-                        TripStatus.IN_PROGRESS,
-                        TripVisibility.PUBLIC,
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
                         null,
-                        Instant.now(),
-                        null,
-                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
                         Instant.now().minusSeconds(3600),
                         true);
 
@@ -258,7 +276,8 @@ class TripControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Updated Trip Name"))
-                .andExpect(jsonPath("$.visibility").value(TripVisibility.PUBLIC.name()));
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility").value(TripVisibility.PUBLIC.name()));
     }
 
     @Test
@@ -268,17 +287,20 @@ class TripControllerTest {
         TripUpdateRequest request =
                 TestEntityFactory.createTripUpdateRequest("Trip Name", TripVisibility.PRIVATE);
 
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PRIVATE, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
         TripDTO expectedResponse =
                 new TripDTO(
-                        tripId,
+                        tripId.toString(),
                         "Trip Name",
-                        USER_ID,
-                        TripStatus.CREATED,
-                        TripVisibility.PRIVATE,
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
                         null,
-                        null,
-                        null,
-                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
                         Instant.now(),
                         true);
 
@@ -291,7 +313,8 @@ class TripControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.visibility").value(TripVisibility.PRIVATE.name()));
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility").value(TripVisibility.PRIVATE.name()));
     }
 
     @Test

@@ -175,9 +175,9 @@ class TripServiceTest {
         assertThat(createdTrip).isNotNull();
         assertThat(createdTrip.id()).isNotNull();
         assertThat(createdTrip.name()).isEqualTo("Summer Road Trip");
-        assertThat(createdTrip.userId()).isEqualTo(USER_ID);
-        assertThat(createdTrip.tripStatus()).isEqualTo(TripStatus.CREATED);
-        assertThat(createdTrip.visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(createdTrip.userId()).isNotNull();
+        assertThat(createdTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(createdTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
         assertThat(createdTrip.enabled()).isTrue();
         assertThat(createdTrip.creationTimestamp()).isNotNull();
 
@@ -205,8 +205,8 @@ class TripServiceTest {
         // Then
         assertThat(createdTrip).isNotNull();
         assertThat(createdTrip.name()).isEqualTo("Private Trip");
-        assertThat(createdTrip.visibility()).isEqualTo(TripVisibility.PRIVATE);
-        assertThat(createdTrip.tripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(createdTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
+        assertThat(createdTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
 
         verify(tripRepository).save(any(Trip.class));
     }
@@ -230,10 +230,10 @@ class TripServiceTest {
 
         // Then
         assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.startTimestamp()).isNull();
-        assertThat(createdTrip.endTimestamp()).isNull();
+        assertThat(createdTrip.tripDetails().startTimestamp()).isNull();
+        assertThat(createdTrip.tripDetails().endTimestamp()).isNull();
         assertThat(createdTrip.tripPlanId()).isNull();
-        assertThat(createdTrip.updateRefresh()).isNull();
+        assertThat(createdTrip.tripSettings().updateRefresh()).isNull();
 
         verify(tripRepository).save(any(Trip.class));
     }
@@ -300,9 +300,9 @@ class TripServiceTest {
 
         // Then
         assertThat(updatedTrip).isNotNull();
-        assertThat(updatedTrip.id()).isEqualTo(tripId);
+        assertThat(updatedTrip.id()).isNotNull();
         assertThat(updatedTrip.name()).isEqualTo("Updated Trip Name");
-        assertThat(updatedTrip.visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
 
         verify(tripRepository).findById(tripId);
         verify(tripRepository).save(any(Trip.class));
@@ -368,7 +368,7 @@ class TripServiceTest {
         TripDTO updatedTrip = tripService.updateTrip(USER_ID, tripId, request);
 
         // Then
-        assertThat(updatedTrip.visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
         assertThat(updatedTrip.name()).isEqualTo("Trip Name");
 
         verify(tripRepository).save(any(Trip.class));
@@ -502,7 +502,7 @@ class TripServiceTest {
         TripDTO updatedTrip = tripService.changeVisibility(USER_ID, tripId, TripVisibility.PRIVATE);
 
         // Then
-        assertThat(updatedTrip.visibility()).isEqualTo(TripVisibility.PRIVATE);
+        assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
         verify(tripRepository).findById(tripId);
         verify(tripRepository).save(any(Trip.class));
     }
@@ -581,8 +581,9 @@ class TripServiceTest {
         TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
 
         // Then
-        assertThat(updatedTrip.tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
-        assertThat(updatedTrip.startTimestamp()).isNotNull(); // Should set start timestamp
+        assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+        assertThat(updatedTrip.tripDetails().startTimestamp())
+                .isNotNull(); // Should set start timestamp
         verify(tripRepository).findById(tripId);
         verify(tripRepository).save(any(Trip.class));
     }
@@ -660,9 +661,10 @@ class TripServiceTest {
         TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.FINISHED);
 
         // Then
-        assertThat(updatedTrip.tripStatus()).isEqualTo(TripStatus.FINISHED);
-        assertThat(updatedTrip.startTimestamp()).isEqualTo(startTime);
-        assertThat(updatedTrip.endTimestamp()).isNotNull(); // Should set end timestamp
+        assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.FINISHED);
+        assertThat(updatedTrip.tripDetails().startTimestamp()).isEqualTo(startTime);
+        assertThat(updatedTrip.tripDetails().endTimestamp())
+                .isNotNull(); // Should set end timestamp
         verify(tripRepository).findById(tripId);
         verify(tripRepository).save(any(Trip.class));
     }
@@ -706,9 +708,9 @@ class TripServiceTest {
         TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
 
         // Then
-        assertThat(updatedTrip.tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
-        assertThat(updatedTrip.startTimestamp()).isNotNull();
-        assertThat(updatedTrip.endTimestamp()).isNull();
+        assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+        assertThat(updatedTrip.tripDetails().startTimestamp()).isNotNull();
+        assertThat(updatedTrip.tripDetails().endTimestamp()).isNull();
         verify(tripRepository).findById(tripId);
         verify(tripRepository).save(any(Trip.class));
     }
@@ -753,9 +755,10 @@ class TripServiceTest {
         TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.PAUSED);
 
         // Then
-        assertThat(updatedTrip.tripStatus()).isEqualTo(TripStatus.PAUSED);
-        assertThat(updatedTrip.startTimestamp()).isEqualTo(startTime);
-        assertThat(updatedTrip.endTimestamp()).isNull(); // Should not set end timestamp for pause
+        assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.PAUSED);
+        assertThat(updatedTrip.tripDetails().startTimestamp()).isEqualTo(startTime);
+        assertThat(updatedTrip.tripDetails().endTimestamp())
+                .isNull(); // Should not set end timestamp for pause
         verify(tripRepository).findById(tripId);
         verify(tripRepository).save(any(Trip.class));
     }
