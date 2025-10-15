@@ -34,7 +34,7 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ### Tracker-Backend (This Repository)
 - Receives REST calls with location and OwnTracks metadata
-- Stores data in PostgreSQL
+- Stores data in PostgresSQL
 - Exposes REST API for frontend queries
 - Supports status messages and weather integration
 - Automatically unlocks achievements based on milestones
@@ -60,21 +60,25 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ### Trip
 - `id` (UUID)
-- `name`, 
+- `name`
 - `userId` (owner)
 - `tripSettings` (visibility, status) 
-- `tripDetails`
+- `tripDetails` (start/end dates, locations, distance)
 - `tripPlanId` (optional reference to trip plan)
-- `comments` 
-- `tripUpdates` (collections)
+- `comments` (one-to-many relationship)
+- `tripUpdates` (one-to-many relationship)
 - `creationTimestamp`
 - `enabled`
 
 ### TripPlan
 - `id` (UUID) 
 - `name`
-- `planType` (SIMPLE, MULTI-DAY)
+- `planType` (SIMPLE, MULTI_DAY)
 - `userId` (owner)
+- `startLocation` (GeoLocation)
+- `endLocation` (GeoLocation)
+- `startDate`
+- `endDate`
 - `metadata` (JSONB for flexible plan data)
 - `creationTimestamp`
 - `updateTimestamp`
@@ -82,27 +86,39 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 ### TripUpdate
 - `id` (UUID)
 - `tripId`
-- `location` (GeoLocation with lat/lon in JSONB)
+- `location` (GeoLocation with lat/lon/altitude in JSONB)
 - `battery`
 - `message`
-- `reactions` (JSONB)
+- `reactions` (Reactions JSONB)
 - `timestamp`
 
 ### Comment
 - `id` (UUID)
-- `tripId`
-- `userId`
-- `message`
+- `tripId` (belongs to a trip)
+- `userId` (comment author)
+- `parentCommentId` (nullable - for nested replies)
+- `message` (TEXT, max 1000 characters)
+- `reactions` (Reactions JSONB)
+- `replies` (one-to-many self-referential relationship)
 - `timestamp`
+- Supports one level of nesting (comments can have replies, but replies cannot have replies)
+
+### Reactions
+A JSONB structure tracking reaction counts:
+- `heart` (integer counter)
+- `smiley` (integer counter)
+- `sad` (integer counter)
+- `laugh` (integer counter)
+- `anger` (integer counter)
 
 ### Supporting Types
 - **GeoLocation**: Latitude and longitude coordinates
 - **TripSettings**: Visibility (PUBLIC, PRIVATE, PROTECTED) and Status
-- **TripDetails**: Additional trip information
+- **TripDetails**: Additional trip information (dates, locations, distance)
 - **TripVisibility**: PUBLIC, PRIVATE, PROTECTED
 - **TripStatus**: CREATED, IN_PROGRESS, PAUSED, FINISHED
-- **TripPlanType**: ITINERARY, ROUTE, CHECKLIST
-- **ReactionType**: Types of reactions to trip updates
+- **TripPlanType**: SIMPLE, MULTI_DAY
+- **ReactionType**: HEART, SMILEY, SAD, LAUGH, ANGER
 
 ## 🏆 Achievements System
 
@@ -162,6 +178,17 @@ GET /api/1/trips/me        → Get current user's trips
 POST   /api/1/trips/plans   → Create trip plan
 PUT    /api/1/trips/plans/{planId}   → Update trip plan
 DELETE /api/1/trips/plans/{planId}   → Delete trip plan
+```
+
+### Comment APIs
+
+#### Command (tracker-command) - Port 8081
+```
+POST   /api/1/trips/{tripId}/comments              → Create comment or reply on a trip
+                                                     (use parentCommentId in body for replies)
+POST   /api/1/comments/{commentId}/reactions       → Add a reaction to a comment
+                                                     (HEART, SMILEY, SAD, LAUGH, ANGER)
+DELETE /api/1/comments/{commentId}/reactions       → Remove a reaction from a comment
 ```
 
 ### Legacy/Planned Endpoints
