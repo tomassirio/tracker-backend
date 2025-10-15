@@ -337,14 +337,20 @@ public class StepDefinitions {
         body.put("endLocation", loc);
 
         HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
-        log.info("[Cucumber] POST {} request: {}", TRIP_PLANS_ENDPOINT, mapper.writeValueAsString(body));
+        log.info(
+                "[Cucumber] POST {} request: {}",
+                TRIP_PLANS_ENDPOINT,
+                mapper.writeValueAsString(body));
         latestResponse = restTemplate.postForEntity(TRIP_PLANS_ENDPOINT, request, String.class);
 
         log.info(
                 "[Cucumber] POST {} response status: {}",
                 TRIP_PLANS_ENDPOINT,
                 latestResponse.getStatusCode().value());
-        log.info("[Cucumber] POST {} response body: {}", TRIP_PLANS_ENDPOINT, latestResponse.getBody());
+        log.info(
+                "[Cucumber] POST {} response body: {}",
+                TRIP_PLANS_ENDPOINT,
+                latestResponse.getBody());
 
         // Store trip plan ID if creation was successful
         if (latestResponse.getStatusCode().is2xxSuccessful()) {
