@@ -1,11 +1,15 @@
 databaseChangeLog:
   - changeSet:
-      id: 010-create-responses-table
+      id: 004-create-comments-table
       author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: comments
       changes:
-        # Create responses table
         - createTable:
-            tableName: responses
+            tableName: comments
             columns:
               - column:
                   name: id
@@ -19,10 +23,13 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: comment_id
+                  name: trip_id
                   type: uuid
                   constraints:
                     nullable: false
+              - column:
+                  name: parent_comment_id
+                  type: uuid
               - column:
                   name: message
                   type: text
@@ -36,37 +43,36 @@ databaseChangeLog:
                   type: timestamp with time zone
                   constraints:
                     nullable: false
-
-        # Add foreign key for user_id
         - addForeignKeyConstraint:
-            baseTableName: responses
+            baseTableName: comments
             baseColumnNames: user_id
             referencedTableName: users
             referencedColumnNames: id
-            constraintName: fk_responses_user_id
-
-        # Add foreign key for comment_id
+            constraintName: fk_comments_user_id
         - addForeignKeyConstraint:
-            baseTableName: responses
-            baseColumnNames: comment_id
+            baseTableName: comments
+            baseColumnNames: trip_id
+            referencedTableName: trips
+            referencedColumnNames: id
+            constraintName: fk_comments_trip_id
+        - addForeignKeyConstraint:
+            baseTableName: comments
+            baseColumnNames: parent_comment_id
             referencedTableName: comments
             referencedColumnNames: id
-            constraintName: fk_responses_comment_id
-
-        # Create indexes for better query performance
+            constraintName: fk_comments_parent_comment
+            onDelete: CASCADE
         - createIndex:
-            tableName: responses
-            indexName: idx_responses_comment_id_timestamp
+            tableName: comments
+            indexName: idx_comments_trip_id_timestamp
             columns:
               - column:
-                  name: comment_id
+                  name: trip_id
               - column:
                   name: timestamp
-
         - createIndex:
-            tableName: responses
-            indexName: idx_responses_user_id
+            tableName: comments
+            indexName: idx_comments_user_id
             columns:
               - column:
                   name: user_id
-

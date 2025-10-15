@@ -1,0 +1,76 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-trips-table
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: trips
+      changes:
+        - createTable:
+            tableName: trips
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              # TripSettings embedded fields
+              - column:
+                  name: trip_status
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: visibility
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: update_refresh
+                  type: integer
+              # TripDetails embedded fields
+              - column:
+                  name: start_timestamp
+                  type: timestamp with time zone
+              - column:
+                  name: end_timestamp
+                  type: timestamp with time zone
+              - column:
+                  name: start_location
+                  type: jsonb
+              - column:
+                  name: end_location
+                  type: jsonb
+              # Other fields
+              - column:
+                  name: trip_plan_id
+                  type: uuid
+              - column:
+                  name: creation_timestamp
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: boolean
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: trips
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_trips_user_id
