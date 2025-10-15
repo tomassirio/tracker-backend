@@ -212,8 +212,138 @@ class TripControllerTest {
                 .andExpect(jsonPath("$[2].name").value("My Trip 3"));
     }
 
+    @Test
+    void getTripsByUser_whenTripsExist_shouldReturnVisibleTrips() throws Exception {
+        // Given
+        UUID otherUserId = UUID.randomUUID();
+        List<TripDTO> trips =
+                List.of(
+                        createTripDTO(UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC),
+                        createTripDTO(
+                                UUID.randomUUID(), "Protected Trip", TripVisibility.PROTECTED));
+        when(tripService.getTripsForUserWithVisibility(otherUserId)).thenReturn(trips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/users/{userId}", otherUserId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].name").value("Public Trip"))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PUBLIC"))
+                .andExpect(jsonPath("$[1].name").value("Protected Trip"))
+                .andExpect(jsonPath("$[1].tripSettings.visibility").value("PROTECTED"));
+    }
+
+    @Test
+    void getTripsByUser_whenNoTripsExist_shouldReturnEmptyList() throws Exception {
+        // Given
+        UUID otherUserId = UUID.randomUUID();
+        when(tripService.getTripsForUserWithVisibility(otherUserId)).thenReturn(List.of());
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/users/{userId}", otherUserId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getTripsByUser_shouldNotIncludePrivateTrips() throws Exception {
+        // Given
+        UUID otherUserId = UUID.randomUUID();
+        List<TripDTO> trips =
+                List.of(createTripDTO(UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC));
+        when(tripService.getTripsForUserWithVisibility(otherUserId)).thenReturn(trips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/users/{userId}", otherUserId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PUBLIC"));
+    }
+
+    @Test
+    void getOngoingPublicTrips_whenOngoingTripsExist_shouldReturnOngoingTrips() throws Exception {
+        // Given
+        List<TripDTO> ongoingTrips =
+                List.of(
+                        createTripDTOWithStatus(
+                                UUID.randomUUID(),
+                                "Ongoing Trip 1",
+                                TripVisibility.PUBLIC,
+                                TripStatus.IN_PROGRESS),
+                        createTripDTOWithStatus(
+                                UUID.randomUUID(),
+                                "Ongoing Trip 2",
+                                TripVisibility.PUBLIC,
+                                TripStatus.IN_PROGRESS));
+        when(tripService.getOngoingPublicTrips()).thenReturn(ongoingTrips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/public"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].name").value("Ongoing Trip 1"))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PUBLIC"))
+                .andExpect(jsonPath("$[0].tripSettings.tripStatus").value("IN_PROGRESS"))
+                .andExpect(jsonPath("$[1].name").value("Ongoing Trip 2"))
+                .andExpect(jsonPath("$[1].tripSettings.tripStatus").value("IN_PROGRESS"));
+    }
+
+    @Test
+    void getOngoingPublicTrips_whenNoOngoingTripsExist_shouldReturnEmptyList() throws Exception {
+        // Given
+        when(tripService.getOngoingPublicTrips()).thenReturn(List.of());
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/public"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getOngoingPublicTrips_shouldOnlyReturnPublicTrips() throws Exception {
+        // Given
+        List<TripDTO> ongoingTrips =
+                List.of(
+                        createTripDTOWithStatus(
+                                UUID.randomUUID(),
+                                "Public Ongoing",
+                                TripVisibility.PUBLIC,
+                                TripStatus.IN_PROGRESS));
+        when(tripService.getOngoingPublicTrips()).thenReturn(ongoingTrips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/public"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PUBLIC"));
+    }
+
     private TripDTO createTripDTO(UUID tripId, String name, TripVisibility visibility) {
         TripSettingsDTO tripSettings = new TripSettingsDTO(TripStatus.CREATED, visibility, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
+        return new TripDTO(
+                tripId.toString(),
+                name,
+                USER_ID.toString(),
+                tripSettings,
+                tripDetails,
+                null, // tripPlanId
+                List.of(), // comments
+                List.of(), // tripUpdates
+                Instant.now(),
+                true);
+    }
+
+    private TripDTO createTripDTOWithStatus(
+            UUID tripId, String name, TripVisibility visibility, TripStatus status) {
+        TripSettingsDTO tripSettings = new TripSettingsDTO(status, visibility, null);
         TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
 
         return new TripDTO(

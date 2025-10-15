@@ -14,7 +14,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -70,6 +72,11 @@ public class TripPlan {
     @Column(name = "end_location", columnDefinition = "jsonb", nullable = false)
     @Type(JsonBinaryType.class)
     private GeoLocation endLocation;
+
+    @Type(JsonBinaryType.class)
+    @Column(name = "waypoints", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<GeoLocation> waypoints = new ArrayList<>();
 
     @Type(JsonBinaryType.class)
     @Column(name = "metadata", columnDefinition = "jsonb")

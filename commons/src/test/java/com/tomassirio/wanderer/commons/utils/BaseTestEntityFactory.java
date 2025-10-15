@@ -92,6 +92,7 @@ public class BaseTestEntityFactory {
                 .trip(trip)
                 .message("Test comment")
                 .reactions(new Reactions())
+                .replies(List.of())
                 .timestamp(Instant.now())
                 .build();
     }

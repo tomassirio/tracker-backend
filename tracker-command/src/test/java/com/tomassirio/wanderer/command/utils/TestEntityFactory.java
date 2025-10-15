@@ -9,6 +9,7 @@ import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory;
 import java.time.LocalDate;
+import java.util.List;
 
 /**
  * Test entity factory for tracker-command module. Extends the commons TestEntityFactory with
@@ -45,7 +46,7 @@ public class TestEntityFactory extends BaseTestEntityFactory {
             GeoLocation endLocation,
             TripPlanType planType) {
         return new TripPlanCreationRequest(
-                name, startDate, endDate, startLocation, endLocation, planType);
+                name, startDate, endDate, startLocation, endLocation, List.of(), planType);
     }
 
     public static TripPlanCreationRequest createTripPlanCreationRequest(String name) {
@@ -65,7 +66,8 @@ public class TestEntityFactory extends BaseTestEntityFactory {
             LocalDate endDate,
             GeoLocation startLocation,
             GeoLocation endLocation) {
-        return new TripPlanUpdateRequest(name, startDate, endDate, startLocation, endLocation);
+        return new TripPlanUpdateRequest(
+                name, startDate, endDate, startLocation, endLocation, List.of());
     }
 
     public static TripPlanUpdateRequest createTripPlanUpdateRequest(String name) {

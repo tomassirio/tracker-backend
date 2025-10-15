@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
+import java.util.List;
 
 public record TripPlanUpdateRequest(
         @Schema(description = "Plan name", example = "Europe Summer Trip")
@@ -24,4 +25,6 @@ public record TripPlanUpdateRequest(
         @Schema(description = "Starting location") @NotNull(message = "Start location is required")
                 GeoLocation startLocation,
         @Schema(description = "Ending location") @NotNull(message = "End location is required")
-                GeoLocation endLocation) {}
+                GeoLocation endLocation,
+        @Schema(description = "Intermediate waypoints (optional)", example = "[]")
+                List<GeoLocation> waypoints) {}

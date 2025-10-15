@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.service;
+package com.tomassirio.wanderer.command.service.impl;
 
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -15,7 +15,6 @@ import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
-import com.tomassirio.wanderer.command.service.impl.TripServiceImpl;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -39,7 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 @ExtendWith(MockitoExtension.class)
-class TripServiceTest {
+class TripServiceImplTest {
 
     @Mock private TripRepository tripRepository;
 

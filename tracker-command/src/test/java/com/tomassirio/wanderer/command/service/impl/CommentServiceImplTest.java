@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.service;
+package com.tomassirio.wanderer.command.service.impl;
 
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -10,12 +10,12 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
-import com.tomassirio.wanderer.command.service.impl.CommentServiceImpl;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.dto.CommentDTO;
+import com.tomassirio.wanderer.commons.mapper.CommentMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,10 +27,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class CommentServiceTest {
+class CommentServiceImplTest {
 
     private static final UUID TRIP_ID = UUID.randomUUID();
     private static final UUID COMMENT_ID = UUID.randomUUID();
@@ -41,6 +42,8 @@ class CommentServiceTest {
     @Mock private CommentRepository commentRepository;
 
     @Mock private TripRepository tripRepository;
+
+    @Spy private CommentMapper commentMapper = CommentMapper.INSTANCE;
 
     @InjectMocks private CommentServiceImpl commentService;
 

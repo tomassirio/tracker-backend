@@ -174,4 +174,202 @@ class TripServiceTest {
 
         verify(tripRepository).findByUserId(userId);
     }
+
+    @Test
+    void getPublicTrips_whenPublicTripsExist_shouldReturnOnlyPublicTrips() {
+        // Given
+        Trip publicTrip1 =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Public Trip 1", TripVisibility.PUBLIC);
+        Trip publicTrip2 =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Public Trip 2", TripVisibility.PUBLIC);
+
+        when(tripRepository.findByTripSettingsVisibility(TripVisibility.PUBLIC))
+                .thenReturn(List.of(publicTrip1, publicTrip2));
+
+        // When
+        List<TripDTO> result = tripService.getPublicTrips();
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).name()).isEqualTo("Public Trip 1");
+        assertThat(result.get(0).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(result.get(1).name()).isEqualTo("Public Trip 2");
+        assertThat(result.get(1).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+
+        verify(tripRepository).findByTripSettingsVisibility(TripVisibility.PUBLIC);
+    }
+
+    @Test
+    void getPublicTrips_whenNoPublicTripsExist_shouldReturnEmptyList() {
+        // Given
+        when(tripRepository.findByTripSettingsVisibility(TripVisibility.PUBLIC))
+                .thenReturn(Collections.emptyList());
+
+        // When
+        List<TripDTO> result = tripService.getPublicTrips();
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        verify(tripRepository).findByTripSettingsVisibility(TripVisibility.PUBLIC);
+    }
+
+    @Test
+    void getTripsForUserWithVisibility_whenTripsExist_shouldReturnPublicAndProtectedTrips() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        Trip publicTrip =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC);
+        Trip protectedTrip =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Protected Trip", TripVisibility.PROTECTED);
+
+        List<TripVisibility> visibilities =
+                List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED);
+        when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
+                .thenReturn(List.of(publicTrip, protectedTrip));
+
+        // When
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).name()).isEqualTo("Public Trip");
+        assertThat(result.get(0).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(result.get(1).name()).isEqualTo("Protected Trip");
+        assertThat(result.get(1).tripSettings().visibility()).isEqualTo(TripVisibility.PROTECTED);
+
+        verify(tripRepository).findByUserIdAndVisibilityIn(userId, visibilities);
+    }
+
+    @Test
+    void getTripsForUserWithVisibility_whenNoTripsExist_shouldReturnEmptyList() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        List<TripVisibility> visibilities =
+                List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED);
+        when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
+                .thenReturn(Collections.emptyList());
+
+        // When
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        verify(tripRepository).findByUserIdAndVisibilityIn(userId, visibilities);
+    }
+
+    @Test
+    void getTripsForUserWithVisibility_shouldNotIncludePrivateTrips() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        Trip publicTrip =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC);
+
+        List<TripVisibility> visibilities =
+                List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED);
+        when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
+                .thenReturn(List.of(publicTrip));
+
+        // When
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+        assertThat(
+                        result.stream()
+                                .noneMatch(
+                                        dto ->
+                                                dto.tripSettings().visibility()
+                                                        == TripVisibility.PRIVATE))
+                .isTrue();
+
+        verify(tripRepository).findByUserIdAndVisibilityIn(userId, visibilities);
+    }
+
+    @Test
+    void getOngoingPublicTrips_whenOngoingTripsExist_shouldReturnOngoingPublicTrips() {
+        // Given
+        Trip ongoingTrip1 =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Ongoing Trip 1", TripVisibility.PUBLIC);
+        ongoingTrip1.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        Trip ongoingTrip2 =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Ongoing Trip 2", TripVisibility.PUBLIC);
+        ongoingTrip2.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        when(tripRepository.findByVisibilityAndStatus(
+                        TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
+                .thenReturn(List.of(ongoingTrip1, ongoingTrip2));
+
+        // When
+        List<TripDTO> result = tripService.getOngoingPublicTrips();
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).name()).isEqualTo("Ongoing Trip 1");
+        assertThat(result.get(0).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(result.get(0).tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+        assertThat(result.get(1).name()).isEqualTo("Ongoing Trip 2");
+        assertThat(result.get(1).tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+
+        verify(tripRepository)
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void getOngoingPublicTrips_whenNoOngoingTripsExist_shouldReturnEmptyList() {
+        // Given
+        when(tripRepository.findByVisibilityAndStatus(
+                        TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
+                .thenReturn(Collections.emptyList());
+
+        // When
+        List<TripDTO> result = tripService.getOngoingPublicTrips();
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        verify(tripRepository)
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void getOngoingPublicTrips_shouldOnlyReturnInProgressPublicTrips() {
+        // Given
+        Trip ongoingPublicTrip =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Ongoing Public", TripVisibility.PUBLIC);
+        ongoingPublicTrip.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        when(tripRepository.findByVisibilityAndStatus(
+                        TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
+                .thenReturn(List.of(ongoingPublicTrip));
+
+        // When
+        List<TripDTO> result = tripService.getOngoingPublicTrips();
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(result.get(0).tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+
+        verify(tripRepository)
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
+    }
 }

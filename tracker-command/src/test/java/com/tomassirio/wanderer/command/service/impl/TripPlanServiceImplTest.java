@@ -13,14 +13,17 @@ import com.tomassirio.wanderer.command.dto.TripPlanUpdateRequest;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
+import com.tomassirio.wanderer.command.service.validator.TripPlanValidator;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import com.tomassirio.wanderer.commons.dto.TripPlanDTO;
+import com.tomassirio.wanderer.commons.mapper.TripPlanMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +33,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -40,7 +44,11 @@ class TripPlanServiceImplTest {
 
     @Mock private TripPlanMetadataProcessor metadataProcessor;
 
+    @Spy private TripPlanMapper tripPlanMapper = TripPlanMapper.INSTANCE;
+
     @Mock private OwnershipValidator ownershipValidator;
+
+    @Mock private TripPlanValidator tripPlanValidator;
 
     @InjectMocks private TripPlanServiceImpl tripPlanService;
 
@@ -75,6 +83,7 @@ class TripPlanServiceImplTest {
                         endDate,
                         startLocation,
                         endLocation,
+                        List.of(),
                         TripPlanType.SIMPLE);
 
         TripPlan savedPlan =
@@ -127,6 +136,7 @@ class TripPlanServiceImplTest {
                         endDate,
                         startLocation,
                         endLocation,
+                        List.of(),
                         TripPlanType.MULTI_DAY);
 
         TripPlan savedPlan =
@@ -158,64 +168,48 @@ class TripPlanServiceImplTest {
     }
 
     @Test
-    void createTripPlan_shouldSetCreationTimestamp() {
+    void createTripPlan_whenInvalidDates_shouldThrowException() {
         // Given
         TripPlanCreationRequest request =
                 new TripPlanCreationRequest(
-                        "Test Plan",
-                        startDate,
+                        "Invalid Plan",
                         endDate,
+                        startDate,
                         startLocation,
                         endLocation,
+                        List.of(),
                         TripPlanType.SIMPLE);
 
-        TripPlan savedPlan =
-                TripPlan.builder()
-                        .id(planId)
-                        .name(request.name())
-                        .planType(request.planType())
-                        .userId(userId)
-                        .createdTimestamp(Instant.now())
-                        .startDate(request.startDate())
-                        .endDate(request.endDate())
-                        .startLocation(request.startLocation())
-                        .endLocation(request.endLocation())
-                        .metadata(new HashMap<>())
-                        .build();
+        doThrow(new IllegalArgumentException("End date must be after start date"))
+                .when(tripPlanValidator)
+                .validateDates(endDate, startDate);
 
-        when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(savedPlan);
+        // When & Then
+        assertThatThrownBy(() -> tripPlanService.createTripPlan(userId, request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("End date must be after start date");
 
-        // When
-        Instant beforeCreation = Instant.now();
-        tripPlanService.createTripPlan(userId, request);
-        Instant afterCreation = Instant.now();
-
-        // Then
-        verify(tripPlanRepository).save(tripPlanCaptor.capture());
-        TripPlan capturedPlan = tripPlanCaptor.getValue();
-        assertThat(capturedPlan.getCreatedTimestamp()).isNotNull();
-        assertThat(capturedPlan.getCreatedTimestamp())
-                .isAfterOrEqualTo(beforeCreation)
-                .isBeforeOrEqualTo(afterCreation);
+        verify(tripPlanRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test
-    void createTripPlan_shouldInitializeMetadataAsEmptyMap() {
+    void createTripPlan_shouldApplyMetadataCorrectly() {
         // Given
         TripPlanCreationRequest request =
                 new TripPlanCreationRequest(
-                        "Test Plan",
+                        "Metadata Test",
                         startDate,
                         endDate,
                         startLocation,
                         endLocation,
-                        TripPlanType.SIMPLE);
+                        List.of(),
+                        TripPlanType.MULTI_DAY);
 
         TripPlan savedPlan =
                 TripPlan.builder()
                         .id(planId)
                         .name(request.name())
-                        .planType(request.planType())
+                        .planType(TripPlanType.MULTI_DAY)
                         .userId(userId)
                         .createdTimestamp(Instant.now())
                         .startDate(request.startDate())
@@ -228,13 +222,15 @@ class TripPlanServiceImplTest {
         when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(savedPlan);
 
         // When
-        tripPlanService.createTripPlan(userId, request);
+        TripPlanDTO result = tripPlanService.createTripPlan(userId, request);
 
         // Then
         verify(tripPlanRepository).save(tripPlanCaptor.capture());
         TripPlan capturedPlan = tripPlanCaptor.getValue();
         assertThat(capturedPlan.getMetadata()).isNotNull();
         assertThat(capturedPlan.getMetadata()).isEmpty();
+
+        verify(metadataProcessor).applyMetadata(any(TripPlan.class), any());
     }
 
     // UPDATE TRIP PLAN TESTS
@@ -248,7 +244,8 @@ class TripPlanServiceImplTest {
                         startDate.plusDays(1),
                         endDate.plusDays(1),
                         startLocation,
-                        endLocation);
+                        endLocation,
+                        List.of());
 
         TripPlan existingPlan =
                 TripPlan.builder()
@@ -302,7 +299,7 @@ class TripPlanServiceImplTest {
         // Given
         TripPlanUpdateRequest request =
                 new TripPlanUpdateRequest(
-                        "Updated Plan", startDate, endDate, startLocation, endLocation);
+                        "Updated Plan", startDate, endDate, startLocation, endLocation, List.of());
 
         when(tripPlanRepository.findById(planId)).thenReturn(Optional.empty());
 
@@ -323,7 +320,7 @@ class TripPlanServiceImplTest {
         UUID differentUserId = UUID.randomUUID();
         TripPlanUpdateRequest request =
                 new TripPlanUpdateRequest(
-                        "Updated Plan", startDate, endDate, startLocation, endLocation);
+                        "Updated Plan", startDate, endDate, startLocation, endLocation, List.of());
 
         TripPlan existingPlan =
                 TripPlan.builder()
@@ -369,7 +366,8 @@ class TripPlanServiceImplTest {
                         newStartDate,
                         newEndDate,
                         newStartLocation,
-                        newEndLocation);
+                        newEndLocation,
+                        List.of());
 
         TripPlan existingPlan =
                 TripPlan.builder()
@@ -406,7 +404,7 @@ class TripPlanServiceImplTest {
         // Given
         TripPlanUpdateRequest request =
                 new TripPlanUpdateRequest(
-                        "Updated Plan", startDate, endDate, startLocation, endLocation);
+                        "Updated Plan", startDate, endDate, startLocation, endLocation, List.of());
 
         TripPlan existingPlan =
                 TripPlan.builder()

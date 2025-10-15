@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class TripPlanServiceImpl implements TripPlanService {
 
     private final TripPlanRepository tripPlanRepository;
+
     private final TripPlanMapper tripPlanMapper = TripPlanMapper.INSTANCE;
 
     @Override

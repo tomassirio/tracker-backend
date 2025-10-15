@@ -23,3 +23,5 @@ databaseChangeLog:
       file: db/changelog/011-create-trip-plans-table.yaml
   - include:
       file: db/changelog/012-merge-responses-into-comments.yaml
+  - include:
+      file: db/changelog/013-add-waypoints-to-trip-plans.yaml
