@@ -518,4 +518,3 @@ class TripPlanControllerTest {
         mockMvc.perform(delete(TRIP_PLAN_BY_ID_URL, planId)).andExpect(status().isForbidden());
     }
 }
-

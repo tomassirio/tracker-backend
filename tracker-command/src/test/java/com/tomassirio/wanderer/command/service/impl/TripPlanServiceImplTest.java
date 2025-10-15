@@ -292,12 +292,7 @@ class TripPlanServiceImplTest {
         assertThat(result.endDate()).isEqualTo(endDate.plusDays(1));
 
         verify(ownershipValidator)
-                .validateOwnership(
-                        eq(existingPlan),
-                        eq(userId),
-                        any(),
-                        any(),
-                        eq("trip plan"));
+                .validateOwnership(eq(existingPlan), eq(userId), any(), any(), eq("trip plan"));
         verify(metadataProcessor).applyMetadata(any(TripPlan.class), any());
         verify(tripPlanRepository).save(existingPlan);
     }
@@ -345,9 +340,7 @@ class TripPlanServiceImplTest {
                         .build();
 
         when(tripPlanRepository.findById(planId)).thenReturn(Optional.of(existingPlan));
-        doThrow(
-                        new AccessDeniedException(
-                                "User does not have permission to modify trip plan"))
+        doThrow(new AccessDeniedException("User does not have permission to modify trip plan"))
                 .when(ownershipValidator)
                 .validateOwnership(any(), any(), any(), any(), any());
 
@@ -466,12 +459,7 @@ class TripPlanServiceImplTest {
         // Then
         verify(tripPlanRepository).findById(planId);
         verify(ownershipValidator)
-                .validateOwnership(
-                        eq(existingPlan),
-                        eq(userId),
-                        any(),
-                        any(),
-                        eq("trip plan"));
+                .validateOwnership(eq(existingPlan), eq(userId), any(), any(), eq("trip plan"));
         verify(tripPlanRepository).deleteById(planId);
     }
 
@@ -510,9 +498,7 @@ class TripPlanServiceImplTest {
                         .build();
 
         when(tripPlanRepository.findById(planId)).thenReturn(Optional.of(existingPlan));
-        doThrow(
-                        new AccessDeniedException(
-                                "User does not have permission to delete trip plan"))
+        doThrow(new AccessDeniedException("User does not have permission to delete trip plan"))
                 .when(ownershipValidator)
                 .validateOwnership(any(), any(), any(), any(), any());
 
@@ -527,4 +513,3 @@ class TripPlanServiceImplTest {
         verify(tripPlanRepository, org.mockito.Mockito.never()).deleteById(any());
     }
 }
-

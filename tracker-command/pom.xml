@@ -10,7 +10,6 @@
     </parent>
 
     <artifactId>tracker-command</artifactId>
-  <version>0.3.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>tracker-command</name>
     <description>Command side of CQRS - handles write operations</description>

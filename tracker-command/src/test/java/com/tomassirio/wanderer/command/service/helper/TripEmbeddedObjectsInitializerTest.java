@@ -19,7 +19,6 @@ class TripEmbeddedObjectsInitializerTest {
         initializer = new TripEmbeddedObjectsInitializer();
     }
 
-
     @Test
     void createTripSettings_whenCalledWithPublicVisibility_shouldCreateSettingsWithCreatedStatus() {
         // When
@@ -33,7 +32,8 @@ class TripEmbeddedObjectsInitializerTest {
     }
 
     @Test
-    void createTripSettings_whenCalledWithPrivateVisibility_shouldCreateSettingsWithCreatedStatus() {
+    void
+            createTripSettings_whenCalledWithPrivateVisibility_shouldCreateSettingsWithCreatedStatus() {
         // When
         TripSettings settings = initializer.createTripSettings(TripVisibility.PRIVATE);
 
@@ -45,7 +45,8 @@ class TripEmbeddedObjectsInitializerTest {
     }
 
     @Test
-    void createTripSettings_whenCalledWithProtectedVisibility_shouldCreateSettingsWithCreatedStatus() {
+    void
+            createTripSettings_whenCalledWithProtectedVisibility_shouldCreateSettingsWithCreatedStatus() {
         // When
         TripSettings settings = initializer.createTripSettings(TripVisibility.PROTECTED);
 
@@ -141,7 +142,8 @@ class TripEmbeddedObjectsInitializerTest {
     }
 
     @Test
-    void ensureTripSettingsAndGetPreviousStatus_whenSettingsExists_shouldReturnActualPreviousStatus() {
+    void
+            ensureTripSettingsAndGetPreviousStatus_whenSettingsExists_shouldReturnActualPreviousStatus() {
         // Given
         TripSettings existingSettings =
                 TripSettings.builder()
@@ -160,7 +162,8 @@ class TripEmbeddedObjectsInitializerTest {
     }
 
     @Test
-    void ensureTripSettingsAndGetPreviousStatus_whenSettingsExistsWithPausedStatus_shouldReturnPaused() {
+    void
+            ensureTripSettingsAndGetPreviousStatus_whenSettingsExistsWithPausedStatus_shouldReturnPaused() {
         // Given
         TripSettings existingSettings =
                 TripSettings.builder()
@@ -178,7 +181,8 @@ class TripEmbeddedObjectsInitializerTest {
     }
 
     @Test
-    void ensureTripSettingsAndGetPreviousStatus_whenSettingsIsNull_shouldInitializeWithProvidedStatus() {
+    void
+            ensureTripSettingsAndGetPreviousStatus_whenSettingsIsNull_shouldInitializeWithProvidedStatus() {
         // Given
         Trip trip = Trip.builder().tripSettings(null).build();
 
@@ -193,7 +197,8 @@ class TripEmbeddedObjectsInitializerTest {
     }
 
     @Test
-    void ensureTripSettingsAndGetPreviousStatus_whenSettingsIsNullWithCreatedStatus_shouldReturnCreated() {
+    void
+            ensureTripSettingsAndGetPreviousStatus_whenSettingsIsNullWithCreatedStatus_shouldReturnCreated() {
         // Given
         Trip trip = Trip.builder().tripSettings(null).build();
 
@@ -301,4 +306,3 @@ class TripEmbeddedObjectsInitializerTest {
         assertThat(trip.getTripSettings().getTripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
     }
 }
-

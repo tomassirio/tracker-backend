@@ -157,7 +157,8 @@ class TripStatusTransitionHandlerTest {
     }
 
     @Test
-    void handleStatusTransition_whenAlreadyHasStartTimestamp_shouldNotOverwriteOnCreatedToInProgress() {
+    void
+            handleStatusTransition_whenAlreadyHasStartTimestamp_shouldNotOverwriteOnCreatedToInProgress() {
         // Given
         Trip trip = createTripWithDetails();
         Instant existingStartTimestamp = Instant.now().minusSeconds(7200);
@@ -191,8 +192,6 @@ class TripStatusTransitionHandlerTest {
     }
 
     private Trip createTripWithDetails() {
-        return Trip.builder()
-                .tripDetails(TripDetails.builder().build())
-                .build();
+        return Trip.builder().tripDetails(TripDetails.builder().build()).build();
     }
 }

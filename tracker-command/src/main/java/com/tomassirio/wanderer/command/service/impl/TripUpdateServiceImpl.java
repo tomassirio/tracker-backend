@@ -32,8 +32,7 @@ public class TripUpdateServiceImpl implements TripUpdateService {
                         .findById(tripId)
                         .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
 
-        ownershipValidator.validateOwnership(
-                trip, userId, Trip::getUserId, Trip::getId, "trip");
+        ownershipValidator.validateOwnership(trip, userId, Trip::getUserId, Trip::getId, "trip");
 
         TripUpdate tripUpdate =
                 TripUpdate.builder()
