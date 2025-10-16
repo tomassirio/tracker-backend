@@ -216,6 +216,24 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>${jacoco.version}</version>
+                <configuration>
+                    <excludes>
+                        <!-- Exclude DTOs and entities -->
+                        <exclude>**/dto/**</exclude>
+                        <exclude>**/entity/**</exclude>
+                        <exclude>**/domain/**</exclude>
+                        <!-- Exclude configuration classes -->
+                        <exclude>**/config/**</exclude>
+                        <!-- Exclude Spring Boot application classes -->
+                        <exclude>**/*Application.class</exclude>
+                        <!-- Exclude MapStruct generated mappers -->
+                        <exclude>**/mapper/*Impl.class</exclude>
+                        <!-- Exclude exception classes -->
+                        <exclude>**/exception/**</exclude>
+                        <!-- Exclude constants -->
+                        <exclude>**/constants/**</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
