@@ -9,5 +9,4 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest(
         classes = TrackerCommandApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class CucumberSpringConfiguration extends BaseCucumberSpringConfiguration {
-}
+public class CucumberSpringConfiguration extends BaseCucumberSpringConfiguration {}

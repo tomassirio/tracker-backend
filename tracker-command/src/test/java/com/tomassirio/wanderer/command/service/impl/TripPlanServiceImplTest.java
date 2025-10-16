@@ -310,8 +310,7 @@ class TripPlanServiceImplTest {
                 .hasMessage("Trip plan not found");
 
         verify(tripPlanRepository).findById(planId);
-        verify(ownershipValidator, never())
-                .validateOwnership(any(), any(), any(), any(), any());
+        verify(ownershipValidator, never()).validateOwnership(any(), any(), any(), any(), any());
         verify(tripPlanRepository, never()).save(any());
     }
 
@@ -473,8 +472,7 @@ class TripPlanServiceImplTest {
                 .hasMessage("Trip plan not found");
 
         verify(tripPlanRepository).findById(planId);
-        verify(ownershipValidator, never())
-                .validateOwnership(any(), any(), any(), any(), any());
+        verify(ownershipValidator, never()).validateOwnership(any(), any(), any(), any(), any());
         verify(tripPlanRepository, never()).deleteById(any());
     }
 

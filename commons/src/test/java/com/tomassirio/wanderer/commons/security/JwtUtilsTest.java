@@ -90,8 +90,7 @@ class JwtUtilsTest {
         // When & Then
         ResponseStatusException exception =
                 assertThrows(
-                        ResponseStatusException.class,
-                        () -> jwtUtils.parsePayload(tamperedToken));
+                        ResponseStatusException.class, () -> jwtUtils.parsePayload(tamperedToken));
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatusCode());
         assertTrue(Objects.requireNonNull(exception.getReason()).contains("Invalid JWT signature"));
     }
@@ -197,7 +196,9 @@ class JwtUtilsTest {
                         ResponseStatusException.class,
                         () -> jwtUtils.getUserIdFromAuthorizationHeader(null));
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatusCode());
-        assertTrue(Objects.requireNonNull(exception.getReason()).contains("Missing Authorization header"));
+        assertTrue(
+                Objects.requireNonNull(exception.getReason())
+                        .contains("Missing Authorization header"));
     }
 
     @Test
@@ -208,12 +209,13 @@ class JwtUtilsTest {
                         ResponseStatusException.class,
                         () -> jwtUtils.getUserIdFromAuthorizationHeader("   "));
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatusCode());
-        assertTrue(Objects.requireNonNull(exception.getReason()).contains("Missing Authorization header"));
+        assertTrue(
+                Objects.requireNonNull(exception.getReason())
+                        .contains("Missing Authorization header"));
     }
 
     @Test
-    void getUserIdFromAuthorizationHeader_shouldThrowExceptionForMissingSubject()
-            throws Exception {
+    void getUserIdFromAuthorizationHeader_shouldThrowExceptionForMissingSubject() throws Exception {
         // Given
         Map<String, Object> payload = new HashMap<>();
         payload.put("email", "test@example.com");
@@ -241,7 +243,8 @@ class JwtUtilsTest {
                         ResponseStatusException.class,
                         () -> jwtUtils.getUserIdFromAuthorizationHeader(token));
         assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatusCode());
-        assertTrue(Objects.requireNonNull(exception.getReason()).contains("Invalid user id in token"));
+        assertTrue(
+                Objects.requireNonNull(exception.getReason()).contains("Invalid user id in token"));
     }
 
     @Test
