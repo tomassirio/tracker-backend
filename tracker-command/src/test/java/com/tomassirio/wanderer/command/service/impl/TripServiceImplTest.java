@@ -401,7 +401,7 @@ class TripServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> tripService.updateTrip(otherUserId, tripId, request))
-                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("does not have permission");
 
         verify(tripRepository).findById(tripId);
@@ -463,7 +463,7 @@ class TripServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> tripService.deleteTrip(otherUserId, tripId))
-                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("does not have permission");
 
         verify(tripRepository).findById(tripId);
@@ -534,7 +534,7 @@ class TripServiceImplTest {
                         () ->
                                 tripService.changeVisibility(
                                         otherUserId, tripId, TripVisibility.PRIVATE))
-                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("does not have permission");
 
         verify(tripRepository).findById(tripId);
@@ -613,7 +613,7 @@ class TripServiceImplTest {
         // When & Then
         assertThatThrownBy(
                         () -> tripService.changeStatus(otherUserId, tripId, TripStatus.IN_PROGRESS))
-                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("does not have permission");
 
         verify(tripRepository).findById(tripId);

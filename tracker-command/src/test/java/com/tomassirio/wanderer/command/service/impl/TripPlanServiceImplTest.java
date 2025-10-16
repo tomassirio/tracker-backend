@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -189,7 +190,7 @@ class TripPlanServiceImplTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("End date must be after start date");
 
-        verify(tripPlanRepository, org.mockito.Mockito.never()).save(any());
+        verify(tripPlanRepository, never()).save(any());
     }
 
     @Test
@@ -309,9 +310,9 @@ class TripPlanServiceImplTest {
                 .hasMessage("Trip plan not found");
 
         verify(tripPlanRepository).findById(planId);
-        verify(ownershipValidator, org.mockito.Mockito.never())
+        verify(ownershipValidator, never())
                 .validateOwnership(any(), any(), any(), any(), any());
-        verify(tripPlanRepository, org.mockito.Mockito.never()).save(any());
+        verify(tripPlanRepository, never()).save(any());
     }
 
     @Test
@@ -349,7 +350,7 @@ class TripPlanServiceImplTest {
         verify(tripPlanRepository).findById(planId);
         verify(ownershipValidator)
                 .validateOwnership(any(), eq(userId), any(), any(), eq("trip plan"));
-        verify(tripPlanRepository, org.mockito.Mockito.never()).save(any());
+        verify(tripPlanRepository, never()).save(any());
     }
 
     @Test
@@ -472,9 +473,9 @@ class TripPlanServiceImplTest {
                 .hasMessage("Trip plan not found");
 
         verify(tripPlanRepository).findById(planId);
-        verify(ownershipValidator, org.mockito.Mockito.never())
+        verify(ownershipValidator, never())
                 .validateOwnership(any(), any(), any(), any(), any());
-        verify(tripPlanRepository, org.mockito.Mockito.never()).deleteById(any());
+        verify(tripPlanRepository, never()).deleteById(any());
     }
 
     @Test
@@ -508,6 +509,6 @@ class TripPlanServiceImplTest {
         verify(tripPlanRepository).findById(planId);
         verify(ownershipValidator)
                 .validateOwnership(any(), eq(userId), any(), any(), eq("trip plan"));
-        verify(tripPlanRepository, org.mockito.Mockito.never()).deleteById(any());
+        verify(tripPlanRepository, never()).deleteById(any());
     }
 }

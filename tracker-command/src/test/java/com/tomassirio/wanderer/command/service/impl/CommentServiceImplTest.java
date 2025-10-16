@@ -4,6 +4,7 @@ import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_I
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -123,7 +124,7 @@ class CommentServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Trip not found");
 
-        verify(commentRepository, org.mockito.Mockito.never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     // ============ CREATE REPLY TESTS ============
@@ -168,7 +169,7 @@ class CommentServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Parent comment not found");
 
-        verify(commentRepository, org.mockito.Mockito.never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -185,7 +186,7 @@ class CommentServiceImplTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Cannot create a reply to a reply. Maximum nesting depth is 1.");
 
-        verify(commentRepository, org.mockito.Mockito.never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     // ============ ADD REACTION TO COMMENT TESTS ============
@@ -240,7 +241,7 @@ class CommentServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Comment not found");
 
-        verify(commentRepository, org.mockito.Mockito.never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -329,7 +330,7 @@ class CommentServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(COMMENT_ID.toString());
 
-        verify(commentRepository, org.mockito.Mockito.never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     @Test
@@ -345,7 +346,7 @@ class CommentServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Comment not found");
 
-        verify(commentRepository, org.mockito.Mockito.never()).save(any(Comment.class));
+        verify(commentRepository, never()).save(any(Comment.class));
     }
 
     // ============ EDGE CASE TESTS ============
