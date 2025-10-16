@@ -55,14 +55,36 @@ jobs:
 
       - name: Extract coverage and update README badges
         run: |
-          # Extract coverage from JaCoCo aggregate report
-          COVERAGE_FILE="target/site/jacoco-aggregate/index.html"
-          if [ -f "$COVERAGE_FILE" ]; then
-            COVERAGE=$(grep -oP 'Total[^%]+\K\d+(?=%)' "$COVERAGE_FILE" | head -1)
-            if [ -z "$COVERAGE" ]; then
-              COVERAGE="N/A"
-              COVERAGE_COLOR="lightgrey"
-            elif [ "$COVERAGE" -ge 80 ]; then
+          # Calculate aggregate coverage from all modules
+          echo "Calculating aggregate coverage from all modules..."
+          
+          TOTAL_COVERED=0
+          TOTAL_MISSED=0
+          
+          # Find all jacoco.csv files from individual modules
+          for csv in */target/site/jacoco/jacoco.csv; do
+            if [ -f "$csv" ]; then
+              echo "Processing: $csv"
+              # Extract instruction coverage (columns 4=INSTRUCTION_MISSED, 5=INSTRUCTION_COVERED)
+              # Skip header line and sum up the totals
+              MISSED=$(awk -F',' 'NR>1 {sum+=$4} END {print sum}' "$csv")
+              COVERED=$(awk -F',' 'NR>1 {sum+=$5} END {print sum}' "$csv")
+              
+              TOTAL_MISSED=$((TOTAL_MISSED + MISSED))
+              TOTAL_COVERED=$((TOTAL_COVERED + COVERED))
+              
+              echo "  Missed: $MISSED, Covered: $COVERED"
+            fi
+          done
+          
+          # Calculate coverage percentage
+          TOTAL_INSTRUCTIONS=$((TOTAL_MISSED + TOTAL_COVERED))
+          
+          if [ "$TOTAL_INSTRUCTIONS" -gt 0 ]; then
+            COVERAGE=$((TOTAL_COVERED * 100 / TOTAL_INSTRUCTIONS))
+            echo "Total coverage: ${COVERAGE}% (${TOTAL_COVERED}/${TOTAL_INSTRUCTIONS} instructions)"
+            
+            if [ "$COVERAGE" -ge 80 ]; then
               COVERAGE_COLOR="brightgreen"
             elif [ "$COVERAGE" -ge 60 ]; then
               COVERAGE_COLOR="yellow"
@@ -72,9 +94,12 @@ jobs:
               COVERAGE_COLOR="red"
             fi
           else
+            echo "No coverage data found"
             COVERAGE="N/A"
             COVERAGE_COLOR="lightgrey"
           fi
+          
+          echo "Setting coverage badge to: ${COVERAGE}% with color ${COVERAGE_COLOR}"
           
           # Update version badge
           sed -i "s/version-[0-9.]*-blue/version-${RELEASE_VERSION}-blue/" README.md
