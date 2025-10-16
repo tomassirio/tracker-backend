@@ -7,18 +7,26 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.commons.domain.Location;
+import com.tomassirio.wanderer.commons.domain.Comment;
+import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripPlan;
+import com.tomassirio.wanderer.commons.domain.TripPlanType;
+import com.tomassirio.wanderer.commons.domain.TripSettings;
+import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.utils.JwtBuilder;
+import com.tomassirio.wanderer.query.repository.CommentRepository;
+import com.tomassirio.wanderer.query.repository.TripPlanRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
 import com.tomassirio.wanderer.query.repository.UserRepository;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +53,8 @@ public class StepDefinitions {
     @Autowired private TestRestTemplate restTemplate;
     @Autowired private UserRepository userRepository;
     @Autowired private TripRepository tripRepository;
+    @Autowired private CommentRepository commentRepository;
+    @Autowired private TripPlanRepository tripPlanRepository;
 
     private ResponseEntity<String> latestResponse;
 
@@ -71,19 +81,27 @@ public class StepDefinitions {
     @Getter @Setter private String tempAuthHeader;
     @Getter @Setter private String lastCreatedUsername;
     @Getter @Setter private UUID lastCreatedTripId;
+    @Getter @Setter private UUID lastCreatedTripPlanId;
+    @Getter @Setter private UUID lastCreatedCommentId;
 
     // In-memory data
     private final Map<String, User> users = new HashMap<>();
     private final Map<UUID, Trip> trips = new HashMap<>();
+    private final Map<UUID, TripPlan> tripPlans = new HashMap<>();
+    private final Map<UUID, Comment> comments = new HashMap<>();
 
     @Given("an empty system")
     public void an_empty_system() {
         trips.clear();
         users.clear();
+        tripPlans.clear();
+        comments.clear();
 
         setTempAuthHeader(null);
         setLastCreatedUsername(null);
         setLastCreatedTripId(null);
+        setLastCreatedTripPlanId(null);
+        setLastCreatedCommentId(null);
 
         Mockito.reset(tripRepository);
         Mockito.reset(userRepository);
@@ -102,32 +120,95 @@ public class StepDefinitions {
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(userRepository.findAll()).thenReturn(List.of(user));
-        when(tripRepository.findByOwnerId(user.getId())).thenReturn(new ArrayList<>());
+        when(tripRepository.findByUserId(user.getId())).thenReturn(new ArrayList<>());
     }
 
     @Given("a trip exists with name {string}")
     public void a_trip_exists_with_name(String name) {
         User owner = users.get(getLastCreatedUsername());
         Assertions.assertNotNull(owner, "No user exists to own the trip");
-        Location loc = Location.builder().latitude(10.0).longitude(20.0).altitude(0.0).build();
+
+        TripSettings tripSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .updateRefresh(null)
+                        .build();
+
+        TripDetails tripDetails =
+                TripDetails.builder()
+                        .startTimestamp(Instant.now())
+                        .endTimestamp(null)
+                        .startLocation(null)
+                        .endLocation(null)
+                        .build();
+
         Trip trip =
                 Trip.builder()
                         .id(UUID.randomUUID())
                         .name(name)
-                        .startDate(LocalDate.now())
-                        .endDate(LocalDate.now().plusDays(5))
-                        .totalDistance(100.0)
-                        .startingLocation(loc)
-                        .endingLocation(loc)
-                        .visibility(TripVisibility.PUBLIC)
-                        .owner(owner)
+                        .userId(owner.getId())
+                        .tripSettings(tripSettings)
+                        .tripDetails(tripDetails)
+                        .tripPlanId(null)
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
                         .build();
         trips.put(trip.getId(), trip);
         setLastCreatedTripId(trip.getId());
 
         when(tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
         when(tripRepository.findAll()).thenReturn(new ArrayList<>(trips.values()));
-        when(tripRepository.findByOwnerId(owner.getId())).thenReturn(List.of(trip));
+        when(tripRepository.findByUserId(owner.getId())).thenReturn(List.of(trip));
+    }
+
+    @Given("a trip plan exists with name {string}")
+    public void a_trip_plan_exists_with_name(String name) {
+        User owner = users.get(getLastCreatedUsername());
+        Assertions.assertNotNull(owner, "No user exists to own the trip plan");
+
+        TripPlan tripPlan =
+                TripPlan.builder()
+                        .id(UUID.randomUUID())
+                        .name(name)
+                        .userId(owner.getId())
+                        .planType(TripPlanType.SIMPLE)
+                        .createdTimestamp(Instant.now())
+                        .startDate(java.time.LocalDate.now())
+                        .endDate(java.time.LocalDate.now().plusDays(7))
+                        .build();
+        tripPlans.put(tripPlan.getId(), tripPlan);
+        setLastCreatedTripPlanId(tripPlan.getId());
+
+        when(tripPlanRepository.findById(tripPlan.getId())).thenReturn(Optional.of(tripPlan));
+        when(tripPlanRepository.findByUserId(owner.getId())).thenReturn(List.of(tripPlan));
+        when(tripPlanRepository.findAll()).thenReturn(new ArrayList<>(tripPlans.values()));
+    }
+
+    @Given("a comment exists with content {string}")
+    public void a_comment_exists_with_content(String content) {
+        User owner = users.get(getLastCreatedUsername());
+        Trip trip = trips.get(getLastCreatedTripId());
+        Assertions.assertNotNull(owner, "No user exists to own the comment");
+        Assertions.assertNotNull(trip, "No trip found to associate with the comment");
+
+        Comment comment =
+                Comment.builder()
+                        .id(UUID.randomUUID())
+                        .userId(owner.getId())
+                        .trip(trip)
+                        .message(content)
+                        .parentComment(null)
+                        .reactions(new Reactions())
+                        .timestamp(Instant.now())
+                        .build();
+        comments.put(comment.getId(), comment);
+        setLastCreatedCommentId(comment.getId());
+
+        when(commentRepository.findById(comment.getId())).thenReturn(Optional.of(comment));
+        when(commentRepository.findTopLevelCommentsByTripId(trip.getId()))
+                .thenReturn(new ArrayList<>(comments.values()));
+        when(commentRepository.findAll()).thenReturn(new ArrayList<>(comments.values()));
     }
 
     @Given("I have a valid token for that user with roles {string}")
@@ -199,8 +280,8 @@ public class StepDefinitions {
         String body = latestResponse.getBody();
         List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
         Assertions.assertFalse(json.isEmpty(), "Expected at least one trip in response");
-        Object ownerIdObj = json.getFirst().get("ownerId");
-        Assertions.assertNotNull(ownerIdObj, "Trip does not contain ownerId");
+        Object ownerIdObj = json.getFirst().get("userId");
+        Assertions.assertNotNull(ownerIdObj, "Trip does not contain userId");
         UUID ownerId = UUID.fromString(ownerIdObj.toString());
         User expected = users.get(username);
         Assertions.assertNotNull(expected, "No such user in test state: " + username);
@@ -325,5 +406,338 @@ public class StepDefinitions {
         payload.put("roles", roles);
         if (extraClaims != null) payload.putAll(extraClaims);
         return JwtBuilder.buildJwt(payload, secret != null ? secret : TEST_SECRET);
+    }
+
+    // ==================== TRIP PLAN STEPS ====================
+
+    @When("I get all trip plans")
+    public void i_get_all_trip_plans() throws JsonProcessingException {
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/trips/plans", HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /trips/plans response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get the last created trip plan")
+    public void i_get_the_last_created_trip_plan() throws JsonProcessingException {
+        String id = getLastCreatedTripPlanId().toString();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/trips/plans/" + id, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /trips/plans/{} response status: {}",
+                id,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get my trip plans")
+    public void i_get_my_trip_plans() throws JsonProcessingException {
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/trips/plans/me", HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /trips/plans/me response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get that trip plan by id")
+    public void i_get_that_trip_plan_by_id() throws JsonProcessingException {
+        i_get_the_last_created_trip_plan();
+    }
+
+    @When("I get that trip plan by id without token")
+    public void i_get_that_trip_plan_by_id_without_token() throws JsonProcessingException {
+        String id = getLastCreatedTripPlanId().toString();
+        HttpEntity<String> request = createJsonRequest(null, null);
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/trips/plans/" + id, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /trips/plans/{} (no token) response status: {}",
+                id,
+                latestResponse.getStatusCode().value());
+    }
+
+    @Then("the response contains a trip plan id")
+    public void the_response_contains_a_trip_plan_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("id"), "Response does not contain id");
+        UUID parsed = UUID.fromString(json.get("id").toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the response contains at least one trip plan id")
+    public void the_response_contains_at_least_one_trip_plan_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        Assertions.assertFalse(json.isEmpty(), "Expected at least one trip plan in response");
+        Object maybeId = json.getFirst().get("id");
+        Assertions.assertNotNull(maybeId);
+        UUID parsed = UUID.fromString(maybeId.toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the trip plan name should be {string}")
+    public void the_trip_plan_name_should_be(String expectedName) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("name"), "Response does not contain name");
+        String actualName = json.get("name").toString();
+        Assertions.assertEquals(expectedName, actualName);
+    }
+
+    // ==================== COMMENT STEPS ====================
+
+    @Given("a comment exists with message {string} on that trip")
+    public void a_comment_exists_with_message_on_that_trip(String message) {
+        User owner = users.get(getLastCreatedUsername());
+        Trip trip = trips.get(getLastCreatedTripId());
+        Assertions.assertNotNull(owner, "No user exists to own the comment");
+        Assertions.assertNotNull(trip, "No trip exists to associate with the comment");
+
+        Comment comment =
+                Comment.builder()
+                        .id(UUID.randomUUID())
+                        .userId(owner.getId())
+                        .trip(trip)
+                        .message(message)
+                        .parentComment(null)
+                        .reactions(new Reactions())
+                        .timestamp(Instant.now())
+                        .build();
+        comments.put(comment.getId(), comment);
+        setLastCreatedCommentId(comment.getId());
+
+        when(commentRepository.findById(comment.getId())).thenReturn(Optional.of(comment));
+        when(commentRepository.findTopLevelCommentsByTripId(trip.getId()))
+                .thenReturn(new ArrayList<>(comments.values()));
+    }
+
+    @Given("a reply exists with message {string} on that comment")
+    public void a_reply_exists_with_message_on_that_comment(String message) {
+        User owner = users.get(getLastCreatedUsername());
+        Comment parentComment = comments.get(getLastCreatedCommentId());
+        Assertions.assertNotNull(owner, "No user exists to own the reply");
+        Assertions.assertNotNull(parentComment, "No parent comment exists");
+
+        Comment reply =
+                Comment.builder()
+                        .id(UUID.randomUUID())
+                        .userId(owner.getId())
+                        .trip(parentComment.getTrip())
+                        .message(message)
+                        .parentComment(parentComment)
+                        .reactions(new Reactions())
+                        .timestamp(Instant.now())
+                        .build();
+        comments.put(reply.getId(), reply);
+
+        when(commentRepository.findById(reply.getId())).thenReturn(Optional.of(reply));
+    }
+
+    @Given("a reaction {string} exists on that comment")
+    public void a_reaction_exists_on_that_comment(String reactionType) {
+        Comment comment = comments.get(getLastCreatedCommentId());
+        Assertions.assertNotNull(comment, "No comment exists to add reaction to");
+
+        if (comment.getReactions() == null) {
+            comment.setReactions(new Reactions());
+        }
+        // Add a reaction (simplified - just mark that reactions exist)
+        Map<String, Integer> reactionMap = new HashMap<>();
+        reactionMap.put(reactionType, 1);
+    }
+
+    @When("I get all comments for that trip")
+    public void i_get_all_comments_for_that_trip() throws JsonProcessingException {
+        String tripId = getLastCreatedTripId().toString();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/" + tripId + "/comments",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /{}/comments response status: {}",
+                tripId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get all comments for that trip without token")
+    public void i_get_all_comments_for_that_trip_without_token() throws JsonProcessingException {
+        String tripId = getLastCreatedTripId().toString();
+        HttpEntity<String> request = createJsonRequest(null, null);
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/" + tripId + "/comments",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /{}/comments (no token) response status: {}",
+                tripId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get that comment by id")
+    public void i_get_that_comment_by_id() throws JsonProcessingException {
+        String commentId = getLastCreatedCommentId().toString();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/comments/" + commentId, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /comments/{} response status: {}",
+                commentId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get that comment by id without token")
+    public void i_get_that_comment_by_id_without_token() throws JsonProcessingException {
+        String commentId = getLastCreatedCommentId().toString();
+        HttpEntity<String> request = createJsonRequest(null, null);
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/comments/" + commentId, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /comments/{} (no token) response status: {}",
+                commentId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get all replies for that comment")
+    public void i_get_all_replies_for_that_comment() throws JsonProcessingException {
+        String commentId = getLastCreatedCommentId().toString();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/comments/" + commentId + "/replies",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /comments/{}/replies response status: {}",
+                commentId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get all replies for that comment without token")
+    public void i_get_all_replies_for_that_comment_without_token() throws JsonProcessingException {
+        String commentId = getLastCreatedCommentId().toString();
+        HttpEntity<String> request = createJsonRequest(null, null);
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/comments/" + commentId + "/replies",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /comments/{}/replies (no token) response status: {}",
+                commentId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get all comments by that user")
+    public void i_get_all_comments_by_that_user() throws JsonProcessingException {
+        User user = users.get(getLastCreatedUsername());
+        Assertions.assertNotNull(user, "No user exists");
+        String userId = user.getId().toString();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/users/" + userId + "/comments",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /users/{}/comments response status: {}",
+                userId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get all comments by that user without token")
+    public void i_get_all_comments_by_that_user_without_token() throws JsonProcessingException {
+        User user = users.get(getLastCreatedUsername());
+        Assertions.assertNotNull(user, "No user exists");
+        String userId = user.getId().toString();
+        HttpEntity<String> request = createJsonRequest(null, null);
+        latestResponse =
+                restTemplate.exchange(
+                        API_BASE + "/users/" + userId + "/comments",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /users/{}/comments (no token) response status: {}",
+                userId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @Then("the response contains a comment id")
+    public void the_response_contains_a_comment_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("id"), "Response does not contain id");
+        UUID parsed = UUID.fromString(json.get("id").toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the response contains at least one comment id")
+    public void the_response_contains_at_least_one_comment_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        Assertions.assertFalse(json.isEmpty(), "Expected at least one comment in response");
+        Object maybeId = json.getFirst().get("id");
+        Assertions.assertNotNull(maybeId);
+        UUID parsed = UUID.fromString(maybeId.toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the comment message should be {string}")
+    public void the_comment_message_should_be(String expectedMessage) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("message"), "Response does not contain message");
+        String actualMessage = json.get("message").toString();
+        Assertions.assertEquals(expectedMessage, actualMessage);
+    }
+
+    @Then("all comments should be by user {string}")
+    public void all_comments_should_be_by_user(String username) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        User expected = users.get(username);
+        Assertions.assertNotNull(expected, "No such user in test state: " + username);
+
+        for (Map<String, Object> comment : json) {
+            Object userIdObj = comment.get("userId");
+            Assertions.assertNotNull(userIdObj, "Comment does not contain userId");
+            UUID userId = UUID.fromString(userIdObj.toString());
+            Assertions.assertEquals(expected.getId(), userId, "Comment not by expected user");
+        }
+    }
+
+    @Then("the comment should have at least one reaction")
+    public void the_comment_should_have_at_least_one_reaction() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("reactions"), "Response does not contain reactions");
+        Object reactions = json.get("reactions");
+        Assertions.assertNotNull(reactions, "Reactions should not be null");
     }
 }

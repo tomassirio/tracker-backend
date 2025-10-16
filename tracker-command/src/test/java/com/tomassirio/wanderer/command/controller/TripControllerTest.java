@@ -15,18 +15,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.command.dto.LocationRequest;
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
+import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import com.tomassirio.wanderer.commons.dto.LocationDTO;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripDetailsDTO;
+import com.tomassirio.wanderer.commons.dto.TripSettingsDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @ExtendWith(MockitoExtension.class)
 class TripControllerTest {
+
+    private static final String TRIPS_BASE_URL = "/api/1/trips";
+    private static final String TRIP_BY_ID_URL = TRIPS_BASE_URL + "/{id}";
 
     private MockMvc mockMvc;
 
@@ -62,22 +66,27 @@ class TripControllerTest {
     @Test
     void createTrip_whenValidRequest_shouldReturnCreatedTrip() throws Exception {
         // Given
-        LocationRequest startLocation =
-                TestEntityFactory.createLocationRequest(39.7392, -104.9903, 1609.3);
-        LocationRequest endLocation =
-                TestEntityFactory.createLocationRequest(37.7749, -122.4194, 16.0);
         TripCreationRequest request =
                 TestEntityFactory.createTripCreationRequest(
-                        "Summer Road Trip 2025", startLocation, endLocation);
+                        "Summer Road Trip 2025", TripVisibility.PUBLIC);
 
         UUID tripId = UUID.randomUUID();
-        LocationDTO startLocationDTO =
-                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903, 1609.3);
-        LocationDTO endLocationDTO =
-                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, 16.0);
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PUBLIC, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
         TripDTO expectedResponse =
-                TestEntityFactory.createTripDTO(
-                        tripId, USER_ID, "Summer Road Trip 2025", startLocationDTO, endLocationDTO);
+                new TripDTO(
+                        tripId.toString(),
+                        "Summer Road Trip 2025",
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
+                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        Instant.now(),
+                        true);
 
         doReturn(expectedResponse)
                 .when(tripService)
@@ -85,36 +94,43 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(tripId.toString()));
+                .andExpect(jsonPath("$.id").value(tripId.toString()))
+                .andExpect(jsonPath("$.name").value("Summer Road Trip 2025"))
+                .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$.tripSettings.tripStatus").value(TripStatus.CREATED.name()))
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility").value(TripVisibility.PUBLIC.name()))
+                .andExpect(jsonPath("$.enabled").value(true));
     }
 
     @Test
-    void createTrip_whenLocationRequestsHaveNoAltitude_shouldReturnCreatedTrip() throws Exception {
-        // Given - locations without altitude
-        LocationRequest startLocation =
-                TestEntityFactory.createLocationRequest(39.7392, -104.9903, null);
-        LocationRequest endLocation =
-                TestEntityFactory.createLocationRequest(37.7749, -122.4194, null);
+    void createTrip_whenPrivateVisibility_shouldReturnCreatedTrip() throws Exception {
+        // Given
         TripCreationRequest request =
                 TestEntityFactory.createTripCreationRequest(
-                        "Road Trip Without Altitude", startLocation, endLocation);
+                        "Private Road Trip", TripVisibility.PRIVATE);
 
         UUID tripId = UUID.randomUUID();
-        LocationDTO startLocationDTO =
-                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 39.7392, -104.9903, null);
-        LocationDTO endLocationDTO =
-                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 37.7749, -122.4194, null);
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PRIVATE, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
         TripDTO expectedResponse =
-                TestEntityFactory.createTripDTO(
-                        tripId,
-                        USER_ID,
-                        "Road Trip Without Altitude",
-                        startLocationDTO,
-                        endLocationDTO);
+                new TripDTO(
+                        tripId.toString(),
+                        "Private Road Trip",
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
+                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        Instant.now(),
+                        true);
 
         doReturn(expectedResponse)
                 .when(tripService)
@@ -122,102 +138,50 @@ class TripControllerTest {
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(tripId.toString()));
+                .andExpect(jsonPath("$.id").value(tripId.toString()))
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility").value(TripVisibility.PRIVATE.name()));
     }
 
     @Test
     void createTrip_whenNameIsTooShort_shouldReturnBadRequest() throws Exception {
         // Given
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest();
-
-        TripCreationRequest request =
-                new TripCreationRequest(
-                        "AB", // Too short (min 3 chars)
-                        LocalDate.of(2025, 6, 1),
-                        LocalDate.of(2025, 6, 15),
-                        null,
-                        startLocation,
-                        null,
-                        TripVisibility.PUBLIC);
+        TripCreationRequest request = new TripCreationRequest("AB", TripVisibility.PUBLIC);
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void createTrip_whenStartingLocationLatitudeIsInvalid_shouldReturnBadRequest()
-            throws Exception {
-        // Given - latitude out of range
-        LocationRequest startLocation =
-                TestEntityFactory.createLocationRequest(91.0, -104.9903, null);
-
-        TripCreationRequest request =
-                new TripCreationRequest(
-                        "Summer Road Trip",
-                        LocalDate.of(2025, 6, 1),
-                        LocalDate.of(2025, 6, 15),
-                        null,
-                        startLocation,
-                        null,
-                        TripVisibility.PUBLIC);
+    void createTrip_whenNameIsBlank_shouldReturnBadRequest() throws Exception {
+        // Given
+        TripCreationRequest request = new TripCreationRequest("", TripVisibility.PUBLIC);
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
-    void createTrip_whenStartingLocationLongitudeIsInvalid_shouldReturnBadRequest()
-            throws Exception {
-        // Given - longitude out of range
-        LocationRequest startLocation =
-                TestEntityFactory.createLocationRequest(39.7392, -181.0, null);
-
-        TripCreationRequest request =
-                new TripCreationRequest(
-                        "Summer Road Trip",
-                        LocalDate.of(2025, 6, 1),
-                        LocalDate.of(2025, 6, 15),
-                        null,
-                        startLocation,
-                        null,
-                        TripVisibility.PUBLIC);
+    void createTrip_whenNameIsTooLong_shouldReturnBadRequest() throws Exception {
+        // Given - name with more than 100 characters
+        String longName = "A".repeat(101);
+        TripCreationRequest request = new TripCreationRequest(longName, TripVisibility.PUBLIC);
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void createTrip_whenStartingLocationIsNull_shouldReturnBadRequest() throws Exception {
-        // Given - no starting location
-        TripCreationRequest request =
-                new TripCreationRequest(
-                        "Summer Road Trip",
-                        LocalDate.of(2025, 6, 1),
-                        LocalDate.of(2025, 6, 15),
-                        null,
-                        null, // Starting location is required
-                        null,
-                        TripVisibility.PUBLIC);
-
-        // When & Then
-        mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -226,80 +190,146 @@ class TripControllerTest {
     @Test
     void createTrip_whenVisibilityIsNull_shouldReturnBadRequest() throws Exception {
         // Given
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest();
-
-        TripCreationRequest request =
-                new TripCreationRequest(
-                        "Summer Road Trip",
-                        LocalDate.of(2025, 6, 1),
-                        LocalDate.of(2025, 6, 15),
-                        null,
-                        startLocation,
-                        null,
-                        null); // Visibility is required
+        TripCreationRequest request = new TripCreationRequest("Summer Road Trip", null);
 
         // When & Then
         mockMvc.perform(
-                        post("/api/1/trips")
+                        post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
 
     @Test
+    void createTrip_whenProtectedVisibility_shouldReturnCreatedTrip() throws Exception {
+        // Given
+        TripCreationRequest request =
+                TestEntityFactory.createTripCreationRequest(
+                        "Protected Trip", TripVisibility.PROTECTED);
+
+        UUID tripId = UUID.randomUUID();
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PROTECTED, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
+        TripDTO expectedResponse =
+                new TripDTO(
+                        tripId.toString(),
+                        "Protected Trip",
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
+                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        Instant.now(),
+                        true);
+
+        doReturn(expectedResponse)
+                .when(tripService)
+                .createTrip(any(UUID.class), any(TripCreationRequest.class));
+
+        // When & Then
+        mockMvc.perform(
+                        post(TRIPS_BASE_URL)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility")
+                                .value(TripVisibility.PROTECTED.name()));
+    }
+
+    @Test
     void updateTrip_whenValidRequest_shouldReturnUpdatedTrip() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        LocationRequest startLocation =
-                TestEntityFactory.createLocationRequest(40.7128, -74.0060, 10.0);
-        LocationRequest endLocation =
-                TestEntityFactory.createLocationRequest(34.0522, -118.2437, 71.0);
         TripUpdateRequest request =
                 TestEntityFactory.createTripUpdateRequest(
-                        "Updated Trip Name", startLocation, endLocation);
+                        "Updated Trip Name", TripVisibility.PUBLIC);
 
-        LocationDTO startLocationDTO =
-                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 40.7128, -74.0060, 10.0);
-        LocationDTO endLocationDTO =
-                TestEntityFactory.createLocationDTO(UUID.randomUUID(), 34.0522, -118.2437, 71.0);
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.IN_PROGRESS, TripVisibility.PUBLIC, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(Instant.now(), null, null, null);
+
         TripDTO expectedResponse =
-                TestEntityFactory.createTripDTO(
-                        tripId, USER_ID, "Updated Trip Name", startLocationDTO, endLocationDTO);
+                new TripDTO(
+                        tripId.toString(),
+                        "Updated Trip Name",
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
+                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        Instant.now().minusSeconds(3600),
+                        true);
 
-        when(tripService.updateTrip(eq(tripId), any(TripUpdateRequest.class)))
+        when(tripService.updateTrip(any(UUID.class), eq(tripId), any(TripUpdateRequest.class)))
                 .thenReturn(expectedResponse);
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(tripId.toString()));
+                .andExpect(jsonPath("$.id").value(tripId.toString()))
+                .andExpect(jsonPath("$.name").value("Updated Trip Name"))
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility").value(TripVisibility.PUBLIC.name()));
+    }
+
+    @Test
+    void updateTrip_whenChangingVisibility_shouldReturnUpdatedTrip() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        TripUpdateRequest request =
+                TestEntityFactory.createTripUpdateRequest("Trip Name", TripVisibility.PRIVATE);
+
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PRIVATE, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+
+        TripDTO expectedResponse =
+                new TripDTO(
+                        tripId.toString(),
+                        "Trip Name",
+                        USER_ID.toString(),
+                        tripSettings,
+                        tripDetails,
+                        null,
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        Instant.now(),
+                        true);
+
+        when(tripService.updateTrip(any(UUID.class), eq(tripId), any(TripUpdateRequest.class)))
+                .thenReturn(expectedResponse);
+
+        // When & Then
+        mockMvc.perform(
+                        put(TRIP_BY_ID_URL, tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$.tripSettings.visibility").value(TripVisibility.PRIVATE.name()));
     }
 
     @Test
     void updateTrip_whenTripNotFound_shouldReturnNotFound() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest();
-
         TripUpdateRequest request =
-                new TripUpdateRequest(
-                        "Updated Trip",
-                        LocalDate.of(2025, 7, 1),
-                        LocalDate.of(2025, 7, 15),
-                        null,
-                        startLocation,
-                        null,
-                        TripVisibility.PUBLIC);
+                TestEntityFactory.createTripUpdateRequest("Updated Trip", TripVisibility.PUBLIC);
 
-        when(tripService.updateTrip(eq(tripId), any(TripUpdateRequest.class)))
+        when(tripService.updateTrip(any(UUID.class), eq(tripId), any(TripUpdateRequest.class)))
                 .thenThrow(new EntityNotFoundException("Trip not found"));
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isNotFound());
@@ -309,21 +339,39 @@ class TripControllerTest {
     void updateTrip_whenNameIsBlank_shouldReturnBadRequest() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        LocationRequest startLocation = TestEntityFactory.createLocationRequest();
-
-        TripUpdateRequest request =
-                new TripUpdateRequest(
-                        "", // Blank name
-                        LocalDate.of(2025, 7, 1),
-                        LocalDate.of(2025, 7, 15),
-                        null,
-                        startLocation,
-                        null,
-                        TripVisibility.PUBLIC);
+        TripUpdateRequest request = new TripUpdateRequest("", TripVisibility.PUBLIC);
 
         // When & Then
         mockMvc.perform(
-                        put("/api/1/trips/{id}", tripId)
+                        put(TRIP_BY_ID_URL, tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateTrip_whenNameIsTooShort_shouldReturnBadRequest() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        TripUpdateRequest request = new TripUpdateRequest("AB", TripVisibility.PUBLIC);
+
+        // When & Then
+        mockMvc.perform(
+                        put(TRIP_BY_ID_URL, tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void updateTrip_whenVisibilityIsNull_shouldReturnBadRequest() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        TripUpdateRequest request = new TripUpdateRequest("Valid Trip Name", null);
+
+        // When & Then
+        mockMvc.perform(
+                        put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -333,19 +381,21 @@ class TripControllerTest {
     void deleteTrip_whenTripExists_shouldReturnNoContent() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        doNothing().when(tripService).deleteTrip(tripId);
+        doNothing().when(tripService).deleteTrip(any(UUID.class), eq(tripId));
 
         // When & Then
-        mockMvc.perform(delete("/api/1/trips/{id}", tripId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete(TRIP_BY_ID_URL, tripId)).andExpect(status().isNoContent());
     }
 
     @Test
     void deleteTrip_whenTripNotFound_shouldReturnNotFound() throws Exception {
         // Given
         UUID tripId = UUID.randomUUID();
-        doThrow(new EntityNotFoundException("Trip not found")).when(tripService).deleteTrip(tripId);
+        doThrow(new EntityNotFoundException("Trip not found"))
+                .when(tripService)
+                .deleteTrip(any(UUID.class), eq(tripId));
 
         // When & Then
-        mockMvc.perform(delete("/api/1/trips/{id}", tripId)).andExpect(status().isNotFound());
+        mockMvc.perform(delete(TRIP_BY_ID_URL, tripId)).andExpect(status().isNotFound());
     }
 }

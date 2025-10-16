@@ -1,10 +1,12 @@
 package com.tomassirio.wanderer.query.controller;
 
+import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import com.tomassirio.wanderer.query.service.TripService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -22,15 +24,17 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping("/api/1/trips")
+@RequestMapping(ApiConstants.TRIPS_PATH)
 @RequiredArgsConstructor
 @Slf4j
+@Tag(name = "Trip Queries", description = "Endpoints for retrieving trip information")
 public class TripController {
 
     private final TripService tripService;
 
-    @GetMapping("/{id:[0-9a-fA-F\\-]{36}}")
+    @GetMapping(ApiConstants.TRIP_BY_ID_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(summary = "Get trip by ID", description = "Retrieves a specific trip by its ID")
     public ResponseEntity<TripDTO> getTrip(@PathVariable UUID id) {
         log.info("Received request to retrieve trip: {}", id);
 
@@ -42,6 +46,7 @@ public class TripController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN')")
+    @Operation(summary = "Get all trips", description = "Retrieves all trips (admin only)")
     public ResponseEntity<List<TripDTO>> getAllTrips() {
         log.info("Received request to retrieve all trips");
 
@@ -51,9 +56,11 @@ public class TripController {
         return ResponseEntity.ok(trips);
     }
 
-    @GetMapping("/me")
+    @GetMapping(ApiConstants.ME_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Get trips for current authenticated user")
+    @Operation(
+            summary = "Get trips for current authenticated user",
+            description = "Retrieves all trips belonging to the authenticated user")
     public ResponseEntity<List<TripDTO>> getMyTrips(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
         log.info("Received request to retrieve trips for current user: {}", userId);
@@ -61,6 +68,34 @@ public class TripController {
         List<TripDTO> trips = tripService.getTripsForUser(userId);
 
         log.info("Successfully retrieved {} trips for user {}", trips.size(), userId);
+        return ResponseEntity.ok(trips);
+    }
+
+    @GetMapping("/users/{userId}")
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Get trips by another user",
+            description =
+                    "Retrieves trips by another user, respecting visibility (PUBLIC and PROTECTED)")
+    public ResponseEntity<List<TripDTO>> getTripsByUser(@PathVariable UUID userId) {
+        log.info("Received request to retrieve trips for user: {}", userId);
+
+        List<TripDTO> trips = tripService.getTripsForUserWithVisibility(userId);
+
+        log.info("Successfully retrieved {} trips for user {}", trips.size(), userId);
+        return ResponseEntity.ok(trips);
+    }
+
+    @GetMapping("/public")
+    @Operation(
+            summary = "Get ongoing public trips",
+            description = "Retrieves all public trips that are currently in progress")
+    public ResponseEntity<List<TripDTO>> getOngoingPublicTrips() {
+        log.info("Received request to retrieve ongoing public trips");
+
+        List<TripDTO> trips = tripService.getOngoingPublicTrips();
+
+        log.info("Successfully retrieved {} ongoing public trips", trips.size());
         return ResponseEntity.ok(trips);
     }
 }

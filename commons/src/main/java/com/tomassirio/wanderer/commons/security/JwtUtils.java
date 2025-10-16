@@ -27,48 +27,6 @@ public class JwtUtils {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private static String base64UrlDecodeToString(String input) {
-        return new String(Base64.getUrlDecoder().decode(padBase64(input)), StandardCharsets.UTF_8);
-    }
-
-    private static byte[] base64UrlDecode(String input) {
-        return Base64.getUrlDecoder().decode(padBase64(input));
-    }
-
-    private static String padBase64(String s) {
-        // Java's URL decoder handles paddingless inputs but to be safe we can add padding
-        int rem = s.length() % 4;
-        if (rem == 2) return s + "==";
-        if (rem == 3) return s + "=";
-        return s;
-    }
-
-    private boolean verifySignature(String headerB64, String payloadB64, String signatureB64) {
-        if (secret == null || secret.isBlank()) {
-            // if no secret configured, don't verify (environment may choose to provide it)
-            return true;
-        }
-        try {
-            String data = headerB64 + "." + payloadB64;
-            Mac mac = Mac.getInstance(SignatureAlgorithm.HS256.getJcaName());
-            SecretKeySpec keySpec =
-                    new SecretKeySpec(
-                            secret.getBytes(StandardCharsets.UTF_8),
-                            SignatureAlgorithm.HS256.getJcaName());
-            mac.init(keySpec);
-            byte[] computed = mac.doFinal(data.getBytes(StandardCharsets.US_ASCII));
-            byte[] provided = base64UrlDecode(signatureB64);
-            if (computed.length != provided.length) return false;
-            int diff = 0;
-            for (int i = 0; i < computed.length; i++) {
-                diff |= computed[i] ^ provided[i];
-            }
-            return diff == 0;
-        } catch (NoSuchAlgorithmException | InvalidKeyException | IllegalArgumentException ex) {
-            return false;
-        }
-    }
-
     public Map<String, Object> parsePayload(String token) {
         if (token == null || token.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Missing token");
@@ -137,5 +95,47 @@ public class JwtUtils {
             }
         }
         return roles;
+    }
+
+    private static String base64UrlDecodeToString(String input) {
+        return new String(Base64.getUrlDecoder().decode(padBase64(input)), StandardCharsets.UTF_8);
+    }
+
+    private static byte[] base64UrlDecode(String input) {
+        return Base64.getUrlDecoder().decode(padBase64(input));
+    }
+
+    private static String padBase64(String s) {
+        // Java's URL decoder handles paddingless inputs but to be safe we can add padding
+        int rem = s.length() % 4;
+        if (rem == 2) return s + "==";
+        if (rem == 3) return s + "=";
+        return s;
+    }
+
+    private boolean verifySignature(String headerB64, String payloadB64, String signatureB64) {
+        if (secret == null || secret.isBlank()) {
+            // if no secret configured, don't verify (environment may choose to provide it)
+            return true;
+        }
+        try {
+            String data = headerB64 + "." + payloadB64;
+            Mac mac = Mac.getInstance(SignatureAlgorithm.HS256.getJcaName());
+            SecretKeySpec keySpec =
+                    new SecretKeySpec(
+                            secret.getBytes(StandardCharsets.UTF_8),
+                            SignatureAlgorithm.HS256.getJcaName());
+            mac.init(keySpec);
+            byte[] computed = mac.doFinal(data.getBytes(StandardCharsets.US_ASCII));
+            byte[] provided = base64UrlDecode(signatureB64);
+            if (computed.length != provided.length) return false;
+            int diff = 0;
+            for (int i = 0; i < computed.length; i++) {
+                diff |= computed[i] ^ provided[i];
+            }
+            return diff == 0;
+        } catch (NoSuchAlgorithmException | InvalidKeyException | IllegalArgumentException ex) {
+            return false;
+        }
     }
 }

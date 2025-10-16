@@ -1,25 +1,3 @@
-x-db-credentials: &db-credentials
-  DB_HOST: postgres-cqrs
-  DB_PORT: 5432
-  DB_NAME: wanderer_db
-  DB_USER: wanderer
-  DB_PASSWORD: password
-  AUTH_DB_USER: wanderer_auth
-  AUTH_DB_PASSWORD: password
-  AUTH_DB_NAME: wanderer_auth_db
-  AUTH_DB_PORT: 5433
-
-x-docker-images: &docker-images
-  POSTGRES_IMAGE: postgres:15-alpine
-  TRACKER_COMMAND_IMAGE: ghcr.io/tomassirio/tracker-command:latest
-  TRACKER_QUERY_IMAGE: ghcr.io/tomassirio/tracker-query:latest
-  TRACKER_AUTH_IMAGE: ghcr.io/tomassirio/tracker-auth:latest
-
-x-service-ports: &service-ports
-  TRACKER_COMMAND_PORT: 8081
-  TRACKER_QUERY_PORT: 8082
-  TRACKER_AUTH_PORT: 8083
-
 x-common-variables: &common-db-variables
   SPRING_DATASOURCE_URL: jdbc:postgresql://${DB_HOST:-postgres-cqrs}:${DB_PORT:-5432}/${DB_NAME:-wanderer_db}
   SPRING_DATASOURCE_USERNAME: ${DB_USER:-wanderer}

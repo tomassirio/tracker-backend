@@ -1,5 +1,17 @@
 # Trip Tracker Application
 
+![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen?logo=spring&logoColor=white)
+![Version](https://img.shields.io/badge/version-0.3.0-blue)
+![Build Status](https://img.shields.io/github/actions/workflow/status/tomassirio/tracker-backend/merge.yml?branch=main&label=build)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
+
+![PostgresSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-enabled-2496ED?logo=docker&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/kubernetes-ready-326CE5?logo=kubernetes&logoColor=white)
+![Architecture](https://img.shields.io/badge/architecture-CQRS-blueviolet)
+
 A comprehensive tracking system for my pilgrimage to Santiago de Compostela, built with CQRS architecture using Spring Boot and Java 21.
 
 ## 📚 Documentation
@@ -34,7 +46,7 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ### Tracker-Backend (This Repository)
 - Receives REST calls with location and OwnTracks metadata
-- Stores data in PostgreSQL
+- Stores data in PostgresSQL
 - Exposes REST API for frontend queries
 - Supports status messages and weather integration
 - Automatically unlocks achievements based on milestones
@@ -53,21 +65,72 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ## 🗄️ Data Model
 
+### User
+- `id` (UUID) 
+- `username` (unique)
+- Represents authenticated users in the system
+
 ### Trip
-- `id`, `name`, `startDate`, `endDate`, `totalDistance`
-- `startingLocation`, `endingLocation`
+- `id` (UUID)
+- `name`
+- `userId` (owner)
+- `tripSettings` (visibility, status) 
+- `tripDetails` (start/end dates, locations, distance)
+- `tripPlanId` (optional reference to trip plan)
+- `comments` (one-to-many relationship)
+- `tripUpdates` (one-to-many relationship)
+- `creationTimestamp`
+- `enabled`
 
-### Location
-- `id`, `tripId`, `lat`, `lon`, `timestamp`
-- `alt`, `acc`, `battery`, `source`
+### TripPlan
+- `id` (UUID) 
+- `name`
+- `planType` (SIMPLE, MULTI_DAY)
+- `userId` (owner)
+- `startLocation` (GeoLocation)
+- `endLocation` (GeoLocation)
+- `startDate`
+- `endDate`
+- `metadata` (JSONB for flexible plan data)
+- `creationTimestamp`
+- `updateTimestamp`
 
-### Message
-- `id`, `tripId`, `text`, `timestamp`
-- `locationId` (optional reference)
+### TripUpdate
+- `id` (UUID)
+- `tripId`
+- `location` (GeoLocation with lat/lon/altitude in JSONB)
+- `battery`
+- `message`
+- `reactions` (Reactions JSONB)
+- `timestamp`
 
-### Achievement
-- `id`, `tripId`, `type`, `unlockedAt`
-- `description`, `distanceThreshold`
+### Comment
+- `id` (UUID)
+- `tripId` (belongs to a trip)
+- `userId` (comment author)
+- `parentCommentId` (nullable - for nested replies)
+- `message` (TEXT, max 1000 characters)
+- `reactions` (Reactions JSONB)
+- `replies` (one-to-many self-referential relationship)
+- `timestamp`
+- Supports one level of nesting (comments can have replies, but replies cannot have replies)
+
+### Reactions
+A JSONB structure tracking reaction counts:
+- `heart` (integer counter)
+- `smiley` (integer counter)
+- `sad` (integer counter)
+- `laugh` (integer counter)
+- `anger` (integer counter)
+
+### Supporting Types
+- **GeoLocation**: Latitude and longitude coordinates
+- **TripSettings**: Visibility (PUBLIC, PRIVATE, PROTECTED) and Status
+- **TripDetails**: Additional trip information (dates, locations, distance)
+- **TripVisibility**: PUBLIC, PRIVATE, PROTECTED
+- **TripStatus**: CREATED, IN_PROGRESS, PAUSED, FINISHED
+- **TripPlanType**: SIMPLE, MULTI_DAY
+- **ReactionType**: HEART, SMILEY, SAD, LAUGH, ANGER
 
 ## 🏆 Achievements System
 
@@ -83,20 +146,73 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ## 🌐 API Endpoints
 
-### Command Side (Write Operations) - Port 8081
+### Authentication API (tracker-auth) - Port 8083
 ```
-POST /api/1/{tripId}/location     → Submit location update
-POST /api/1/{tripId}/messages     → Submit status message
+POST /api/1/auth/login      → Login with username/password, returns JWT token
+POST /api/1/auth/register   → Register new user, returns JWT token
 ```
 
-### Query Side (Read Operations) - Port 8082
+### User APIs
+
+#### Command (tracker-command) - Port 8081
 ```
-GET /api/1/{tripId}/location/{locationId}  → Fetch specific location
-GET /api/1/{tripId}/locations              → Location history (with date filters)
-GET /api/1/{tripId}/location/latest        → Latest position
-GET /api/1/{tripId}/messages               → List status messages
-GET /api/1/{tripId}/achievements           → Unlocked achievements
-GET /api/1/{tripId}/weather/latest         → Live weather data
+POST /api/1/users           → Create new user
+```
+
+#### Query (tracker-query) - Port 8082
+```
+GET /api/1/users/{id}              → Get user by ID (Auth: ADMIN, USER)
+GET /api/1/users/username/{username} → Get user by username (Public)
+GET /api/1/users/me                → Get current authenticated user profile
+```
+
+### Trip APIs
+
+#### Command (tracker-command) - Port 8081
+```
+POST   /api/1/trips                    → Create new trip
+PUT    /api/1/trips/{id}               → Update trip
+PATCH  /api/1/trips/{id}/visibility    → Change trip visibility (PUBLIC/PRIVATE/PROTECTED)
+PATCH  /api/1/trips/{id}/status        → Change trip status (PLANNING/ACTIVE/COMPLETED/CANCELLED)
+DELETE /api/1/trips/{id}               → Delete trip
+POST   /api/1/trips/{tripId}/updates   → Create trip update (location, battery, message)
+```
+
+#### Query (tracker-query) - Port 8082
+```
+GET /api/1/trips/{id}      → Get trip by ID
+GET /api/1/trips           → Get all trips (Admin only)
+GET /api/1/trips/me        → Get current user's trips
+```
+
+### Trip Plan APIs (tracker-command) - Port 8081
+```
+POST   /api/1/trips/plans   → Create trip plan
+PUT    /api/1/trips/plans/{planId}   → Update trip plan
+DELETE /api/1/trips/plans/{planId}   → Delete trip plan
+```
+
+### Comment APIs
+
+#### Command (tracker-command) - Port 8081
+```
+POST   /api/1/trips/{tripId}/comments              → Create comment or reply on a trip
+                                                     (use parentCommentId in body for replies)
+POST   /api/1/comments/{commentId}/reactions       → Add a reaction to a comment
+                                                     (HEART, SMILEY, SAD, LAUGH, ANGER)
+DELETE /api/1/comments/{commentId}/reactions       → Remove a reaction from a comment
+```
+
+### Legacy/Planned Endpoints
+```
+POST /api/1/{tripId}/location          → Submit location update (planned)
+POST /api/1/{tripId}/messages          → Submit status message (planned)
+GET  /api/1/{tripId}/location/{locationId} → Fetch specific location (planned)
+GET  /api/1/{tripId}/locations         → Location history with filters (planned)
+GET  /api/1/{tripId}/location/latest   → Latest position (planned)
+GET  /api/1/{tripId}/messages          → List status messages (planned)
+GET  /api/1/{tripId}/achievements      → Unlocked achievements (planned)
+GET  /api/1/{tripId}/weather/latest    → Live weather data (planned)
 ```
 
 ## 📌 Functional Requirements
@@ -221,14 +337,31 @@ The companion frontend application will feature:
 - ✅ Multi-module CQRS structure
 - ✅ Basic Spring Boot applications
 - ✅ Application configuration
-- ⏳ Domain entities and CQRS infrastructure
-- ⏳ REST API implementation
-- ⏳ Database integration
-- ⏳ Security implementation
+- ✅ Domain entities and CQRS infrastructure
+- ✅ REST API implementation (User, Trip, TripPlan, TripUpdate)
+- ✅ Database integration (PostgreSQL with JPA/Hibernate)
+- ✅ Security implementation (JWT authentication, Role-based authorization)
+- ✅ User management (Create, Query by ID/username, Current user context)
+- ✅ Trip CRUD operations (Create, Read, Update, Delete)
+- ✅ Trip status and visibility management
+- ✅ Trip Plans (Create, Update, Delete)
+- ✅ Trip Updates with location tracking
+- ✅ Global exception handling
+- ✅ Docker configuration (Jib plugin, docker-compose)
+- ✅ CI/CD pipeline (GitHub Actions)
+- ✅ API documentation (Swagger/OpenAPI)
+- ✅ Unit and Integration tests
+- ✅ MapStruct DTO mapping
+- ✅ Code formatting (Spotless with Google Java Format)
+- ⏳ Trip Updates Query API
+- ⏳ Comments system (CRUD operations)
+- ⏳ Reactions system
 - ⏳ Weather API integration
 - ⏳ Achievement system
-- ⏳ Docker configuration
 - ⏳ Kubernetes manifests
+- ⏳ Real-time updates (WebSocket/SSE)
+- ⏳ Search and filtering
+- ⏳ Pagination support
 
 ## 🤝 Contributing
 
@@ -236,7 +369,9 @@ This is a personal project for my pilgrimage, but suggestions and improvements a
 
 ## 📝 License
 
-This project is for personal use during my Santiago de Compostela pilgrimage.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+You are free to use, modify, and distribute this software, including for commercial purposes.
 
 ---
 

@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tomassirio.wanderer.command.repository.CommentRepository;
+import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.User;
@@ -36,6 +38,8 @@ public class StepDefinitions {
     @Autowired private TestRestTemplate restTemplate;
     @Autowired private UserRepository userRepository;
     @Autowired private TripRepository tripRepository;
+    @Autowired private TripPlanRepository tripPlanRepository;
+    @Autowired private CommentRepository commentRepository;
 
     private ResponseEntity<String> latestResponse;
 
@@ -50,6 +54,11 @@ public class StepDefinitions {
     private static final String API_BASE = "/api/1";
     private static final String USERS_ENDPOINT = API_BASE + "/users";
     private static final String TRIPS_ENDPOINT = API_BASE + "/trips";
+    private static final String TRIP_PLANS_ENDPOINT = TRIPS_ENDPOINT + "/plans";
+
+    @Getter @Setter private UUID lastCreatedTripId;
+    @Getter @Setter private UUID lastCreatedTripPlanId;
+    @Getter @Setter private UUID lastCreatedCommentId;
 
     static {
         mapper.registerModule(new JavaTimeModule());
@@ -63,10 +72,15 @@ public class StepDefinitions {
     @Given("an empty system")
     public void an_empty_system() {
         // clear repositories to ensure clean state
+        commentRepository.deleteAll();
+        tripPlanRepository.deleteAll();
         tripRepository.deleteAll();
         userRepository.deleteAll();
         setTempAuthHeader(null);
         setLastCreatedUsername(null);
+        setLastCreatedTripId(null);
+        setLastCreatedTripPlanId(null);
+        setLastCreatedCommentId(null);
     }
 
     @When("I create a user with username {string} and email {string}")
@@ -104,6 +118,16 @@ public class StepDefinitions {
                 TRIPS_ENDPOINT,
                 latestResponse.getStatusCode().value());
         log.info("[Cucumber] POST {} response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
+
+        // Store trip ID if creation was successful
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                lastCreatedTripId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored trip ID: {}", lastCreatedTripId);
+            }
+        }
     }
 
     @Then("the response status should be {int}")
@@ -164,6 +188,404 @@ public class StepDefinitions {
     public void i_create_a_trip_without_token(String name) throws Exception {
         setTempAuthHeader(null);
         i_create_a_trip_with_name_using_that_token(name);
+    }
+
+    @When("I update that trip with name {string} using that token")
+    public void i_update_that_trip_with_name_using_that_token(String name) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to update");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        body.put("visibility", "PUBLIC");
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId;
+        log.info("[Cucumber] PUT {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.PUT, request, String.class);
+
+        log.info(
+                "[Cucumber] PUT {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] PUT {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I update that trip with name {string} without token")
+    public void i_update_that_trip_with_name_without_token(String name) throws Exception {
+        setTempAuthHeader(null);
+        i_update_that_trip_with_name_using_that_token(name);
+    }
+
+    @When("I delete that trip using that token")
+    public void i_delete_that_trip_using_that_token() {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to delete");
+
+        HttpHeaders headers = new HttpHeaders();
+        if (getTempAuthHeader() != null) {
+            headers.set("Authorization", getTempAuthHeader());
+        }
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId;
+        log.info("[Cucumber] DELETE {}", url);
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.DELETE, request, String.class);
+
+        log.info(
+                "[Cucumber] DELETE {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I delete that trip without token")
+    public void i_delete_that_trip_without_token() {
+        setTempAuthHeader(null);
+        i_delete_that_trip_using_that_token();
+    }
+
+    @When("I change that trip visibility to {string} using that token")
+    public void i_change_that_trip_visibility_using_that_token(String visibility) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to change visibility");
+
+        Map<String, Object> body = Map.of("visibility", visibility);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/visibility";
+        log.info("[Cucumber] PATCH {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.PATCH, request, String.class);
+
+        log.info(
+                "[Cucumber] PATCH {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] PATCH {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I change that trip status to {string} using that token")
+    public void i_change_that_trip_status_using_that_token(String status) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to change status");
+
+        Map<String, Object> body = Map.of("status", status);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/status";
+        log.info("[Cucumber] PATCH {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.PATCH, request, String.class);
+
+        log.info(
+                "[Cucumber] PATCH {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] PATCH {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I add a trip update with message {string} using that token")
+    public void i_add_a_trip_update_with_message_using_that_token(String message) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to add update");
+
+        Map<String, Object> body = new HashMap<>();
+        Map<String, Object> location = Map.of("latitude", 10.0, "longitude", 20.0, "altitude", 0.0);
+        body.put("location", location);
+        body.put("message", message);
+        body.put("battery", 75);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/updates";
+        log.info("[Cucumber] POST {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @Then("the trip name should be {string}")
+    public void the_trip_name_should_be(String expectedName) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
+        String actualName = json.get("name").toString();
+        Assertions.assertEquals(expectedName, actualName, "Trip name does not match");
+    }
+
+    // ========== Trip Plan Step Definitions ==========
+
+    @When("I create a trip plan with name {string} using that token")
+    public void i_create_a_trip_plan_with_name_using_that_token(String name) throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        body.put("startDate", LocalDate.now());
+        body.put("endDate", LocalDate.now().plusDays(5));
+        body.put("planType", "SIMPLE");
+        Map<String, Object> loc = Map.of("latitude", 10.0, "longitude", 20.0, "altitude", 0.0);
+        body.put("startLocation", loc);
+        body.put("endLocation", loc);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        log.info(
+                "[Cucumber] POST {} request: {}",
+                TRIP_PLANS_ENDPOINT,
+                mapper.writeValueAsString(body));
+        latestResponse = restTemplate.postForEntity(TRIP_PLANS_ENDPOINT, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                TRIP_PLANS_ENDPOINT,
+                latestResponse.getStatusCode().value());
+        log.info(
+                "[Cucumber] POST {} response body: {}",
+                TRIP_PLANS_ENDPOINT,
+                latestResponse.getBody());
+
+        // Store trip plan ID if creation was successful
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                lastCreatedTripPlanId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored trip plan ID: {}", lastCreatedTripPlanId);
+            }
+        }
+    }
+
+    @When("I create a trip plan with name {string} without token")
+    public void i_create_a_trip_plan_without_token(String name) throws Exception {
+        setTempAuthHeader(null);
+        i_create_a_trip_plan_with_name_using_that_token(name);
+    }
+
+    @When("I update that trip plan with name {string} using that token")
+    public void i_update_that_trip_plan_with_name_using_that_token(String name) throws Exception {
+        Assertions.assertNotNull(lastCreatedTripPlanId, "No trip plan ID stored to update");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("name", name);
+        body.put("startDate", LocalDate.now());
+        body.put("endDate", LocalDate.now().plusDays(5));
+        body.put("planType", "SIMPLE");
+        Map<String, Object> loc = Map.of("latitude", 10.0, "longitude", 20.0, "altitude", 0.0);
+        body.put("startLocation", loc);
+        body.put("endLocation", loc);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIP_PLANS_ENDPOINT + "/" + lastCreatedTripPlanId;
+        log.info("[Cucumber] PUT {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.PUT, request, String.class);
+
+        log.info(
+                "[Cucumber] PUT {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] PUT {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I update that trip plan with name {string} without token")
+    public void i_update_that_trip_plan_with_name_without_token(String name) throws Exception {
+        setTempAuthHeader(null);
+        i_update_that_trip_plan_with_name_using_that_token(name);
+    }
+
+    @When("I delete that trip plan using that token")
+    public void i_delete_that_trip_plan_using_that_token() {
+        Assertions.assertNotNull(lastCreatedTripPlanId, "No trip plan ID stored to delete");
+
+        HttpHeaders headers = new HttpHeaders();
+        if (getTempAuthHeader() != null) {
+            headers.set("Authorization", getTempAuthHeader());
+        }
+        HttpEntity<String> request = new HttpEntity<>(headers);
+
+        String url = TRIP_PLANS_ENDPOINT + "/" + lastCreatedTripPlanId;
+        log.info("[Cucumber] DELETE {}", url);
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.DELETE, request, String.class);
+
+        log.info(
+                "[Cucumber] DELETE {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I delete that trip plan without token")
+    public void i_delete_that_trip_plan_without_token() {
+        setTempAuthHeader(null);
+        i_delete_that_trip_plan_using_that_token();
+    }
+
+    @Then("the trip plan name should be {string}")
+    public void the_trip_plan_name_should_be(String expectedName) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
+        String actualName = json.get("name").toString();
+        Assertions.assertEquals(expectedName, actualName, "Trip plan name does not match");
+    }
+
+    // ========== Comment Step Definitions ==========
+
+    @When("I create a comment with message {string} on that trip using that token")
+    public void i_create_a_comment_with_message_on_that_trip_using_that_token(String message)
+            throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to add comment");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("message", message);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/comments";
+        log.info("[Cucumber] POST {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST {} response body: {}", url, latestResponse.getBody());
+
+        // Store comment ID if creation was successful
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                lastCreatedCommentId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored comment ID: {}", lastCreatedCommentId);
+            }
+        }
+    }
+
+    @When("I create a comment with message {string} on that trip without token")
+    public void i_create_a_comment_with_message_on_that_trip_without_token(String message)
+            throws Exception {
+        setTempAuthHeader(null);
+        i_create_a_comment_with_message_on_that_trip_using_that_token(message);
+    }
+
+    @When("I create a reply with message {string} on that comment using that token")
+    public void i_create_a_reply_with_message_on_that_comment_using_that_token(String message)
+            throws Exception {
+        Assertions.assertNotNull(lastCreatedTripId, "No trip ID stored to add reply");
+        Assertions.assertNotNull(lastCreatedCommentId, "No comment ID stored to reply to");
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("message", message);
+        body.put("parentCommentId", lastCreatedCommentId.toString());
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = TRIPS_ENDPOINT + "/" + lastCreatedTripId + "/comments";
+        log.info("[Cucumber] POST {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST {} response body: {}", url, latestResponse.getBody());
+
+        // Store reply ID if creation was successful
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                UUID replyId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored reply ID: {}", replyId);
+            }
+        }
+    }
+
+    @When("I create a reply with message {string} on that comment without token")
+    public void i_create_a_reply_with_message_on_that_comment_without_token(String message)
+            throws Exception {
+        setTempAuthHeader(null);
+        i_create_a_reply_with_message_on_that_comment_using_that_token(message);
+    }
+
+    @When("I add a reaction {string} to that comment using that token")
+    public void i_add_a_reaction_to_that_comment_using_that_token(String reactionType)
+            throws Exception {
+        Assertions.assertNotNull(lastCreatedCommentId, "No comment ID stored to add reaction");
+
+        Map<String, Object> body = Map.of("reactionType", reactionType);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/comments/" + lastCreatedCommentId + "/reactions";
+        log.info("[Cucumber] POST {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] POST {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I add a reaction {string} to that comment without token")
+    public void i_add_a_reaction_to_that_comment_without_token(String reactionType)
+            throws Exception {
+        setTempAuthHeader(null);
+        i_add_a_reaction_to_that_comment_using_that_token(reactionType);
+    }
+
+    @When("I remove a reaction {string} from that comment using that token")
+    public void i_remove_a_reaction_from_that_comment_using_that_token(String reactionType)
+            throws Exception {
+        Assertions.assertNotNull(lastCreatedCommentId, "No comment ID stored to remove reaction");
+
+        Map<String, Object> body = Map.of("reactionType", reactionType);
+
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/comments/" + lastCreatedCommentId + "/reactions";
+        log.info("[Cucumber] DELETE {} request: {}", url, mapper.writeValueAsString(body));
+
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.DELETE, request, String.class);
+
+        log.info(
+                "[Cucumber] DELETE {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+        log.info("[Cucumber] DELETE {} response body: {}", url, latestResponse.getBody());
+    }
+
+    @When("I remove a reaction {string} from that comment without token")
+    public void i_remove_a_reaction_from_that_comment_without_token(String reactionType)
+            throws Exception {
+        setTempAuthHeader(null);
+        i_remove_a_reaction_from_that_comment_using_that_token(reactionType);
+    }
+
+    @And("the response contains a comment id")
+    public void the_response_contains_a_comment_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        Assertions.assertTrue(json.containsKey("id"), "Response does not contain 'id' field");
+        UUID parsed = UUID.fromString(json.get("id").toString());
+        Assertions.assertNotNull(parsed);
     }
 
     private HttpEntity<String> createJsonRequest(Map<String, Object> body)

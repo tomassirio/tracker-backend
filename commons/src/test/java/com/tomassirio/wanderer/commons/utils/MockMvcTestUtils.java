@@ -1,9 +1,11 @@
 package com.tomassirio.wanderer.commons.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import java.util.UUID;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.core.MethodParameter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.bind.support.WebDataBinderFactory;
@@ -25,6 +27,11 @@ public class MockMvcTestUtils {
 
     public static MockMvc buildMockMvcWithCurrentUserResolver(
             Object controller, UUID userId, Object... controllerAdvice) {
+        return buildMockMvcWithCurrentUserResolver(controller, userId, null, controllerAdvice);
+    }
+
+    public static MockMvc buildMockMvcWithCurrentUserResolver(
+            Object controller, UUID userId, ObjectMapper objectMapper, Object... controllerAdvice) {
         HandlerMethodArgumentResolver currentUserResolver =
                 new HandlerMethodArgumentResolver() {
                     @Override
@@ -47,6 +54,14 @@ public class MockMvcTestUtils {
             builder = builder.setControllerAdvice(controllerAdvice);
         }
         builder = builder.setCustomArgumentResolvers(currentUserResolver);
+
+        if (objectMapper != null) {
+            MappingJackson2HttpMessageConverter messageConverter =
+                    new MappingJackson2HttpMessageConverter();
+            messageConverter.setObjectMapper(objectMapper);
+            builder = builder.setMessageConverters(messageConverter);
+        }
+
         return builder.build();
     }
 }
