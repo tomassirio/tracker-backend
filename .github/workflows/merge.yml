@@ -79,8 +79,8 @@ jobs:
           # Update version badge
           sed -i "s/version-[0-9.]*-blue/version-${RELEASE_VERSION}-blue/" README.md
           
-          # Update coverage badge
-          sed -i "s/coverage-[^-]*-[a-z]*/coverage-${COVERAGE}%25-${COVERAGE_COLOR}/" README.md
+          # Update coverage badge (escape % for sed and match full color names)
+          sed -i "s/coverage-[^-]*%25-[a-z]*/coverage-${COVERAGE}%25-${COVERAGE_COLOR}/" README.md
           
           # Commit badge updates
           git add README.md
