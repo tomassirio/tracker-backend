@@ -55,29 +55,36 @@ jobs:
 
       - name: Extract coverage and update README badges
         run: |
-          # Debug: List files to see what was generated
-          echo "Checking for JaCoCo reports..."
-          find target -name "index.html" -path "*/jacoco*" || true
+          # Calculate aggregate coverage from all modules
+          echo "Calculating aggregate coverage from all modules..."
           
-          # Extract coverage from JaCoCo aggregate report
-          COVERAGE_FILE="target/site/jacoco-aggregate/index.html"
+          TOTAL_COVERED=0
+          TOTAL_MISSED=0
           
-          if [ -f "$COVERAGE_FILE" ]; then
-            echo "Found coverage report at: $COVERAGE_FILE"
-            # Try multiple patterns to extract coverage
-            COVERAGE=$(grep -oP 'Total[^%]+\K\d+(?=%)' "$COVERAGE_FILE" | head -1 || true)
-            
-            if [ -z "$COVERAGE" ]; then
-              # Try alternative pattern
-              COVERAGE=$(grep -oP '<tfoot>.*?(\d+)%' "$COVERAGE_FILE" | grep -oP '\d+' | tail -1 || true)
+          # Find all jacoco.csv files from individual modules
+          for csv in */target/site/jacoco/jacoco.csv; do
+            if [ -f "$csv" ]; then
+              echo "Processing: $csv"
+              # Extract instruction coverage (columns 4=INSTRUCTION_MISSED, 5=INSTRUCTION_COVERED)
+              # Skip header line and sum up the totals
+              MISSED=$(awk -F',' 'NR>1 {sum+=$4} END {print sum}' "$csv")
+              COVERED=$(awk -F',' 'NR>1 {sum+=$5} END {print sum}' "$csv")
+              
+              TOTAL_MISSED=$((TOTAL_MISSED + MISSED))
+              TOTAL_COVERED=$((TOTAL_COVERED + COVERED))
+              
+              echo "  Missed: $MISSED, Covered: $COVERED"
             fi
+          done
+          
+          # Calculate coverage percentage
+          TOTAL_INSTRUCTIONS=$((TOTAL_MISSED + TOTAL_COVERED))
+          
+          if [ "$TOTAL_INSTRUCTIONS" -gt 0 ]; then
+            COVERAGE=$((TOTAL_COVERED * 100 / TOTAL_INSTRUCTIONS))
+            echo "Total coverage: ${COVERAGE}% (${TOTAL_COVERED}/${TOTAL_INSTRUCTIONS} instructions)"
             
-            echo "Extracted coverage: $COVERAGE"
-            
-            if [ -z "$COVERAGE" ]; then
-              COVERAGE="N/A"
-              COVERAGE_COLOR="lightgrey"
-            elif [ "$COVERAGE" -ge 80 ]; then
+            if [ "$COVERAGE" -ge 80 ]; then
               COVERAGE_COLOR="brightgreen"
             elif [ "$COVERAGE" -ge 60 ]; then
               COVERAGE_COLOR="yellow"
@@ -87,9 +94,7 @@ jobs:
               COVERAGE_COLOR="red"
             fi
           else
-            echo "Coverage report not found at: $COVERAGE_FILE"
-            echo "Directory contents:"
-            ls -la target/site/ || echo "target/site/ does not exist"
+            echo "No coverage data found"
             COVERAGE="N/A"
             COVERAGE_COLOR="lightgrey"
           fi
