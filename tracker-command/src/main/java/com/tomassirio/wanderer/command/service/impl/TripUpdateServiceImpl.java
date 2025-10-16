@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -25,6 +26,7 @@ public class TripUpdateServiceImpl implements TripUpdateService {
     private final TripUpdateMapper tripUpdateMapper = TripUpdateMapper.INSTANCE;
 
     @Override
+    @Transactional
     public TripUpdateDTO createTripUpdate(
             UUID userId, UUID tripId, TripUpdateCreationRequest request) {
         Trip trip =

@@ -18,6 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -25,11 +26,12 @@ public class TripPlanServiceImpl implements TripPlanService {
 
     private final TripPlanRepository tripPlanRepository;
     private final TripPlanMetadataProcessor metadataProcessor;
-    private final TripPlanMapper tripPlanMapper;
+    private final TripPlanMapper tripPlanMapper = TripPlanMapper.INSTANCE;;
     private final OwnershipValidator ownershipValidator;
     private final TripPlanValidator tripPlanValidator;
 
     @Override
+    @Transactional
     public TripPlanDTO createTripPlan(UUID userId, TripPlanCreationRequest request) {
         // Validate dates
         tripPlanValidator.validateDates(request.startDate(), request.endDate());
@@ -54,6 +56,7 @@ public class TripPlanServiceImpl implements TripPlanService {
     }
 
     @Override
+    @Transactional
     public TripPlanDTO updateTripPlan(UUID userId, UUID planId, TripPlanUpdateRequest request) {
         TripPlan tripPlan =
                 tripPlanRepository
@@ -78,6 +81,7 @@ public class TripPlanServiceImpl implements TripPlanService {
     }
 
     @Override
+    @Transactional
     public void deleteTripPlan(UUID userId, UUID planId) {
         TripPlan tripPlan =
                 tripPlanRepository

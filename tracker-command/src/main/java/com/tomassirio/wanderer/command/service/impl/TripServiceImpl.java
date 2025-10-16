@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -31,6 +32,7 @@ public class TripServiceImpl implements TripService {
     private final OwnershipValidator ownershipValidator;
 
     @Override
+    @Transactional
     public TripDTO createTrip(UUID ownerId, TripCreationRequest request) {
         userRepository
                 .findById(ownerId)
@@ -52,6 +54,7 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    @Transactional
     public TripDTO updateTrip(UUID userId, UUID id, TripUpdateRequest request) {
         Trip trip =
                 tripRepository
@@ -71,6 +74,7 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    @Transactional
     public void deleteTrip(UUID userId, UUID id) {
         Trip trip =
                 tripRepository
@@ -83,6 +87,7 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    @Transactional
     public TripDTO changeVisibility(UUID userId, UUID id, TripVisibility visibility) {
         Trip trip =
                 tripRepository
@@ -98,6 +103,7 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
+    @Transactional
     public TripDTO changeStatus(UUID userId, UUID id, TripStatus status) {
         Trip trip =
                 tripRepository
