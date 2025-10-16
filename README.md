@@ -7,7 +7,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
 
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![PostgresSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-enabled-2496ED?logo=docker&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/kubernetes-ready-326CE5?logo=kubernetes&logoColor=white)
 ![Architecture](https://img.shields.io/badge/architecture-CQRS-blueviolet)
@@ -369,7 +369,9 @@ This is a personal project for my pilgrimage, but suggestions and improvements a
 
 ## 📝 License
 
-This project is for personal use during my Santiago de Compostela pilgrimage.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+You are free to use, modify, and distribute this software, including for commercial purposes.
 
 ---
 
