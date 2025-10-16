@@ -55,10 +55,25 @@ jobs:
 
       - name: Extract coverage and update README badges
         run: |
+          # Debug: List files to see what was generated
+          echo "Checking for JaCoCo reports..."
+          find target -name "index.html" -path "*/jacoco*" || true
+          
           # Extract coverage from JaCoCo aggregate report
           COVERAGE_FILE="target/site/jacoco-aggregate/index.html"
+          
           if [ -f "$COVERAGE_FILE" ]; then
-            COVERAGE=$(grep -oP 'Total[^%]+\K\d+(?=%)' "$COVERAGE_FILE" | head -1)
+            echo "Found coverage report at: $COVERAGE_FILE"
+            # Try multiple patterns to extract coverage
+            COVERAGE=$(grep -oP 'Total[^%]+\K\d+(?=%)' "$COVERAGE_FILE" | head -1 || true)
+            
+            if [ -z "$COVERAGE" ]; then
+              # Try alternative pattern
+              COVERAGE=$(grep -oP '<tfoot>.*?(\d+)%' "$COVERAGE_FILE" | grep -oP '\d+' | tail -1 || true)
+            fi
+            
+            echo "Extracted coverage: $COVERAGE"
+            
             if [ -z "$COVERAGE" ]; then
               COVERAGE="N/A"
               COVERAGE_COLOR="lightgrey"
@@ -72,9 +87,14 @@ jobs:
               COVERAGE_COLOR="red"
             fi
           else
+            echo "Coverage report not found at: $COVERAGE_FILE"
+            echo "Directory contents:"
+            ls -la target/site/ || echo "target/site/ does not exist"
             COVERAGE="N/A"
             COVERAGE_COLOR="lightgrey"
           fi
+          
+          echo "Setting coverage badge to: ${COVERAGE}% with color ${COVERAGE_COLOR}"
           
           # Update version badge
           sed -i "s/version-[0-9.]*-blue/version-${RELEASE_VERSION}-blue/" README.md
