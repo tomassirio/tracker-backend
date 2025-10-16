@@ -51,7 +51,7 @@ jobs:
           git tag -a "v${RELEASE_VERSION}" -m "Release version ${RELEASE_VERSION}"
 
       - name: Build project
-        run: mvn clean install
+        run: mvn clean verify
 
       - name: Extract coverage and update README badges
         run: |
