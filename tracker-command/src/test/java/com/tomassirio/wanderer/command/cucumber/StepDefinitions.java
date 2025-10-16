@@ -81,6 +81,9 @@ public class StepDefinitions {
         setLastCreatedTripId(null);
         setLastCreatedTripPlanId(null);
         setLastCreatedCommentId(null);
+        lastCreatedFriendRequestId = null;
+        firstUserIdInScenario = null;
+        lastCreatedFollowId = null;
     }
 
     @When("I create a user with username {string} and email {string}")
@@ -763,7 +766,6 @@ public class StepDefinitions {
 
     // User Follow Steps
     private UUID lastCreatedFollowId;
-    private Map<String, UUID> userIdsByUsername = new HashMap<>();
 
     @When("I follow that user using that token")
     public void i_follow_that_user_using_that_token() throws Exception {
