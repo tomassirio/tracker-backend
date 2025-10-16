@@ -22,7 +22,8 @@ fi
 # Clone wiki if it doesn't exist
 if [ ! -d "$WIKI_DIR" ]; then
     echo "📥 Cloning wiki repository..."
-    cd "$(dirname $REPO_DIR)"
+    PARENT_DIR="$(cd "$(dirname "$REPO_DIR")" && pwd)"
+    cd "$PARENT_DIR"
     git clone "$WIKI_URL" || {
         echo "❌ Failed to clone wiki repository"
         echo "Make sure:"
@@ -57,7 +58,8 @@ echo ""
 echo "📤 Committing and pushing to wiki..."
 git add .
 
-if git diff-index --quiet HEAD --; then
+# Check if there are any changes to commit
+if git diff --cached --quiet; then
     echo "ℹ️  No changes to commit - wiki is already up to date"
 else
     git commit -m "Update API documentation

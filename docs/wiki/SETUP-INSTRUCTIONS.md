@@ -90,56 +90,22 @@ If you prefer to use the GitHub web interface:
 
 ## Automated Setup Script
 
-Save this as `setup-wiki.sh` and run it:
+An automated setup script is provided in the repository root: [`setup-wiki.sh`](../../setup-wiki.sh)
+
+This script will:
+1. Clone the wiki repository if it doesn't exist
+2. Copy all documentation files
+3. Remove non-wiki files (README, SETUP-INSTRUCTIONS)
+4. Commit and push changes to the wiki
+
+To use it:
 
 ```bash
-#!/bin/bash
-
-# Configuration
-REPO_DIR="$(pwd)"
-WIKI_DIR="../tracker-backend.wiki"
-WIKI_URL="https://github.com/tomassirio/tracker-backend.wiki.git"
-
-echo "🚀 Setting up GitHub Wiki..."
-
-# Check if we're in the right directory
-if [ ! -d "docs/wiki" ]; then
-    echo "❌ Error: docs/wiki directory not found"
-    echo "Please run this script from the repository root"
-    exit 1
-fi
-
-# Clone wiki if it doesn't exist
-if [ ! -d "$WIKI_DIR" ]; then
-    echo "📥 Cloning wiki repository..."
-    cd "$(dirname $REPO_DIR)"
-    git clone "$WIKI_URL"
-    cd "$REPO_DIR"
-fi
-
-# Copy wiki files
-echo "📄 Copying wiki files..."
-cp docs/wiki/*.md "$WIKI_DIR/"
-
-# Remove files that shouldn't be in wiki
-cd "$WIKI_DIR"
-rm -f README.md SETUP-INSTRUCTIONS.md
-
-# Commit and push
-echo "📤 Committing and pushing to wiki..."
-git add .
-git commit -m "Update API documentation" || echo "No changes to commit"
-git push origin master
-
-echo "✅ Wiki setup complete!"
-echo "Visit: https://github.com/tomassirio/tracker-backend/wiki"
-```
-
-Make it executable and run:
-```bash
-chmod +x setup-wiki.sh
+# From the repository root
 ./setup-wiki.sh
 ```
+
+The script handles error cases and provides helpful feedback. If the wiki repository doesn't exist yet, it will guide you through the initial setup steps.
 
 ---
 
