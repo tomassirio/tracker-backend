@@ -146,30 +146,6 @@
          </dependencies>
      </dependencyManagement>
 
-    <!-- Dependencies needed for JaCoCo report aggregation -->
-    <dependencies>
-        <dependency>
-            <groupId>com.tomassirio.wanderer</groupId>
-            <artifactId>commons</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.tomassirio.wanderer</groupId>
-            <artifactId>tracker-command</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.tomassirio.wanderer</groupId>
-            <artifactId>tracker-query</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.tomassirio.wanderer</groupId>
-            <artifactId>tracker-auth</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <plugin>
