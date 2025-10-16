@@ -36,11 +36,19 @@ public class CurrentUserIdArgumentResolver implements HandlerMethodArgumentResol
             throw new ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR, "Request context not available");
         }
+
+        CurrentUserId annotation = parameter.getParameterAnnotation(CurrentUserId.class);
+        boolean required = annotation != null && annotation.required();
+
         String auth = webRequest.getHeader("Authorization");
         if (auth == null || auth.isBlank()) {
-            throw new ResponseStatusException(
-                    HttpStatus.UNAUTHORIZED, "Missing Authorization header");
+            if (required) {
+                throw new ResponseStatusException(
+                        HttpStatus.UNAUTHORIZED, "Missing Authorization header");
+            }
+            return null; // Return null for optional user ID
         }
+
         UUID userId = jwtUtils.getUserIdFromAuthorizationHeader(auth);
         if (UUID.class.isAssignableFrom(parameter.getParameterType())) {
             return userId;

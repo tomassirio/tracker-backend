@@ -1,0 +1,70 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-friend-requests-table
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: friend_requests
+      changes:
+        - createTable:
+            tableName: friend_requests
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: sender_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: receiver_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+        - addForeignKeyConstraint:
+            baseTableName: friend_requests
+            baseColumnNames: sender_id
+            constraintName: fk_friend_requests_sender
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: friend_requests
+            baseColumnNames: receiver_id
+            constraintName: fk_friend_requests_receiver
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            tableName: friend_requests
+            indexName: idx_friend_requests_sender_receiver
+            columns:
+              - column:
+                  name: sender_id
+              - column:
+                  name: receiver_id
+        - createIndex:
+            tableName: friend_requests
+            indexName: idx_friend_requests_status
+            columns:
+              - column:
+                  name: status
