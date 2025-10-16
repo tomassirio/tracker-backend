@@ -17,6 +17,9 @@ A comprehensive tracking system for my pilgrimage to Santiago de Compostela, bui
 ## 📚 Documentation
 
 - **[API Documentation Wiki](https://github.com/tomassirio/tracker-backend/wiki)** - Comprehensive API reference and guides
+  - All wiki source files are in [`docs/wiki/`](docs/wiki/)
+  - To publish to GitHub Wiki: `./setup-wiki.sh`
+  - See [`docs/wiki/SETUP-INSTRUCTIONS.md`](docs/wiki/SETUP-INSTRUCTIONS.md) for details
 - **[Docker Guide](docs/DOCKER.md)** - Complete guide for building and running with Docker
 - **[CI/CD Workflows](docs/CI-CD.md)** - GitHub Actions workflows and automation
 - **[Release Notes](https://github.com/tomassirio/tracker-backend/releases)** - Version history and changelog
