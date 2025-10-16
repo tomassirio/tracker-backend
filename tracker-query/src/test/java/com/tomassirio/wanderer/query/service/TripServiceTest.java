@@ -9,7 +9,9 @@ import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.query.repository.FriendshipRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
+import com.tomassirio.wanderer.query.repository.UserFollowRepository;
 import com.tomassirio.wanderer.query.service.impl.TripServiceImpl;
 import com.tomassirio.wanderer.query.utils.TestEntityFactory;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,6 +29,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TripServiceTest {
 
     @Mock private TripRepository tripRepository;
+
+    @Mock private FriendshipRepository friendshipRepository;
+
+    @Mock private UserFollowRepository userFollowRepository;
 
     @InjectMocks private TripServiceImpl tripService;
 
@@ -222,6 +228,7 @@ class TripServiceTest {
     void getTripsForUserWithVisibility_whenTripsExist_shouldReturnPublicAndProtectedTrips() {
         // Given
         UUID userId = UUID.randomUUID();
+        UUID requestingUserId = UUID.randomUUID();
         Trip publicTrip =
                 TestEntityFactory.createTrip(
                         UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC);
@@ -229,13 +236,15 @@ class TripServiceTest {
                 TestEntityFactory.createTrip(
                         UUID.randomUUID(), "Protected Trip", TripVisibility.PROTECTED);
 
+        when(friendshipRepository.existsByUserIdAndFriendId(requestingUserId, userId))
+                .thenReturn(true);
         List<TripVisibility> visibilities =
                 List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED);
         when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
                 .thenReturn(List.of(publicTrip, protectedTrip));
 
         // When
-        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId);
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId, requestingUserId);
 
         // Then
         assertThat(result).isNotNull();
@@ -252,13 +261,16 @@ class TripServiceTest {
     void getTripsForUserWithVisibility_whenNoTripsExist_shouldReturnEmptyList() {
         // Given
         UUID userId = UUID.randomUUID();
+        UUID requestingUserId = UUID.randomUUID();
+        when(friendshipRepository.existsByUserIdAndFriendId(requestingUserId, userId))
+                .thenReturn(true);
         List<TripVisibility> visibilities =
                 List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED);
         when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
                 .thenReturn(Collections.emptyList());
 
         // When
-        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId);
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId, requestingUserId);
 
         // Then
         assertThat(result).isNotNull();
@@ -271,17 +283,20 @@ class TripServiceTest {
     void getTripsForUserWithVisibility_shouldNotIncludePrivateTrips() {
         // Given
         UUID userId = UUID.randomUUID();
+        UUID requestingUserId = UUID.randomUUID();
         Trip publicTrip =
                 TestEntityFactory.createTrip(
                         UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC);
 
+        when(friendshipRepository.existsByUserIdAndFriendId(requestingUserId, userId))
+                .thenReturn(true);
         List<TripVisibility> visibilities =
                 List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED);
         when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
                 .thenReturn(List.of(publicTrip));
 
         // When
-        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId);
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId, requestingUserId);
 
         // Then
         assertThat(result).isNotNull();
@@ -315,7 +330,7 @@ class TripServiceTest {
                 .thenReturn(List.of(ongoingTrip1, ongoingTrip2));
 
         // When
-        List<TripDTO> result = tripService.getOngoingPublicTrips();
+        List<TripDTO> result = tripService.getOngoingPublicTrips(null);
 
         // Then
         assertThat(result).isNotNull();
@@ -338,7 +353,7 @@ class TripServiceTest {
                 .thenReturn(Collections.emptyList());
 
         // When
-        List<TripDTO> result = tripService.getOngoingPublicTrips();
+        List<TripDTO> result = tripService.getOngoingPublicTrips(null);
 
         // Then
         assertThat(result).isNotNull();
@@ -361,7 +376,7 @@ class TripServiceTest {
                 .thenReturn(List.of(ongoingPublicTrip));
 
         // When
-        List<TripDTO> result = tripService.getOngoingPublicTrips();
+        List<TripDTO> result = tripService.getOngoingPublicTrips(null);
 
         // Then
         assertThat(result).isNotNull();

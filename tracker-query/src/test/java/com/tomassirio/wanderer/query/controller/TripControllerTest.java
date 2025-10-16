@@ -1,6 +1,8 @@
 package com.tomassirio.wanderer.query.controller;
 
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -221,7 +223,8 @@ class TripControllerTest {
                         createTripDTO(UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC),
                         createTripDTO(
                                 UUID.randomUUID(), "Protected Trip", TripVisibility.PROTECTED));
-        when(tripService.getTripsForUserWithVisibility(otherUserId)).thenReturn(trips);
+        when(tripService.getTripsForUserWithVisibility(eq(otherUserId), any(UUID.class)))
+                .thenReturn(trips);
 
         // When & Then
         mockMvc.perform(get(TRIPS_BASE_URL + "/users/{userId}", otherUserId))
@@ -238,7 +241,8 @@ class TripControllerTest {
     void getTripsByUser_whenNoTripsExist_shouldReturnEmptyList() throws Exception {
         // Given
         UUID otherUserId = UUID.randomUUID();
-        when(tripService.getTripsForUserWithVisibility(otherUserId)).thenReturn(List.of());
+        when(tripService.getTripsForUserWithVisibility(eq(otherUserId), any(UUID.class)))
+                .thenReturn(List.of());
 
         // When & Then
         mockMvc.perform(get(TRIPS_BASE_URL + "/users/{userId}", otherUserId))
@@ -253,7 +257,8 @@ class TripControllerTest {
         UUID otherUserId = UUID.randomUUID();
         List<TripDTO> trips =
                 List.of(createTripDTO(UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC));
-        when(tripService.getTripsForUserWithVisibility(otherUserId)).thenReturn(trips);
+        when(tripService.getTripsForUserWithVisibility(eq(otherUserId), any(UUID.class)))
+                .thenReturn(trips);
 
         // When & Then
         mockMvc.perform(get(TRIPS_BASE_URL + "/users/{userId}", otherUserId))
@@ -278,7 +283,7 @@ class TripControllerTest {
                                 "Ongoing Trip 2",
                                 TripVisibility.PUBLIC,
                                 TripStatus.IN_PROGRESS));
-        when(tripService.getOngoingPublicTrips()).thenReturn(ongoingTrips);
+        when(tripService.getOngoingPublicTrips(any())).thenReturn(ongoingTrips);
 
         // When & Then
         mockMvc.perform(get(TRIPS_BASE_URL + "/public"))
@@ -295,7 +300,7 @@ class TripControllerTest {
     @Test
     void getOngoingPublicTrips_whenNoOngoingTripsExist_shouldReturnEmptyList() throws Exception {
         // Given
-        when(tripService.getOngoingPublicTrips()).thenReturn(List.of());
+        when(tripService.getOngoingPublicTrips(any())).thenReturn(List.of());
 
         // When & Then
         mockMvc.perform(get(TRIPS_BASE_URL + "/public"))
@@ -314,7 +319,7 @@ class TripControllerTest {
                                 "Public Ongoing",
                                 TripVisibility.PUBLIC,
                                 TripStatus.IN_PROGRESS));
-        when(tripService.getOngoingPublicTrips()).thenReturn(ongoingTrips);
+        when(tripService.getOngoingPublicTrips(any())).thenReturn(ongoingTrips);
 
         // When & Then
         mockMvc.perform(get(TRIPS_BASE_URL + "/public"))
