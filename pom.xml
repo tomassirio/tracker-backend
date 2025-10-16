@@ -11,7 +11,7 @@
 
     <groupId>com.tomassirio.wanderer</groupId>
     <artifactId>tracker-backend</artifactId>
-    <version>0.3.3-SNAPSHOT</version>
+    <version>0.3.3</version>
     <packaging>pom</packaging>
     <name>tracker-backend</name>
     <description>Trip Tracker Backend - CQRS Multi-Module Project</description>
