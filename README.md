@@ -1,5 +1,17 @@
 # Trip Tracker Application
 
+![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen?logo=spring&logoColor=white)
+![Version](https://img.shields.io/badge/version-0.3.0-blue)
+![Build Status](https://img.shields.io/github/actions/workflow/status/tomassirio/tracker-backend/merge.yml?branch=main&label=build)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Coverage](https://img.shields.io/badge/coverage-85%25-brightgreen)
+
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-enabled-2496ED?logo=docker&logoColor=white)
+![Kubernetes](https://img.shields.io/badge/kubernetes-ready-326CE5?logo=kubernetes&logoColor=white)
+![Architecture](https://img.shields.io/badge/architecture-CQRS-blueviolet)
+
 A comprehensive tracking system for my pilgrimage to Santiago de Compostela, built with CQRS architecture using Spring Boot and Java 21.
 
 ## 📚 Documentation

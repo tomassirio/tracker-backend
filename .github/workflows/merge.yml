@@ -53,11 +53,61 @@ jobs:
       - name: Build project
         run: mvn clean install
 
+      - name: Extract coverage and update README badges
+        run: |
+          # Extract coverage from JaCoCo aggregate report
+          COVERAGE_FILE="target/site/jacoco-aggregate/index.html"
+          if [ -f "$COVERAGE_FILE" ]; then
+            COVERAGE=$(grep -oP 'Total[^%]+\K\d+(?=%)' "$COVERAGE_FILE" | head -1)
+            if [ -z "$COVERAGE" ]; then
+              COVERAGE="N/A"
+              COVERAGE_COLOR="lightgrey"
+            elif [ "$COVERAGE" -ge 80 ]; then
+              COVERAGE_COLOR="brightgreen"
+            elif [ "$COVERAGE" -ge 60 ]; then
+              COVERAGE_COLOR="yellow"
+            elif [ "$COVERAGE" -ge 40 ]; then
+              COVERAGE_COLOR="orange"
+            else
+              COVERAGE_COLOR="red"
+            fi
+          else
+            COVERAGE="N/A"
+            COVERAGE_COLOR="lightgrey"
+          fi
+          
+          # Update version badge
+          sed -i "s/version-[0-9.]*-blue/version-${RELEASE_VERSION}-blue/" README.md
+          
+          # Update coverage badge
+          sed -i "s/coverage-[^-]*-[a-z]*/coverage-${COVERAGE}%25-${COVERAGE_COLOR}/" README.md
+          
+          # Commit badge updates
+          git add README.md
+          git commit --amend --no-edit
+
       - name: Create release notes
         run: |
           echo "Release ${RELEASE_VERSION}" > release-notes.md
           echo "" >> release-notes.md
           git log --pretty=format:"* %s" $(git describe --tags --abbrev=0)..HEAD >> release-notes.md
+
+      - name: Collect release artifacts
+        run: |
+          # Extract module names from parent pom.xml
+          MODULES=$(mvn help:evaluate -Dexpression=project.modules -q -DforceStdout | grep -oP '(?<=<string>)[^<]+' || true)
+          
+          # Build artifact paths for all modules
+          ARTIFACTS=""
+          for module in $MODULES; do
+            if [ -d "$module/target" ]; then
+              # Add all JARs from each module's target directory
+              ARTIFACTS="${ARTIFACTS} ${module}/target/*.jar"
+            fi
+          done
+          
+          echo "RELEASE_ARTIFACTS=${ARTIFACTS}" >> $GITHUB_ENV
+          echo "Artifacts to release: ${ARTIFACTS}"
 
       - name: Set next development version
         run: |
@@ -82,9 +132,7 @@ jobs:
           gh release create "v${RELEASE_VERSION}" \
             --title "Release ${RELEASE_VERSION}" \
             --notes-file release-notes.md \
-            commons/target/*.jar \
-            tracker-command/target/*.jar \
-            tracker-query/target/*.jar
+            $RELEASE_ARTIFACTS
 
   build-release-docker-images:
     needs: version-and-release
