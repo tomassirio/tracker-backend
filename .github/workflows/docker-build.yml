@@ -80,14 +80,16 @@ jobs:
       - name: Push version tag to GHCR
         if: ${{ inputs.push-to-registry }}
         run: |
-          SOURCE_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          SOURCE_IMAGE="ghcr.io/${REPO_OWNER}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
           docker push ${SOURCE_IMAGE}
 
       - name: Tag and push additional tag
         if: ${{ inputs.push-to-registry && inputs.image-tag != '' }}
         run: |
-          SOURCE_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
-          TARGET_IMAGE="ghcr.io/${{ secrets.registry-username }}/${{ matrix.module }}:${{ inputs.image-tag }}"
+          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          SOURCE_IMAGE="ghcr.io/${REPO_OWNER}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
+          TARGET_IMAGE="ghcr.io/${REPO_OWNER}/${{ matrix.module }}:${{ inputs.image-tag }}"
           docker tag ${SOURCE_IMAGE} ${TARGET_IMAGE}
           docker push ${TARGET_IMAGE}
 
