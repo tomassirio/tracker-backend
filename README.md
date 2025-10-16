@@ -16,6 +16,7 @@ A comprehensive tracking system for my pilgrimage to Santiago de Compostela, bui
 
 ## 📚 Documentation
 
+- **[API Documentation Wiki](https://github.com/tomassirio/tracker-backend/wiki)** - Comprehensive API reference and guides
 - **[Docker Guide](docs/DOCKER.md)** - Complete guide for building and running with Docker
 - **[CI/CD Workflows](docs/CI-CD.md)** - GitHub Actions workflows and automation
 - **[Release Notes](https://github.com/tomassirio/tracker-backend/releases)** - Version history and changelog
@@ -144,7 +145,32 @@ A JSONB structure tracking reaction counts:
 - Halfway mark reached
 - Santiago arrival
 
-## 🌐 API Endpoints
+## 📖 API Documentation
+
+For comprehensive API documentation, visit the **[API Documentation Wiki](https://github.com/tomassirio/tracker-backend/wiki)**:
+
+- **[Getting Started Guide](https://github.com/tomassirio/tracker-backend/wiki/Getting-Started-with-APIs)** - Quick start with examples
+- **[Authentication API](https://github.com/tomassirio/tracker-backend/wiki/Authentication-API)** - User registration and login
+- **[User API](https://github.com/tomassirio/tracker-backend/wiki/User-API)** - User management
+- **[Trip API](https://github.com/tomassirio/tracker-backend/wiki/Trip-API)** - Trip CRUD operations
+- **[Trip Plan API](https://github.com/tomassirio/tracker-backend/wiki/Trip-Plan-API)** - Route planning
+- **[Trip Update API](https://github.com/tomassirio/tracker-backend/wiki/Trip-Update-API)** - Location tracking
+- **[Comment API](https://github.com/tomassirio/tracker-backend/wiki/Comment-API)** - Comments and reactions
+- **[Security Guide](https://github.com/tomassirio/tracker-backend/wiki/Security-and-Authorization)** - Authentication and authorization
+
+The Wiki provides detailed documentation with request/response examples, error handling, and complete workflows.
+
+### Interactive API Documentation (Swagger UI)
+
+Each service also provides interactive API documentation:
+
+- **Auth Service**: http://localhost:8083/swagger-ui.html
+- **Command Service**: http://localhost:8081/swagger-ui.html
+- **Query Service**: http://localhost:8082/swagger-ui.html
+
+## 🌐 API Endpoints Overview
+
+Below is a quick reference of available endpoints. For detailed documentation, see the [Wiki](https://github.com/tomassirio/tracker-backend/wiki).
 
 ### Authentication API (tracker-auth) - Port 8083
 ```
