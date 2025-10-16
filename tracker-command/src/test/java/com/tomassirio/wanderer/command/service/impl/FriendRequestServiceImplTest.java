@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.tomassirio.wanderer.command.dto.FriendRequestResponse;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.command.service.FriendshipService;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
@@ -177,33 +177,5 @@ class FriendRequestServiceImplTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> friendRequestService.declineFriendRequest(requestId, wrongUser));
-    }
-
-    @Test
-    void getPendingReceivedRequests_Success() {
-        when(friendRequestRepository.findByReceiverIdAndStatus(
-                        receiverId, FriendRequestStatus.PENDING))
-                .thenReturn(List.of(friendRequest));
-
-        List<FriendRequestResponse> responses =
-                friendRequestService.getPendingReceivedRequests(receiverId);
-
-        assertNotNull(responses);
-        assertEquals(1, responses.size());
-        assertEquals(requestId, responses.get(0).id());
-    }
-
-    @Test
-    void getPendingSentRequests_Success() {
-        when(friendRequestRepository.findBySenderIdAndStatus(
-                        senderId, FriendRequestStatus.PENDING))
-                .thenReturn(List.of(friendRequest));
-
-        List<FriendRequestResponse> responses =
-                friendRequestService.getPendingSentRequests(senderId);
-
-        assertNotNull(responses);
-        assertEquals(1, responses.size());
-        assertEquals(requestId, responses.get(0).id());
     }
 }

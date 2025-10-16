@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.dto;
+package com.tomassirio.wanderer.commons.dto;
 
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
 import java.time.Instant;

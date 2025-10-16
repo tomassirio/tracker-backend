@@ -10,8 +10,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.command.dto.UserFollowRequest;
-import com.tomassirio.wanderer.command.dto.UserFollowResponse;
+import com.tomassirio.wanderer.commons.dto.UserFollowRequest;
+import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.security.CurrentUserIdArgumentResolver;

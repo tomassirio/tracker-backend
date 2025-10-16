@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.dto.FriendRequestRequest;
-import com.tomassirio.wanderer.command.dto.FriendRequestResponse;
+import com.tomassirio.wanderer.commons.dto.FriendRequestRequest;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
@@ -9,14 +9,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for friend request operations.
+ * REST controller for friend request command operations.
  *
  * @author tomassirio
  * @since 0.3.7
@@ -73,31 +71,5 @@ public class FriendRequestController {
         FriendRequestResponse response = friendRequestService.declineFriendRequest(requestId, userId);
         log.info("Friend request {} declined", requestId);
         return ResponseEntity.ok(response);
-    }
-
-    @GetMapping("/received")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(
-            summary = "Get received friend requests",
-            description = "Get all pending friend requests received by the current user")
-    public ResponseEntity<List<FriendRequestResponse>> getReceivedFriendRequests(
-            @Parameter(hidden = true) @CurrentUserId UUID userId) {
-        log.info("Received request to get pending friend requests for user {}", userId);
-        List<FriendRequestResponse> requests = friendRequestService.getPendingReceivedRequests(userId);
-        log.info("Found {} pending friend requests for user {}", requests.size(), userId);
-        return ResponseEntity.ok(requests);
-    }
-
-    @GetMapping("/sent")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(
-            summary = "Get sent friend requests",
-            description = "Get all pending friend requests sent by the current user")
-    public ResponseEntity<List<FriendRequestResponse>> getSentFriendRequests(
-            @Parameter(hidden = true) @CurrentUserId UUID userId) {
-        log.info("Received request to get sent friend requests for user {}", userId);
-        List<FriendRequestResponse> requests = friendRequestService.getPendingSentRequests(userId);
-        log.info("Found {} sent friend requests for user {}", requests.size(), userId);
-        return ResponseEntity.ok(requests);
     }
 }

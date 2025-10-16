@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.command.service.impl;
 
-import com.tomassirio.wanderer.command.dto.FriendRequestResponse;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.command.service.FriendshipService;
@@ -115,24 +115,6 @@ public class FriendRequestServiceImpl implements FriendRequestService {
 
         log.info("Friend request {} declined", requestId);
         return mapToResponse(updated);
-    }
-
-    @Override
-    public List<FriendRequestResponse> getPendingReceivedRequests(UUID userId) {
-        log.info("Getting pending received friend requests for user {}", userId);
-        return friendRequestRepository.findByReceiverIdAndStatus(userId, FriendRequestStatus.PENDING)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
-    }
-
-    @Override
-    public List<FriendRequestResponse> getPendingSentRequests(UUID userId) {
-        log.info("Getting pending sent friend requests for user {}", userId);
-        return friendRequestRepository.findBySenderIdAndStatus(userId, FriendRequestStatus.PENDING)
-                .stream()
-                .map(this::mapToResponse)
-                .toList();
     }
 
     private FriendRequestResponse mapToResponse(FriendRequest request) {

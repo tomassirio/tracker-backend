@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.command.service;
 
-import com.tomassirio.wanderer.command.dto.UserFollowResponse;
+import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import java.util.UUID;
 
 /**

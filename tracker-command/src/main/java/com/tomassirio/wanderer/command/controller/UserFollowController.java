@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.dto.UserFollowRequest;
-import com.tomassirio.wanderer.command.dto.UserFollowResponse;
+import com.tomassirio.wanderer.commons.dto.UserFollowRequest;
+import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;

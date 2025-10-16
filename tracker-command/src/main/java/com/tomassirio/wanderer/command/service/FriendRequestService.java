@@ -1,11 +1,10 @@
 package com.tomassirio.wanderer.command.service;
 
-import com.tomassirio.wanderer.command.dto.FriendRequestResponse;
-import java.util.List;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import java.util.UUID;
 
 /**
- * Service responsible for handling friend request operations.
+ * Service responsible for handling friend request command operations.
  *
  * @author tomassirio
  * @since 0.3.7
@@ -44,20 +43,4 @@ public interface FriendRequestService {
      * @throws IllegalArgumentException if user is not the receiver or request is not pending
      */
     FriendRequestResponse declineFriendRequest(UUID requestId, UUID userId);
-
-    /**
-     * Get all pending friend requests received by a user.
-     *
-     * @param userId the ID of the user
-     * @return list of pending friend requests
-     */
-    List<FriendRequestResponse> getPendingReceivedRequests(UUID userId);
-
-    /**
-     * Get all pending friend requests sent by a user.
-     *
-     * @param userId the ID of the user
-     * @return list of pending friend requests
-     */
-    List<FriendRequestResponse> getPendingSentRequests(UUID userId);
 }

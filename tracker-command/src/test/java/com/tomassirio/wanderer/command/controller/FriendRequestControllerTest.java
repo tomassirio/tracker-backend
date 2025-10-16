@@ -11,8 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.command.dto.FriendRequestRequest;
-import com.tomassirio.wanderer.command.dto.FriendRequestResponse;
+import com.tomassirio.wanderer.commons.dto.FriendRequestRequest;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
@@ -139,41 +139,5 @@ class FriendRequestControllerTest {
                 .andExpect(jsonPath("$.status").value("DECLINED"));
 
         verify(friendRequestService).declineFriendRequest(requestId, senderId);
-    }
-
-    @Test
-    void getReceivedFriendRequests_Success() throws Exception {
-        FriendRequestResponse response =
-                new FriendRequestResponse(
-                        requestId, UUID.randomUUID(), senderId, FriendRequestStatus.PENDING, Instant.now(), null);
-
-        doReturn(List.of(response)).when(friendRequestService).getPendingReceivedRequests(senderId);
-
-        mockMvc.perform(
-                        get("/api/1/users/friend-requests/received")
-                                .header("Authorization", token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].id").value(requestId.toString()));
-
-        verify(friendRequestService).getPendingReceivedRequests(senderId);
-    }
-
-    @Test
-    void getSentFriendRequests_Success() throws Exception {
-        FriendRequestResponse response =
-                new FriendRequestResponse(
-                        requestId, senderId, UUID.randomUUID(), FriendRequestStatus.PENDING, Instant.now(), null);
-
-        doReturn(List.of(response)).when(friendRequestService).getPendingSentRequests(senderId);
-
-        mockMvc.perform(
-                        get("/api/1/users/friend-requests/sent")
-                                .header("Authorization", token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].id").value(requestId.toString()));
-
-        verify(friendRequestService).getPendingSentRequests(senderId);
     }
 }
