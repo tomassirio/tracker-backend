@@ -22,8 +22,14 @@ fi
 # Clone wiki if it doesn't exist
 if [ ! -d "$WIKI_DIR" ]; then
     echo "📥 Cloning wiki repository..."
-    PARENT_DIR="$(cd "$(dirname "$REPO_DIR")" && pwd)"
-    cd "$PARENT_DIR"
+    PARENT_DIR="$(cd "$(dirname "$REPO_DIR")" && pwd)" || {
+        echo "❌ Error: Failed to access parent directory"
+        exit 1
+    }
+    cd "$PARENT_DIR" || {
+        echo "❌ Error: Failed to change to parent directory"
+        exit 1
+    }
     git clone "$WIKI_URL" || {
         echo "❌ Failed to clone wiki repository"
         echo "Make sure:"
@@ -32,7 +38,10 @@ if [ ! -d "$WIKI_DIR" ]; then
         echo "  3. At least one wiki page exists (create via GitHub UI)"
         exit 1
     }
-    cd "$REPO_DIR"
+    cd "$REPO_DIR" || {
+        echo "❌ Error: Failed to return to repository directory"
+        exit 1
+    }
     echo "✅ Wiki repository cloned"
 else
     echo "📦 Wiki repository already exists"
