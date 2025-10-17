@@ -4,14 +4,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.command.service.FriendshipService;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,7 +58,8 @@ class FriendRequestServiceImplTest {
                 .thenReturn(Optional.empty());
         when(friendRequestRepository.save(any(FriendRequest.class))).thenReturn(friendRequest);
 
-        FriendRequestResponse response = friendRequestService.sendFriendRequest(senderId, receiverId);
+        FriendRequestResponse response =
+                friendRequestService.sendFriendRequest(senderId, receiverId);
 
         assertNotNull(response);
         assertEquals(requestId, response.id());

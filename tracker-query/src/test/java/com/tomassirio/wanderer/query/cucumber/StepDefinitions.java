@@ -1,5 +1,7 @@
 package com.tomassirio.wanderer.query.cucumber;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -293,7 +295,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
-        Assertions.assertTrue(json.isEmpty(), "Expected response array to be empty");
+        assertTrue(json.isEmpty(), "Expected response array to be empty");
     }
 
     @When("I get user by username {string}")
@@ -351,7 +353,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"));
+        assertTrue(json.containsKey("id"));
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -361,7 +363,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"), "Response does not contain id");
+        assertTrue(json.containsKey("id"), "Response does not contain id");
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -371,7 +373,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("username"), "Response does not contain username");
+        assertTrue(json.containsKey("username"), "Response does not contain username");
         String actualUsername = json.get("username").toString();
         User expected = users.get(username);
         Assertions.assertNotNull(expected, "No such user in test state: " + username);
@@ -468,7 +470,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"), "Response does not contain id");
+        assertTrue(json.containsKey("id"), "Response does not contain id");
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -490,7 +492,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("name"), "Response does not contain name");
+        assertTrue(json.containsKey("name"), "Response does not contain name");
         String actualName = json.get("name").toString();
         Assertions.assertEquals(expectedName, actualName);
     }
@@ -688,7 +690,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"), "Response does not contain id");
+        assertTrue(json.containsKey("id"), "Response does not contain id");
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -710,7 +712,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("message"), "Response does not contain message");
+        assertTrue(json.containsKey("message"), "Response does not contain message");
         String actualMessage = json.get("message").toString();
         Assertions.assertEquals(expectedMessage, actualMessage);
     }
@@ -736,7 +738,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("reactions"), "Response does not contain reactions");
+        assertTrue(json.containsKey("reactions"), "Response does not contain reactions");
         Object reactions = json.get("reactions");
         Assertions.assertNotNull(reactions, "Reactions should not be null");
     }
@@ -764,7 +766,7 @@ public class StepDefinitions {
             throws JsonProcessingException {
         User user = usersMap.get(username);
         Assertions.assertNotNull(user, "User not found: " + username);
-        
+
         String token = buildTokenForUser(user, "USER", TEST_SECRET);
         HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
         latestResponse =
@@ -783,7 +785,7 @@ public class StepDefinitions {
             throws JsonProcessingException {
         User user = usersMap.get(username);
         Assertions.assertNotNull(user, "User not found: " + username);
-        
+
         String token = buildTokenForUser(user, "USER", TEST_SECRET);
         HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
         latestResponse =
@@ -809,7 +811,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Object json = mapper.readValue(body, Object.class);
-        Assertions.assertTrue(json instanceof java.util.List);
+        assertInstanceOf(List.class, json);
     }
 
     @Then("the response should be an empty list")
@@ -817,8 +819,8 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Object json = mapper.readValue(body, Object.class);
-        Assertions.assertTrue(json instanceof java.util.List);
-        Assertions.assertTrue(((java.util.List<?>) json).isEmpty());
+        assertInstanceOf(List.class, json);
+        assertTrue(((List<?>) json).isEmpty());
     }
 
     private String buildTokenForUser(User user, String roles, String secret) {

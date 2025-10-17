@@ -3,9 +3,9 @@ package com.tomassirio.wanderer.query.service.impl;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.query.repository.FriendRequestRepository;
 import java.time.Instant;
 import java.util.List;
@@ -76,8 +76,7 @@ class FriendRequestQueryServiceImplTest {
 
     @Test
     void getPendingSentRequests_Success() {
-        when(friendRequestRepository.findBySenderIdAndStatus(
-                        senderId, FriendRequestStatus.PENDING))
+        when(friendRequestRepository.findBySenderIdAndStatus(senderId, FriendRequestStatus.PENDING))
                 .thenReturn(List.of(friendRequest));
 
         List<FriendRequestResponse> responses =
@@ -92,8 +91,7 @@ class FriendRequestQueryServiceImplTest {
 
     @Test
     void getPendingSentRequests_EmptyList() {
-        when(friendRequestRepository.findBySenderIdAndStatus(
-                        senderId, FriendRequestStatus.PENDING))
+        when(friendRequestRepository.findBySenderIdAndStatus(senderId, FriendRequestStatus.PENDING))
                 .thenReturn(List.of());
 
         List<FriendRequestResponse> responses =

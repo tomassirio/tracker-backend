@@ -1,25 +1,22 @@
 package com.tomassirio.wanderer.command.controller;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.commons.dto.FriendRequestRequest;
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import com.tomassirio.wanderer.commons.dto.FriendRequestRequest;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.security.CurrentUserIdArgumentResolver;
 import com.tomassirio.wanderer.commons.security.JwtUtils;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +70,12 @@ class FriendRequestControllerTest {
         FriendRequestRequest request = new FriendRequestRequest(receiverId);
         FriendRequestResponse response =
                 new FriendRequestResponse(
-                        requestId, senderId, receiverId, FriendRequestStatus.PENDING, Instant.now(), null);
+                        requestId,
+                        senderId,
+                        receiverId,
+                        FriendRequestStatus.PENDING,
+                        Instant.now(),
+                        null);
 
         doReturn(response)
                 .when(friendRequestService)

@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.query.service.impl;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import com.tomassirio.wanderer.commons.domain.UserFollow;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
@@ -10,11 +11,12 @@ import com.tomassirio.wanderer.query.repository.TripRepository;
 import com.tomassirio.wanderer.query.repository.UserFollowRepository;
 import com.tomassirio.wanderer.query.service.TripService;
 import jakarta.persistence.EntityNotFoundException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -38,23 +40,19 @@ public class TripServiceImpl implements TripService {
 
     @Override
     public List<TripDTO> getAllTrips() {
-        return tripRepository.findAll().stream()
-                .map(tripMapper::toDTO)
-                .collect(Collectors.toList());
+        return tripRepository.findAll().stream().map(tripMapper::toDTO).toList();
     }
 
     @Override
     public List<TripDTO> getPublicTrips() {
         return tripRepository.findByTripSettingsVisibility(TripVisibility.PUBLIC).stream()
                 .map(tripMapper::toDTO)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public List<TripDTO> getTripsForUser(UUID userId) {
-        return tripRepository.findByUserId(userId).stream()
-                .map(tripMapper::toDTO)
-                .collect(Collectors.toList());
+        return tripRepository.findByUserId(userId).stream().map(tripMapper::toDTO).toList();
     }
 
     @Override
@@ -62,27 +60,17 @@ public class TripServiceImpl implements TripService {
         // Check if users are friends
         boolean areFriends =
                 requestingUserId != null
-                        && friendshipRepository.existsByUserIdAndFriendId(
-                                requestingUserId, userId);
+                        && friendshipRepository.existsByUserIdAndFriendId(requestingUserId, userId);
 
-        List<Trip> trips;
-        if (areFriends) {
-            // Friends can see PUBLIC and PROTECTED trips
-            List<TripVisibility> visibilities =
-                    List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED);
-            trips = tripRepository.findByUserIdAndVisibilityIn(userId, visibilities);
-        } else {
-            // Non-friends can only see PUBLIC trips
-            trips =
-                    tripRepository.findByUserId(userId).stream()
-                            .filter(
-                                    trip ->
-                                            trip.getTripSettings().getVisibility()
-                                                    == TripVisibility.PUBLIC)
-                            .toList();
-        }
+        // Determine allowed visibilities based on friendship status
+        List<TripVisibility> allowedVisibilities =
+                areFriends
+                        ? List.of(TripVisibility.PUBLIC, TripVisibility.PROTECTED)
+                        : List.of(TripVisibility.PUBLIC);
 
-        return trips.stream().map(tripMapper::toDTO).collect(Collectors.toList());
+        return tripRepository.findByUserIdAndVisibilityIn(userId, allowedVisibilities).stream()
+                .map(tripMapper::toDTO)
+                .toList();
     }
 
     @Override
@@ -92,31 +80,24 @@ public class TripServiceImpl implements TripService {
                         TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
 
         if (requestingUserId == null) {
-            return publicTrips.stream().map(tripMapper::toDTO).collect(Collectors.toList());
+            return publicTrips.stream().map(tripMapper::toDTO).toList();
         }
 
         // Get followed user IDs
         Set<UUID> followedUserIds =
                 userFollowRepository.findByFollowerId(requestingUserId).stream()
-                        .map(follow -> follow.getFollowedId())
+                        .map(UserFollow::getFollowedId)
                         .collect(Collectors.toSet());
 
-        // Separate trips by followed users
-        List<Trip> followedTrips = new ArrayList<>();
-        List<Trip> otherTrips = new ArrayList<>();
+        Map<Boolean, List<Trip>> partitionedTrips =
+                publicTrips.stream()
+                        .collect(
+                                Collectors.partitioningBy(
+                                        trip -> followedUserIds.contains(trip.getUserId())));
 
-        for (Trip trip : publicTrips) {
-            if (followedUserIds.contains(trip.getUserId())) {
-                followedTrips.add(trip);
-            } else {
-                otherTrips.add(trip);
-            }
-        }
-
-        // Combine with followed trips first
-        List<Trip> sortedTrips = new ArrayList<>(followedTrips);
-        sortedTrips.addAll(otherTrips);
-
-        return sortedTrips.stream().map(tripMapper::toDTO).collect(Collectors.toList());
+        return Stream.concat(
+                        partitionedTrips.get(true).stream(), partitionedTrips.get(false).stream())
+                .map(tripMapper::toDTO)
+                .toList();
     }
 }

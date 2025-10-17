@@ -1,9 +1,9 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.commons.dto.UserFollowRequest;
-import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
+import com.tomassirio.wanderer.commons.dto.UserFollowRequest;
+import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -43,8 +43,10 @@ public class UserFollowController {
     public ResponseEntity<UserFollowResponse> followUser(
             @Parameter(hidden = true) @CurrentUserId UUID followerId,
             @Valid @RequestBody UserFollowRequest request) {
-        log.info("Received request for user {} to follow user {}", followerId, request.followedId());
-        UserFollowResponse response = userFollowService.followUser(followerId, request.followedId());
+        log.info(
+                "Received request for user {} to follow user {}", followerId, request.followedId());
+        UserFollowResponse response =
+                userFollowService.followUser(followerId, request.followedId());
         log.info("User {} now follows user {}", followerId, request.followedId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }

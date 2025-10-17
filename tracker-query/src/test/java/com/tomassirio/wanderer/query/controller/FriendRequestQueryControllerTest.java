@@ -5,8 +5,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
+import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.security.CurrentUserIdArgumentResolver;
 import com.tomassirio.wanderer.commons.security.JwtUtils;
@@ -25,6 +26,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class FriendRequestQueryControllerTest {
+
+    private static final String RECEIVED_REQUESTS_URL =
+            ApiConstants.FRIEND_REQUESTS_PATH + ApiConstants.FRIEND_REQUESTS_RECEIVED_ENDPOINT;
+    private static final String SENT_REQUESTS_URL =
+            ApiConstants.FRIEND_REQUESTS_PATH + ApiConstants.FRIEND_REQUESTS_SENT_ENDPOINT;
 
     private MockMvc mockMvc;
 
@@ -67,7 +73,7 @@ class FriendRequestQueryControllerTest {
         when(friendRequestQueryService.getPendingReceivedRequests(userId))
                 .thenReturn(List.of(response));
 
-        mockMvc.perform(get("/api/1/users/friend-requests/received").header("Authorization", token))
+        mockMvc.perform(get(RECEIVED_REQUESTS_URL).header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].id").value(requestId.toString()));
@@ -79,7 +85,7 @@ class FriendRequestQueryControllerTest {
     void getReceivedFriendRequests_EmptyList() throws Exception {
         when(friendRequestQueryService.getPendingReceivedRequests(userId)).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/1/users/friend-requests/received").header("Authorization", token))
+        mockMvc.perform(get(RECEIVED_REQUESTS_URL).header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
@@ -98,9 +104,10 @@ class FriendRequestQueryControllerTest {
                         Instant.now(),
                         null);
 
-        when(friendRequestQueryService.getPendingSentRequests(userId)).thenReturn(List.of(response));
+        when(friendRequestQueryService.getPendingSentRequests(userId))
+                .thenReturn(List.of(response));
 
-        mockMvc.perform(get("/api/1/users/friend-requests/sent").header("Authorization", token))
+        mockMvc.perform(get(SENT_REQUESTS_URL).header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].id").value(requestId.toString()));
@@ -112,7 +119,7 @@ class FriendRequestQueryControllerTest {
     void getSentFriendRequests_EmptyList() throws Exception {
         when(friendRequestQueryService.getPendingSentRequests(userId)).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/1/users/friend-requests/sent").header("Authorization", token))
+        mockMvc.perform(get(SENT_REQUESTS_URL).header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());

@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.query.controller;
 
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import com.tomassirio.wanderer.query.service.FriendRequestQueryService;
 import io.swagger.v3.oas.annotations.Operation;

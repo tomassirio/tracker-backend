@@ -4,9 +4,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
+import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

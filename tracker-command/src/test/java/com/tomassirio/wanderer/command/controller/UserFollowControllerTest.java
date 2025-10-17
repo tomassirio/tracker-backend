@@ -10,9 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.dto.UserFollowRequest;
 import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
-import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.security.CurrentUserIdArgumentResolver;
 import com.tomassirio.wanderer.commons.security.JwtUtils;
@@ -85,9 +85,7 @@ class UserFollowControllerTest {
 
     @Test
     void unfollowUser_Success() throws Exception {
-        mockMvc.perform(
-                        delete("/api/1/users/follows/" + followedId)
-                                .header("Authorization", token))
+        mockMvc.perform(delete("/api/1/users/follows/" + followedId).header("Authorization", token))
                 .andExpect(status().isNoContent());
 
         verify(userFollowService).unfollowUser(followerId, followedId);

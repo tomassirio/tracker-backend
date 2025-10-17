@@ -1,9 +1,9 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.commons.dto.FriendRequestRequest;
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
+import com.tomassirio.wanderer.commons.dto.FriendRequestRequest;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,11 +38,16 @@ public class FriendRequestController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Send a friend request", description = "Send a friend request to another user")
+    @Operation(
+            summary = "Send a friend request",
+            description = "Send a friend request to another user")
     public ResponseEntity<FriendRequestResponse> sendFriendRequest(
             @Parameter(hidden = true) @CurrentUserId UUID senderId,
             @Valid @RequestBody FriendRequestRequest request) {
-        log.info("Received request to send friend request from {} to {}", senderId, request.receiverId());
+        log.info(
+                "Received request to send friend request from {} to {}",
+                senderId,
+                request.receiverId());
         FriendRequestResponse response =
                 friendRequestService.sendFriendRequest(senderId, request.receiverId());
         log.info("Friend request sent with ID: {}", response.id());
@@ -53,22 +58,24 @@ public class FriendRequestController {
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Accept a friend request", description = "Accept a pending friend request")
     public ResponseEntity<FriendRequestResponse> acceptFriendRequest(
-            @Parameter(hidden = true) @CurrentUserId UUID userId,
-            @PathVariable UUID requestId) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID requestId) {
         log.info("Received request to accept friend request {} by user {}", requestId, userId);
-        FriendRequestResponse response = friendRequestService.acceptFriendRequest(requestId, userId);
+        FriendRequestResponse response =
+                friendRequestService.acceptFriendRequest(requestId, userId);
         log.info("Friend request {} accepted", requestId);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/{requestId}/decline")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Decline a friend request", description = "Decline a pending friend request")
+    @Operation(
+            summary = "Decline a friend request",
+            description = "Decline a pending friend request")
     public ResponseEntity<FriendRequestResponse> declineFriendRequest(
-            @Parameter(hidden = true) @CurrentUserId UUID userId,
-            @PathVariable UUID requestId) {
+            @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID requestId) {
         log.info("Received request to decline friend request {} by user {}", requestId, userId);
-        FriendRequestResponse response = friendRequestService.declineFriendRequest(requestId, userId);
+        FriendRequestResponse response =
+                friendRequestService.declineFriendRequest(requestId, userId);
         log.info("Friend request {} declined", requestId);
         return ResponseEntity.ok(response);
     }

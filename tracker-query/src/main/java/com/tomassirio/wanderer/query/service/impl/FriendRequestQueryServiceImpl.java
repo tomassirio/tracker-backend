@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.query.service.impl;
 
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.query.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.query.service.FriendRequestQueryService;
 import java.util.List;
@@ -37,7 +37,8 @@ public class FriendRequestQueryServiceImpl implements FriendRequestQueryService 
                 .toList();
     }
 
-    private FriendRequestResponse mapToResponse(com.tomassirio.wanderer.commons.domain.FriendRequest request) {
+    private FriendRequestResponse mapToResponse(
+            com.tomassirio.wanderer.commons.domain.FriendRequest request) {
         return new FriendRequestResponse(
                 request.getId(),
                 request.getSenderId(),

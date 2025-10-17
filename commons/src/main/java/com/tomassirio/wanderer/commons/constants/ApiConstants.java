@@ -39,10 +39,17 @@ public final class ApiConstants {
     public static final String TRIP_VISIBILITY_ENDPOINT = "/{id}/visibility";
     public static final String TRIP_STATUS_ENDPOINT = "/{id}/status";
     public static final String TRIP_UPDATES_ENDPOINT = "/{tripId}/updates";
+    public static final String TRIPS_BY_USER_ENDPOINT = "/users/{userId}";
+    public static final String TRIPS_PUBLIC_ENDPOINT = "/public";
 
     // Comment endpoints base paths
     public static final String TRIP_COMMENTS_ENDPOINT = "/{tripId}/comments";
     public static final String COMMENT_REACTIONS_ENDPOINT = "/comments/{commentId}/reactions";
+
+    // Friend Request endpoints
+    public static final String FRIEND_REQUESTS_PATH = USERS_PATH + "/friend-requests";
+    public static final String FRIEND_REQUESTS_RECEIVED_ENDPOINT = "/received";
+    public static final String FRIEND_REQUESTS_SENT_ENDPOINT = "/sent";
 
     // Trip Plan endpoints
     public static final String TRIP_PLAN_BY_ID_ENDPOINT = "/{planId}";

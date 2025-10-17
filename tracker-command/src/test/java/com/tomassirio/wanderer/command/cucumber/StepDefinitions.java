@@ -163,7 +163,7 @@ public class StepDefinitions {
     public void a_user_exists(String username, String email) throws Exception {
         i_create_a_user_with_username_and_email(username, email);
         Assertions.assertEquals(201, latestResponse.getStatusCode().value());
-        
+
         // Store first user ID for later reference
         if (firstUserIdInScenario == null) {
             Optional<User> user = userRepository.findByUsername(username);
@@ -648,7 +648,10 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
         String url = API_BASE + "/users/friend-requests";
         latestResponse = restTemplate.postForEntity(url, request, String.class);
-        log.info("[Cucumber] POST {} response status: {}", url, latestResponse.getStatusCode().value());
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
 
         if (latestResponse.getStatusCode().is2xxSuccessful()) {
             String responseBody = latestResponse.getBody();
@@ -696,7 +699,9 @@ public class StepDefinitions {
         String authHeader = getTempAuthHeader();
         if (authHeader != null) headers.set("Authorization", authHeader);
         HttpEntity<String> request = new HttpEntity<>(headers);
-        latestResponse = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, request, String.class);
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.GET, request, String.class);
     }
 
     @When("I get my sent friend requests using that token")
@@ -706,7 +711,9 @@ public class StepDefinitions {
         String authHeader = getTempAuthHeader();
         if (authHeader != null) headers.set("Authorization", authHeader);
         HttpEntity<String> request = new HttpEntity<>(headers);
-        latestResponse = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, request, String.class);
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.GET, request, String.class);
     }
 
     @When("I send a friend request to the first user using that token")
@@ -801,7 +808,9 @@ public class StepDefinitions {
         String authHeader = getTempAuthHeader();
         if (authHeader != null) headers.set("Authorization", authHeader);
         HttpEntity<String> request = new HttpEntity<>(headers);
-        latestResponse = restTemplate.exchange(url, org.springframework.http.HttpMethod.DELETE, request, String.class);
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.DELETE, request, String.class);
     }
 
     @When("I follow myself using that token")
@@ -836,7 +845,9 @@ public class StepDefinitions {
         String authHeader = getTempAuthHeader();
         if (authHeader != null) headers.set("Authorization", authHeader);
         HttpEntity<String> request = new HttpEntity<>(headers);
-        latestResponse = restTemplate.exchange(url, org.springframework.http.HttpMethod.GET, request, String.class);
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.GET, request, String.class);
     }
 
     @And("the response contains a follow id")
@@ -857,9 +868,10 @@ public class StepDefinitions {
         Assertions.assertTrue(json instanceof java.util.List);
         java.util.List<?> trips = (java.util.List<?>) json;
         Assertions.assertFalse(trips.isEmpty(), "No trips returned");
-        
+
         Map<?, ?> firstTrip = (Map<?, ?>) trips.get(0);
         String firstTripName = firstTrip.get("name").toString();
-        Assertions.assertTrue(firstTripName.contains("Bob"), "First trip should be from Bob (followed user)");
+        Assertions.assertTrue(
+                firstTripName.contains("Bob"), "First trip should be from Bob (followed user)");
     }
 }

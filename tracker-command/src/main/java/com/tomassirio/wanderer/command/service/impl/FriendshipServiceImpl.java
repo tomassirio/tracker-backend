@@ -33,21 +33,13 @@ public class FriendshipServiceImpl implements FriendshipService {
         // Create bidirectional friendship
         if (!friendshipRepository.existsByUserIdAndFriendId(userId, friendId)) {
             Friendship friendship1 =
-                    Friendship.builder()
-                            .userId(userId)
-                            .friendId(friendId)
-                            .createdAt(now)
-                            .build();
+                    Friendship.builder().userId(userId).friendId(friendId).createdAt(now).build();
             friendshipRepository.save(friendship1);
         }
 
         if (!friendshipRepository.existsByUserIdAndFriendId(friendId, userId)) {
             Friendship friendship2 =
-                    Friendship.builder()
-                            .userId(friendId)
-                            .friendId(userId)
-                            .createdAt(now)
-                            .build();
+                    Friendship.builder().userId(friendId).friendId(userId).createdAt(now).build();
             friendshipRepository.save(friendship2);
         }
 

@@ -71,7 +71,7 @@ public class TripController {
         return ResponseEntity.ok(trips);
     }
 
-    @GetMapping("/users/{userId}")
+    @GetMapping(ApiConstants.TRIPS_BY_USER_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get trips by another user",
@@ -91,7 +91,7 @@ public class TripController {
         return ResponseEntity.ok(trips);
     }
 
-    @GetMapping("/public")
+    @GetMapping(ApiConstants.TRIPS_PUBLIC_ENDPOINT)
     @Operation(
             summary = "Get ongoing public trips",
             description =
@@ -99,8 +99,7 @@ public class TripController {
     public ResponseEntity<List<TripDTO>> getOngoingPublicTrips(
             @Parameter(hidden = true) @CurrentUserId(required = false) UUID requestingUserId) {
         log.info(
-                "Received request to retrieve ongoing public trips from user {}",
-                requestingUserId);
+                "Received request to retrieve ongoing public trips from user {}", requestingUserId);
 
         List<TripDTO> trips = tripService.getOngoingPublicTrips(requestingUserId);
 
