@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * REST controller for user follow operations.
  *
  * @author tomassirio
- * @since 0.3.7
+ * @since 0.4.0
  */
 @RestController
 @RequestMapping(ApiConstants.USERS_PATH + "/follows")

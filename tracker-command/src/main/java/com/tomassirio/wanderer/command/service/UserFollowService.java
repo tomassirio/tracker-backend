@@ -7,7 +7,7 @@ import java.util.UUID;
  * Service responsible for handling user follow operations.
  *
  * @author tomassirio
- * @since 0.3.7
+ * @since 0.4.0
  */
 public interface UserFollowService {
 

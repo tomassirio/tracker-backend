@@ -8,7 +8,7 @@ import java.util.UUID;
  * Service responsible for querying friend request information.
  *
  * @author tomassirio
- * @since 0.3.7
+ * @since 0.4.0
  */
 public interface FriendRequestQueryService {
 
