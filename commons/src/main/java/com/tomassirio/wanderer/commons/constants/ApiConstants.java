@@ -32,19 +32,28 @@ public final class ApiConstants {
     // User endpoints
     public static final String ME_ENDPOINT = "/me";
     public static final String USERNAME_ENDPOINT = "/username/{username}";
+    public static final String USERNAME_PATH = USERS_PATH + "/username/";
+    public static final String USERS_ME_PATH = USERS_PATH + ME_ENDPOINT;
     public static final String USER_BY_ID_ENDPOINT = UUID_PATH_VARIABLE;
 
     // Friends and Follow endpoints
     public static final String FRIENDS_PATH = USERS_PATH + "/friends";
     public static final String FRIEND_REQUESTS_PATH = FRIENDS_PATH + "/requests";
+    public static final String FRIEND_REQUESTS_RECEIVED_PATH = FRIEND_REQUESTS_PATH + "/received";
+    public static final String FRIEND_REQUESTS_SENT_PATH = FRIEND_REQUESTS_PATH + "/sent";
     public static final String FRIEND_REQUEST_ACCEPT_ENDPOINT = "/{requestId}/accept";
     public static final String FRIEND_REQUEST_DECLINE_ENDPOINT = "/{requestId}/decline";
     public static final String FRIEND_REQUESTS_RECEIVED_ENDPOINT = "/received";
     public static final String FRIEND_REQUESTS_SENT_ENDPOINT = "/sent";
     public static final String FOLLOWS_PATH = USERS_PATH + "/follows";
+    public static final String FOLLOWS_FOLLOWING_PATH = FOLLOWS_PATH + "/following";
+    public static final String FOLLOWS_FOLLOWERS_PATH = FOLLOWS_PATH + "/followers";
     public static final String FOLLOW_BY_ID_ENDPOINT = "/{followedId}";
+    public static final String FOLLOWS_FOLLOWING_ENDPOINT = "/following";
+    public static final String FOLLOWS_FOLLOWERS_ENDPOINT = "/followers";
 
     // Trip endpoints
+    public static final String TRIPS_ME_PATH = TRIPS_PATH + ME_ENDPOINT;
     public static final String TRIP_BY_ID_ENDPOINT = UUID_PATH_VARIABLE;
     public static final String TRIP_VISIBILITY_ENDPOINT = "/{id}/visibility";
     public static final String TRIP_STATUS_ENDPOINT = "/{id}/status";
@@ -53,9 +62,11 @@ public final class ApiConstants {
     public static final String TRIPS_PUBLIC_ENDPOINT = "/public";
 
     // Comment endpoints base paths
+    public static final String COMMENTS_PATH = API_V1 + "/comments";
     public static final String TRIP_COMMENTS_ENDPOINT = "/{tripId}/comments";
     public static final String COMMENT_REACTIONS_ENDPOINT = "/comments/{commentId}/reactions";
 
     // Trip Plan endpoints
+    public static final String TRIP_PLANS_ME_PATH = TRIP_PLANS_PATH + ME_ENDPOINT;
     public static final String TRIP_PLAN_BY_ID_ENDPOINT = "/{planId}";
 }

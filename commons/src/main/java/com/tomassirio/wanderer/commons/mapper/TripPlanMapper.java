@@ -18,7 +18,7 @@ public interface TripPlanMapper {
             target = "userId",
             expression =
                     "java(tripPlan.getUserId() != null ? tripPlan.getUserId().toString() : null)")
-    @Mapping(source = "createdTimestamp", target = "creationTimestamp")
+    @Mapping(source = "createdTimestamp", target = "createdTimestamp")
     TripPlanDTO toDTO(TripPlan tripPlan);
 
     @Mapping(

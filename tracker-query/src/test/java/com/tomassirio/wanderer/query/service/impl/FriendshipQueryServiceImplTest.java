@@ -49,8 +49,8 @@ class FriendshipQueryServiceImplTest {
 
         assertNotNull(responses);
         assertEquals(1, responses.size());
-        assertEquals(userId, responses.get(0).userId());
-        assertEquals(friendId, responses.get(0).friendId());
+        assertEquals(userId, responses.getFirst().userId());
+        assertEquals(friendId, responses.getFirst().friendId());
     }
 
     @Test

@@ -20,7 +20,10 @@ public class FriendshipQueryServiceImpl implements FriendshipQueryService {
     public List<FriendshipResponse> getFriends(UUID userId) {
         log.info("Getting friends for user {}", userId);
         return friendshipRepository.findByUserId(userId).stream()
-                .map(friendship -> new FriendshipResponse(friendship.getUserId(), friendship.getFriendId()))
+                .map(
+                        friendship ->
+                                new FriendshipResponse(
+                                        friendship.getUserId(), friendship.getFriendId()))
                 .toList();
     }
 }

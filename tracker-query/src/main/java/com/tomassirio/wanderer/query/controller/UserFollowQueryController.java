@@ -32,7 +32,7 @@ public class UserFollowQueryController {
 
     private final UserFollowQueryService userFollowQueryService;
 
-    @GetMapping("/following")
+    @GetMapping(ApiConstants.FOLLOWS_FOLLOWING_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get following",
@@ -45,9 +45,11 @@ public class UserFollowQueryController {
         return ResponseEntity.ok(following);
     }
 
-    @GetMapping("/followers")
+    @GetMapping(ApiConstants.FOLLOWS_FOLLOWERS_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Get followers", description = "Get all users that follow the current user")
+    @Operation(
+            summary = "Get followers",
+            description = "Get all users that follow the current user")
     public ResponseEntity<List<UserFollowResponse>> getFollowers(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
         log.info("Received request to get followers list for user {}", userId);

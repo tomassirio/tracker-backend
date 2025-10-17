@@ -1,5 +1,8 @@
 package com.tomassirio.wanderer.command.cucumber;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -17,6 +20,7 @@ import io.cucumber.java.en.When;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -154,7 +158,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"));
+        assertTrue(json.containsKey("id"));
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -330,7 +334,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
+        assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
         String actualName = json.get("name").toString();
         Assertions.assertEquals(expectedName, actualName, "Trip name does not match");
     }
@@ -449,7 +453,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
+        assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
         String actualName = json.get("name").toString();
         Assertions.assertEquals(expectedName, actualName, "Trip plan name does not match");
     }
@@ -595,7 +599,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"), "Response does not contain 'id' field");
+        assertTrue(json.containsKey("id"), "Response does not contain 'id' field");
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -641,7 +645,7 @@ public class StepDefinitions {
     public void i_send_a_friend_request_to_that_user_using_that_token() throws Exception {
         String receiverUsername = getLastCreatedUsername();
         Optional<User> receiver = userRepository.findByUsername(receiverUsername);
-        Assertions.assertTrue(receiver.isPresent(), "Receiver user not found");
+        assertTrue(receiver.isPresent(), "Receiver user not found");
         UUID receiverId = receiver.get().getId();
 
         Map<String, Object> body = Map.of("receiverId", receiverId.toString());
@@ -667,7 +671,7 @@ public class StepDefinitions {
     public void i_send_a_friend_request_to_myself_using_that_token() throws Exception {
         String username = getLastCreatedUsername();
         Optional<User> user = userRepository.findByUsername(username);
-        Assertions.assertTrue(user.isPresent(), "User not found");
+        assertTrue(user.isPresent(), "User not found");
         UUID userId = user.get().getId();
 
         Map<String, Object> body = Map.of("receiverId", userId.toString());
@@ -687,7 +691,8 @@ public class StepDefinitions {
     @When("I decline that friend request using that token")
     public void i_decline_that_friend_request_using_that_token() throws Exception {
         Assertions.assertNotNull(lastCreatedFriendRequestId, "No friend request ID stored");
-        String url = API_BASE + "/users/friends/requests/" + lastCreatedFriendRequestId + "/decline";
+        String url =
+                API_BASE + "/users/friends/requests/" + lastCreatedFriendRequestId + "/decline";
         HttpEntity<String> request = createJsonRequest(Map.of(), getTempAuthHeader());
         latestResponse = restTemplate.postForEntity(url, request, String.class);
     }
@@ -748,7 +753,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"));
+        assertTrue(json.containsKey("id"));
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -758,7 +763,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("status"));
+        assertTrue(json.containsKey("status"));
         Assertions.assertEquals(expectedStatus, json.get("status").toString());
     }
 
@@ -767,7 +772,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Object json = mapper.readValue(body, Object.class);
-        Assertions.assertTrue(json instanceof java.util.List);
+        assertTrue(json instanceof java.util.List);
         Assertions.assertFalse(((java.util.List<?>) json).isEmpty());
     }
 
@@ -778,7 +783,7 @@ public class StepDefinitions {
     public void i_follow_that_user_using_that_token() throws Exception {
         String followedUsername = getLastCreatedUsername();
         Optional<User> followed = userRepository.findByUsername(followedUsername);
-        Assertions.assertTrue(followed.isPresent(), "Followed user not found");
+        assertTrue(followed.isPresent(), "Followed user not found");
         UUID followedId = followed.get().getId();
 
         Map<String, Object> body = Map.of("followedId", followedId.toString());
@@ -800,7 +805,7 @@ public class StepDefinitions {
     public void i_unfollow_that_user_using_that_token() throws Exception {
         String followedUsername = getLastCreatedUsername();
         Optional<User> followed = userRepository.findByUsername(followedUsername);
-        Assertions.assertTrue(followed.isPresent(), "Followed user not found");
+        assertTrue(followed.isPresent(), "Followed user not found");
         UUID followedId = followed.get().getId();
 
         String url = API_BASE + "/users/follows/" + followedId;
@@ -817,7 +822,7 @@ public class StepDefinitions {
     public void i_follow_myself_using_that_token() throws Exception {
         String username = getLastCreatedUsername();
         Optional<User> user = userRepository.findByUsername(username);
-        Assertions.assertTrue(user.isPresent(), "User not found");
+        assertTrue(user.isPresent(), "User not found");
         UUID userId = user.get().getId();
 
         Map<String, Object> body = Map.of("followedId", userId.toString());
@@ -829,7 +834,7 @@ public class StepDefinitions {
     @And("I follow user {string} using that token")
     public void i_follow_user_using_that_token(String username) throws Exception {
         Optional<User> followed = userRepository.findByUsername(username);
-        Assertions.assertTrue(followed.isPresent(), "Followed user not found: " + username);
+        assertTrue(followed.isPresent(), "Followed user not found: " + username);
         UUID followedId = followed.get().getId();
 
         Map<String, Object> body = Map.of("followedId", followedId.toString());
@@ -855,7 +860,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"));
+        assertTrue(json.containsKey("id"));
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -865,13 +870,12 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Object json = mapper.readValue(body, Object.class);
-        Assertions.assertTrue(json instanceof java.util.List);
+        assertInstanceOf(List.class, json);
         java.util.List<?> trips = (java.util.List<?>) json;
         Assertions.assertFalse(trips.isEmpty(), "No trips returned");
 
-        Map<?, ?> firstTrip = (Map<?, ?>) trips.get(0);
+        Map<?, ?> firstTrip = (Map<?, ?>) trips.getFirst();
         String firstTripName = firstTrip.get("name").toString();
-        Assertions.assertTrue(
-                firstTripName.contains("Bob"), "First trip should be from Bob (followed user)");
+        assertTrue(firstTripName.contains("Bob"), "First trip should be from Bob (followed user)");
     }
 }

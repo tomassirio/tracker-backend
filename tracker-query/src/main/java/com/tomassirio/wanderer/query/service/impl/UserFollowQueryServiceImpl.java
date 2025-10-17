@@ -20,12 +20,13 @@ public class UserFollowQueryServiceImpl implements UserFollowQueryService {
     public List<UserFollowResponse> getFollowing(UUID userId) {
         log.info("Getting following list for user {}", userId);
         return userFollowRepository.findByFollowerId(userId).stream()
-                .map(follow ->
-                        new UserFollowResponse(
-                                follow.getId(),
-                                follow.getFollowerId(),
-                                follow.getFollowedId(),
-                                follow.getCreatedAt()))
+                .map(
+                        follow ->
+                                new UserFollowResponse(
+                                        follow.getId(),
+                                        follow.getFollowerId(),
+                                        follow.getFollowedId(),
+                                        follow.getCreatedAt()))
                 .toList();
     }
 
@@ -33,12 +34,13 @@ public class UserFollowQueryServiceImpl implements UserFollowQueryService {
     public List<UserFollowResponse> getFollowers(UUID userId) {
         log.info("Getting followers list for user {}", userId);
         return userFollowRepository.findByFollowedId(userId).stream()
-                .map(follow ->
-                        new UserFollowResponse(
-                                follow.getId(),
-                                follow.getFollowerId(),
-                                follow.getFollowedId(),
-                                follow.getCreatedAt()))
+                .map(
+                        follow ->
+                                new UserFollowResponse(
+                                        follow.getId(),
+                                        follow.getFollowerId(),
+                                        follow.getFollowedId(),
+                                        follow.getCreatedAt()))
                 .toList();
     }
 }

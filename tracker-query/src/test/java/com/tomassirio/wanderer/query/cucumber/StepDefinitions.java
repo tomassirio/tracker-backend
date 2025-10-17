@@ -9,7 +9,11 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.domain.Comment;
+import com.tomassirio.wanderer.commons.domain.FriendRequest;
+import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import com.tomassirio.wanderer.commons.domain.Friendship;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
@@ -19,10 +23,14 @@ import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.domain.UserFollow;
 import com.tomassirio.wanderer.commons.utils.JwtBuilder;
 import com.tomassirio.wanderer.query.repository.CommentRepository;
+import com.tomassirio.wanderer.query.repository.FriendRequestRepository;
+import com.tomassirio.wanderer.query.repository.FriendshipRepository;
 import com.tomassirio.wanderer.query.repository.TripPlanRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
+import com.tomassirio.wanderer.query.repository.UserFollowRepository;
 import com.tomassirio.wanderer.query.repository.UserRepository;
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
@@ -57,6 +65,9 @@ public class StepDefinitions {
     @Autowired private TripRepository tripRepository;
     @Autowired private CommentRepository commentRepository;
     @Autowired private TripPlanRepository tripPlanRepository;
+    @Autowired private FriendshipRepository friendshipRepository;
+    @Autowired private UserFollowRepository userFollowRepository;
+    @Autowired private FriendRequestRepository friendRequestRepository;
 
     private ResponseEntity<String> latestResponse;
 
@@ -67,12 +78,6 @@ public class StepDefinitions {
     // long secret used by tests
     private static final String TEST_SECRET =
             "test-secret-that-is-long-enough-for-jwt-hmac-sha-algorithm-256-bits-minimum";
-
-    // URL constants for endpoints used in tests
-    private static final String API_BASE = "/api/1";
-    private static final String TRIPS_ENDPOINT = API_BASE + "/trips";
-    private static final String USERS_BY_USERNAME_ENDPOINT = API_BASE + "/users/username/";
-    private static final String USERS_ME_ENDPOINT = API_BASE + "/users/me";
 
     static {
         mapper.registerModule(new JavaTimeModule());
@@ -91,6 +96,9 @@ public class StepDefinitions {
     private final Map<UUID, Trip> trips = new HashMap<>();
     private final Map<UUID, TripPlan> tripPlans = new HashMap<>();
     private final Map<UUID, Comment> comments = new HashMap<>();
+    private final Map<UUID, Friendship> friendships = new HashMap<>();
+    private final Map<UUID, UserFollow> userFollows = new HashMap<>();
+    private final Map<UUID, FriendRequest> friendRequests = new HashMap<>();
 
     @Given("an empty system")
     public void an_empty_system() {
@@ -98,6 +106,9 @@ public class StepDefinitions {
         users.clear();
         tripPlans.clear();
         comments.clear();
+        friendships.clear();
+        userFollows.clear();
+        friendRequests.clear();
 
         setTempAuthHeader(null);
         setLastCreatedUsername(null);
@@ -105,10 +116,21 @@ public class StepDefinitions {
         setLastCreatedTripPlanId(null);
         setLastCreatedCommentId(null);
 
-        Mockito.reset(tripRepository);
-        Mockito.reset(userRepository);
+        Mockito.reset(
+                tripRepository,
+                userRepository,
+                friendshipRepository,
+                userFollowRepository,
+                friendRequestRepository);
 
         when(tripRepository.findAll()).thenReturn(new ArrayList<>());
+        when(friendshipRepository.findByUserId(Mockito.any())).thenReturn(new ArrayList<>());
+        when(userFollowRepository.findByFollowerId(Mockito.any())).thenReturn(new ArrayList<>());
+        when(userFollowRepository.findByFollowedId(Mockito.any())).thenReturn(new ArrayList<>());
+        when(friendRequestRepository.findByReceiverIdAndStatus(Mockito.any(), Mockito.any()))
+                .thenReturn(new ArrayList<>());
+        when(friendRequestRepository.findBySenderIdAndStatus(Mockito.any(), Mockito.any()))
+                .thenReturn(new ArrayList<>());
     }
 
     @Given("a user exists with username {string} and email {string}")
@@ -223,12 +245,16 @@ public class StepDefinitions {
     public void i_get_all_trips() throws JsonProcessingException {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
-                restTemplate.exchange(TRIPS_ENDPOINT, HttpMethod.GET, request, String.class);
+                restTemplate.exchange(
+                        ApiConstants.TRIPS_PATH, HttpMethod.GET, request, String.class);
         log.info(
                 "[Cucumber] GET {} response status: {}",
-                TRIPS_ENDPOINT,
+                ApiConstants.TRIPS_PATH,
                 latestResponse.getStatusCode().value());
-        log.info("[Cucumber] GET {} response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
+        log.info(
+                "[Cucumber] GET {} response body: {}",
+                ApiConstants.TRIPS_PATH,
+                latestResponse.getBody());
     }
 
     @When("I get my trips")
@@ -236,13 +262,15 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        TRIPS_ENDPOINT + "/me", HttpMethod.GET, request, String.class);
+                        ApiConstants.TRIPS_ME_PATH, HttpMethod.GET, request, String.class);
         log.info(
                 "[Cucumber] GET {}/me response status: {}",
-                TRIPS_ENDPOINT,
+                ApiConstants.TRIPS_PATH,
                 latestResponse.getStatusCode().value());
         log.info(
-                "[Cucumber] GET {}/me response body: {}", TRIPS_ENDPOINT, latestResponse.getBody());
+                "[Cucumber] GET {}/me response body: {}",
+                ApiConstants.TRIPS_PATH,
+                latestResponse.getBody());
     }
 
     @When("I get the last created trip")
@@ -251,15 +279,15 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        TRIPS_ENDPOINT + "/" + id, HttpMethod.GET, request, String.class);
+                        ApiConstants.TRIPS_PATH + "/" + id, HttpMethod.GET, request, String.class);
         log.info(
                 "[Cucumber] GET {}/{} response status: {}",
-                TRIPS_ENDPOINT,
+                ApiConstants.TRIPS_PATH,
                 id,
                 latestResponse.getStatusCode().value());
         log.info(
                 "[Cucumber] GET {}/{} response body: {}",
-                TRIPS_ENDPOINT,
+                ApiConstants.TRIPS_PATH,
                 id,
                 latestResponse.getBody());
     }
@@ -303,18 +331,18 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        USERS_BY_USERNAME_ENDPOINT + username,
+                        ApiConstants.USERNAME_PATH + username,
                         HttpMethod.GET,
                         request,
                         String.class);
         log.info(
                 "[Cucumber] GET {}{} response status: {}",
-                USERS_BY_USERNAME_ENDPOINT,
+                ApiConstants.USERNAME_PATH,
                 username,
                 latestResponse.getStatusCode().value());
         log.info(
                 "[Cucumber] GET {}{} response body: {}",
-                USERS_BY_USERNAME_ENDPOINT,
+                ApiConstants.USERNAME_PATH,
                 username,
                 latestResponse.getBody());
     }
@@ -323,13 +351,16 @@ public class StepDefinitions {
     public void i_get_my_user() throws JsonProcessingException {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
-                restTemplate.exchange(USERS_ME_ENDPOINT, HttpMethod.GET, request, String.class);
+                restTemplate.exchange(
+                        ApiConstants.USERS_ME_PATH, HttpMethod.GET, request, String.class);
         log.info(
                 "[Cucumber] GET {} response status: {}",
-                USERS_ME_ENDPOINT,
+                ApiConstants.USERS_ME_PATH,
                 latestResponse.getStatusCode().value());
         log.info(
-                "[Cucumber] GET {} response body: {}", USERS_ME_ENDPOINT, latestResponse.getBody());
+                "[Cucumber] GET {} response body: {}",
+                ApiConstants.USERS_ME_PATH,
+                latestResponse.getBody());
     }
 
     @Then("the response status should be {int}")
@@ -417,7 +448,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/trips/plans", HttpMethod.GET, request, String.class);
+                        ApiConstants.TRIP_PLANS_PATH, HttpMethod.GET, request, String.class);
         log.info(
                 "[Cucumber] GET /trips/plans response status: {}",
                 latestResponse.getStatusCode().value());
@@ -429,7 +460,10 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/trips/plans/" + id, HttpMethod.GET, request, String.class);
+                        ApiConstants.TRIP_PLANS_PATH + "/" + id,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
         log.info(
                 "[Cucumber] GET /trips/plans/{} response status: {}",
                 id,
@@ -441,7 +475,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/trips/plans/me", HttpMethod.GET, request, String.class);
+                        ApiConstants.TRIP_PLANS_ME_PATH, HttpMethod.GET, request, String.class);
         log.info(
                 "[Cucumber] GET /trips/plans/me response status: {}",
                 latestResponse.getStatusCode().value());
@@ -458,7 +492,10 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, null);
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/trips/plans/" + id, HttpMethod.GET, request, String.class);
+                        ApiConstants.TRIP_PLANS_PATH + "/" + id,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
         log.info(
                 "[Cucumber] GET /trips/plans/{} (no token) response status: {}",
                 id,
@@ -565,7 +602,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/" + tripId + "/comments",
+                        ApiConstants.API_V1 + "/" + tripId + "/comments",
                         HttpMethod.GET,
                         request,
                         String.class);
@@ -581,7 +618,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, null);
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/" + tripId + "/comments",
+                        ApiConstants.API_V1 + "/" + tripId + "/comments",
                         HttpMethod.GET,
                         request,
                         String.class);
@@ -597,7 +634,10 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/comments/" + commentId, HttpMethod.GET, request, String.class);
+                        ApiConstants.COMMENTS_PATH + "/" + commentId,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
         log.info(
                 "[Cucumber] GET /comments/{} response status: {}",
                 commentId,
@@ -610,7 +650,10 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, null);
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/comments/" + commentId, HttpMethod.GET, request, String.class);
+                        ApiConstants.COMMENTS_PATH + "/" + commentId,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
         log.info(
                 "[Cucumber] GET /comments/{} (no token) response status: {}",
                 commentId,
@@ -623,7 +666,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/comments/" + commentId + "/replies",
+                        ApiConstants.COMMENTS_PATH + "/" + commentId + "/replies",
                         HttpMethod.GET,
                         request,
                         String.class);
@@ -639,7 +682,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, null);
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/comments/" + commentId + "/replies",
+                        ApiConstants.COMMENTS_PATH + "/" + commentId + "/replies",
                         HttpMethod.GET,
                         request,
                         String.class);
@@ -657,7 +700,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/users/" + userId + "/comments",
+                        ApiConstants.USERS_PATH + "/" + userId + "/comments",
                         HttpMethod.GET,
                         request,
                         String.class);
@@ -675,7 +718,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, null);
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/users/" + userId + "/comments",
+                        ApiConstants.USERS_PATH + "/" + userId + "/comments",
                         HttpMethod.GET,
                         request,
                         String.class);
@@ -756,9 +799,43 @@ public class StepDefinitions {
 
     @Given("user {string} sends a friend request to user {string}")
     public void user_sends_friend_request_to_user(String senderUsername, String receiverUsername) {
-        // This step creates the friend request in the system (simulated via mock)
-        // In a real scenario, this would call the command service endpoint
-        // For query tests, we just mock the repository to return the expected data
+        User sender = usersMap.get(senderUsername);
+        User receiver = usersMap.get(receiverUsername);
+        Assertions.assertNotNull(sender, "Sender user not found: " + senderUsername);
+        Assertions.assertNotNull(receiver, "Receiver user not found: " + receiverUsername);
+
+        FriendRequest friendRequest =
+                FriendRequest.builder()
+                        .id(UUID.randomUUID())
+                        .senderId(sender.getId())
+                        .receiverId(receiver.getId())
+                        .status(FriendRequestStatus.PENDING)
+                        .createdAt(Instant.now())
+                        .build();
+        friendRequests.put(friendRequest.getId(), friendRequest);
+
+        // Mock repository responses
+        when(friendRequestRepository.findByReceiverIdAndStatus(
+                        receiver.getId(), FriendRequestStatus.PENDING))
+                .thenReturn(
+                        friendRequests.values().stream()
+                                .filter(
+                                        fr ->
+                                                fr.getReceiverId().equals(receiver.getId())
+                                                        && fr.getStatus()
+                                                                == FriendRequestStatus.PENDING)
+                                .toList());
+
+        when(friendRequestRepository.findBySenderIdAndStatus(
+                        sender.getId(), FriendRequestStatus.PENDING))
+                .thenReturn(
+                        friendRequests.values().stream()
+                                .filter(
+                                        fr ->
+                                                fr.getSenderId().equals(sender.getId())
+                                                        && fr.getStatus()
+                                                                == FriendRequestStatus.PENDING)
+                                .toList());
     }
 
     @When("user {string} queries their received friend requests")
@@ -771,12 +848,12 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/users/friend-requests/received",
+                        ApiConstants.FRIEND_REQUESTS_RECEIVED_PATH,
                         HttpMethod.GET,
                         request,
                         String.class);
         log.info(
-                "[Cucumber] GET /users/friend-requests/received response status: {}",
+                "[Cucumber] GET /users/friends/requests/received response status: {}",
                 latestResponse.getStatusCode().value());
     }
 
@@ -790,12 +867,12 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
         latestResponse =
                 restTemplate.exchange(
-                        API_BASE + "/users/friend-requests/sent",
+                        ApiConstants.FRIEND_REQUESTS_SENT_PATH,
                         HttpMethod.GET,
                         request,
                         String.class);
         log.info(
-                "[Cucumber] GET /users/friend-requests/sent response status: {}",
+                "[Cucumber] GET /users/friends/requests/sent response status: {}",
                 latestResponse.getStatusCode().value());
     }
 
@@ -832,5 +909,177 @@ public class StepDefinitions {
         } catch (Exception e) {
             throw new RuntimeException("Failed to build JWT", e);
         }
+    }
+
+    // ==================== FRIENDSHIP STEPS ====================
+
+    @Given("user {string} and user {string} are friends")
+    public void user_and_user_are_friends(String username1, String username2) {
+        User user1 = usersMap.get(username1);
+        User user2 = usersMap.get(username2);
+        Assertions.assertNotNull(user1, "User not found: " + username1);
+        Assertions.assertNotNull(user2, "User not found: " + username2);
+
+        // Create bidirectional friendship (each user has the other as friend)
+        Friendship friendship1 =
+                Friendship.builder()
+                        .id(UUID.randomUUID())
+                        .userId(user1.getId())
+                        .friendId(user2.getId())
+                        .createdAt(Instant.now())
+                        .build();
+        friendships.put(friendship1.getId(), friendship1);
+
+        Friendship friendship2 =
+                Friendship.builder()
+                        .id(UUID.randomUUID())
+                        .userId(user2.getId())
+                        .friendId(user1.getId())
+                        .createdAt(Instant.now())
+                        .build();
+        friendships.put(friendship2.getId(), friendship2);
+
+        // Mock repository responses for both users
+        when(friendshipRepository.findByUserId(user1.getId()))
+                .thenReturn(
+                        friendships.values().stream()
+                                .filter(f -> f.getUserId().equals(user1.getId()))
+                                .toList());
+
+        when(friendshipRepository.findByUserId(user2.getId()))
+                .thenReturn(
+                        friendships.values().stream()
+                                .filter(f -> f.getUserId().equals(user2.getId()))
+                                .toList());
+    }
+
+    @Given("user {string} and user {string} are no longer friends")
+    public void user_and_user_are_no_longer_friends(String username1, String username2) {
+        User user1 = usersMap.get(username1);
+        User user2 = usersMap.get(username2);
+        Assertions.assertNotNull(user1, "User not found: " + username1);
+        Assertions.assertNotNull(user2, "User not found: " + username2);
+
+        // Remove friendships in both directions
+        friendships
+                .entrySet()
+                .removeIf(
+                        entry ->
+                                (entry.getValue().getUserId().equals(user1.getId())
+                                                && entry.getValue()
+                                                        .getFriendId()
+                                                        .equals(user2.getId()))
+                                        || (entry.getValue().getUserId().equals(user2.getId())
+                                                && entry.getValue()
+                                                        .getFriendId()
+                                                        .equals(user1.getId())));
+
+        // Update mocks
+        when(friendshipRepository.findByUserId(user1.getId()))
+                .thenReturn(
+                        friendships.values().stream()
+                                .filter(f -> f.getUserId().equals(user1.getId()))
+                                .toList());
+
+        when(friendshipRepository.findByUserId(user2.getId()))
+                .thenReturn(
+                        friendships.values().stream()
+                                .filter(f -> f.getUserId().equals(user2.getId()))
+                                .toList());
+    }
+
+    @When("user {string} queries their friends list")
+    public void user_queries_their_friends_list(String username) throws JsonProcessingException {
+        User user = usersMap.get(username);
+        Assertions.assertNotNull(user, "User not found: " + username);
+
+        String token = buildTokenForUser(user, "USER", TEST_SECRET);
+        HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.FRIENDS_PATH, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /users/friends response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @Then("the response should contain {int} friends")
+    public void the_response_should_contain_friends(int expectedCount) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<?> json = mapper.readValue(body, List.class);
+        Assertions.assertEquals(
+                expectedCount, json.size(), "Expected " + expectedCount + " friends in response");
+    }
+
+    // ==================== USER FOLLOWS STEPS ====================
+
+    @Given("user {string} follows user {string}")
+    public void user_follows_user(String followerUsername, String followedUsername) {
+        User follower = usersMap.get(followerUsername);
+        User followed = usersMap.get(followedUsername);
+        Assertions.assertNotNull(follower, "Follower user not found: " + followerUsername);
+        Assertions.assertNotNull(followed, "Followed user not found: " + followedUsername);
+
+        UserFollow userFollow =
+                UserFollow.builder()
+                        .id(UUID.randomUUID())
+                        .followerId(follower.getId())
+                        .followedId(followed.getId())
+                        .createdAt(Instant.now())
+                        .build();
+        userFollows.put(userFollow.getId(), userFollow);
+
+        // Mock repository responses
+        when(userFollowRepository.findByFollowerId(follower.getId()))
+                .thenReturn(
+                        userFollows.values().stream()
+                                .filter(uf -> uf.getFollowerId().equals(follower.getId()))
+                                .toList());
+
+        when(userFollowRepository.findByFollowedId(followed.getId()))
+                .thenReturn(
+                        userFollows.values().stream()
+                                .filter(uf -> uf.getFollowedId().equals(followed.getId()))
+                                .toList());
+    }
+
+    @When("user {string} queries their following list")
+    public void user_queries_their_following_list(String username) throws JsonProcessingException {
+        User user = usersMap.get(username);
+        Assertions.assertNotNull(user, "User not found: " + username);
+
+        String token = buildTokenForUser(user, "USER", TEST_SECRET);
+        HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.FOLLOWS_FOLLOWING_PATH, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /users/follows/following response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("user {string} queries their followers list")
+    public void user_queries_their_followers_list(String username) throws JsonProcessingException {
+        User user = usersMap.get(username);
+        Assertions.assertNotNull(user, "User not found: " + username);
+
+        String token = buildTokenForUser(user, "USER", TEST_SECRET);
+        HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.FOLLOWS_FOLLOWERS_PATH, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /users/follows/followers response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @Then("the response should contain {int} follows")
+    public void the_response_should_contain_follows(int expectedCount) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<?> json = mapper.readValue(body, List.class);
+        Assertions.assertEquals(
+                expectedCount, json.size(), "Expected " + expectedCount + " follows in response");
     }
 }
