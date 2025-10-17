@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-refresh-tokens
+      author: copilot
+      changes:
+        - createTable:
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: token_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: expires_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: revoked
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_refresh_tokens_user_id
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            indexName: idx_refresh_tokens_token_hash
+            tableName: refresh_tokens
+            columns:
+              - column:
+                  name: token_hash
+      rollback:
+        - dropIndex:
+            indexName: idx_refresh_tokens_token_hash
+            tableName: refresh_tokens
+        - dropIndex:
+            indexName: idx_refresh_tokens_user_id
+            tableName: refresh_tokens
+        - dropTable:
+            tableName: refresh_tokens

@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-token-blacklist
+      author: copilot
+      changes:
+        - createTable:
+            tableName: token_blacklist
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: token_jti
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: expires_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: blacklisted_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_token_blacklist_token_jti
+            tableName: token_blacklist
+            columns:
+              - column:
+                  name: token_jti
+        - createIndex:
+            indexName: idx_token_blacklist_expires_at
+            tableName: token_blacklist
+            columns:
+              - column:
+                  name: expires_at
+      rollback:
+        - dropIndex:
+            indexName: idx_token_blacklist_expires_at
+            tableName: token_blacklist
+        - dropIndex:
+            indexName: idx_token_blacklist_token_jti
+            tableName: token_blacklist
+        - dropTable:
+            tableName: token_blacklist
