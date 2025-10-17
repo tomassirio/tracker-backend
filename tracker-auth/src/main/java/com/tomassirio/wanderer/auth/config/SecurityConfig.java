@@ -32,8 +32,15 @@ public class SecurityConfig {
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         authz ->
-                                authz.requestMatchers("/api/1/auth/**")
+                                authz.requestMatchers(
+                                                "/api/1/auth/login",
+                                                "/api/1/auth/register",
+                                                "/api/1/auth/refresh",
+                                                "/api/1/auth/password/reset")
                                         .permitAll()
+                                        .requestMatchers(
+                                                "/api/1/auth/logout", "/api/1/auth/password/change")
+                                        .authenticated()
                                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                                         .permitAll()
                                         .anyRequest()
