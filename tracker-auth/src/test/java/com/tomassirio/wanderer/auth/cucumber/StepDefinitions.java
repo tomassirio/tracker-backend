@@ -163,6 +163,18 @@ public class StepDefinitions {
                 latestResponse.getStatusCode().value());
     }
 
+    @When("I try to use the logged out token")
+    public void i_try_to_use_the_logged_out_token() throws Exception {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + getTempAuthToken());
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        // Try to access a protected endpoint with the logged out token
+        latestResponse = restTemplate.postForEntity("/api/1/auth/logout", request, String.class);
+        log.info(
+                "[Cucumber] Attempting to use logged out token, response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
     @When("I request password reset for email {string}")
     public void i_request_password_reset_for_email(String email) throws Exception {
         Map<String, Object> body = Map.of("email", email);

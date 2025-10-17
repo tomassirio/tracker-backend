@@ -103,4 +103,41 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    void refresh_whenValidRequest_shouldReturnOk() throws Exception {
+        com.tomassirio.wanderer.auth.dto.RefreshTokenRequest request =
+                new com.tomassirio.wanderer.auth.dto.RefreshTokenRequest("valid.refresh.token");
+        com.tomassirio.wanderer.auth.dto.RefreshTokenResponse response =
+                new com.tomassirio.wanderer.auth.dto.RefreshTokenResponse(
+                        "new.access.token", "new.refresh.token", "Bearer", 3600000L);
+
+        when(tokenService.refreshAccessToken(request.refreshToken())).thenReturn(response);
+
+        mockMvc.perform(
+                        post("/api/1/auth/refresh")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value("new.access.token"))
+                .andExpect(jsonPath("$.refreshToken").value("new.refresh.token"))
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
+                .andExpect(jsonPath("$.expiresIn").value(3600000L));
+    }
+
+    @Test
+    void passwordReset_whenValidEmail_shouldReturnOk() throws Exception {
+        com.tomassirio.wanderer.auth.dto.PasswordResetRequest request =
+                new com.tomassirio.wanderer.auth.dto.PasswordResetRequest("test@example.com");
+
+        when(authService.initiatePasswordReset(request.email())).thenReturn("reset.token.here");
+
+        mockMvc.perform(
+                        post("/api/1/auth/password/reset")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password reset token generated"))
+                .andExpect(jsonPath("$.token").value("reset.token.here"));
+    }
 }

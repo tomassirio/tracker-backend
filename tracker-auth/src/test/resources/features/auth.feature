@@ -38,15 +38,17 @@ Feature: Authentication
     And the response should contain a JWT token
     And the response should contain a refresh token
 
-  Scenario: Logout successfully
+  Scenario: Logout successfully and token becomes invalid
     Given an empty auth system
     When I register a user with username "testuser", email "test@example.com", and password "password123"
     Then the response status should be 201
     And I save the access token
     When I logout
     Then the response status should be 200
+    When I try to use the logged out token
+    Then the response status should be 403
 
-  Scenario: Password reset flow
+  Scenario: Password reset flow and login with new password
     Given an empty auth system
     When I register a user with username "testuser", email "test@example.com", and password "password123"
     Then the response status should be 201
@@ -55,11 +57,17 @@ Feature: Authentication
     And I save the reset token
     When I reset password with new password "newPassword123"
     Then the response status should be 200
+    When I login with username "testuser" and password "newPassword123"
+    Then the response status should be 200
+    And the response should contain a JWT token
 
-  Scenario: Change password
+  Scenario: Change password successfully and login with new password
     Given an empty auth system
     When I register a user with username "testuser", email "test@example.com", and password "password123"
     Then the response status should be 201
     And I save the access token
     When I change password from "password123" to "newPassword456"
     Then the response status should be 200
+    When I login with username "testuser" and password "newPassword456"
+    Then the response status should be 200
+    And the response should contain a JWT token
