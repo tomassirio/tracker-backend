@@ -35,8 +35,11 @@ public class SecurityConfig {
                                 authz.requestMatchers(
                                                 "/api/1/auth/login",
                                                 "/api/1/auth/register",
-                                                "/api/1/auth/refresh",
-                                                "/api/1/auth/password/reset")
+                                                "/api/1/auth/refresh")
+                                        .permitAll()
+                                        // Both POST (initiate) and PUT (complete) for password
+                                        // reset are public
+                                        .requestMatchers("/api/1/auth/password/reset")
                                         .permitAll()
                                         .requestMatchers(
                                                 "/api/1/auth/logout", "/api/1/auth/password/change")
