@@ -56,7 +56,7 @@ public class TripController {
         return ResponseEntity.ok(trips);
     }
 
-    @GetMapping(ApiConstants.ME_ENDPOINT)
+    @GetMapping(ApiConstants.ME_SUFFIX)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get trips for current authenticated user",

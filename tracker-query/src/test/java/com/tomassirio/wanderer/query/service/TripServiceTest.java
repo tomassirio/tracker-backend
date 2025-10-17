@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import com.tomassirio.wanderer.commons.domain.UserFollow;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
@@ -313,6 +314,82 @@ class TripServiceTest {
     }
 
     @Test
+    void getTripsForUserWithVisibility_whenNotFriends_shouldReturnOnlyPublicTrips() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID requestingUserId = UUID.randomUUID();
+        Trip publicTrip =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC);
+
+        when(friendshipRepository.existsByUserIdAndFriendId(requestingUserId, userId))
+                .thenReturn(false);
+        List<TripVisibility> visibilities = List.of(TripVisibility.PUBLIC);
+        when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
+                .thenReturn(List.of(publicTrip));
+
+        // When
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId, requestingUserId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).name()).isEqualTo("Public Trip");
+        assertThat(result.get(0).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+
+        verify(friendshipRepository).existsByUserIdAndFriendId(requestingUserId, userId);
+        verify(tripRepository).findByUserIdAndVisibilityIn(userId, visibilities);
+    }
+
+    @Test
+    void getTripsForUserWithVisibility_whenRequestingUserIdIsNull_shouldReturnOnlyPublicTrips() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        Trip publicTrip =
+                TestEntityFactory.createTrip(
+                        UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC);
+
+        List<TripVisibility> visibilities = List.of(TripVisibility.PUBLIC);
+        when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
+                .thenReturn(List.of(publicTrip));
+
+        // When
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId, null);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).name()).isEqualTo("Public Trip");
+        assertThat(result.get(0).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+
+        verify(tripRepository).findByUserIdAndVisibilityIn(userId, visibilities);
+    }
+
+    @Test
+    void
+            getTripsForUserWithVisibility_whenNotFriendsAndNoPublicTrips_shouldReturnEmptyList() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID requestingUserId = UUID.randomUUID();
+
+        when(friendshipRepository.existsByUserIdAndFriendId(requestingUserId, userId))
+                .thenReturn(false);
+        List<TripVisibility> visibilities = List.of(TripVisibility.PUBLIC);
+        when(tripRepository.findByUserIdAndVisibilityIn(userId, visibilities))
+                .thenReturn(Collections.emptyList());
+
+        // When
+        List<TripDTO> result = tripService.getTripsForUserWithVisibility(userId, requestingUserId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
+
+        verify(friendshipRepository).existsByUserIdAndFriendId(requestingUserId, userId);
+        verify(tripRepository).findByUserIdAndVisibilityIn(userId, visibilities);
+    }
+
+    @Test
     void getOngoingPublicTrips_whenOngoingTripsExist_shouldReturnOngoingPublicTrips() {
         // Given
         Trip ongoingTrip1 =
@@ -383,6 +460,217 @@ class TripServiceTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
         assertThat(result.get(0).tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+
+        verify(tripRepository)
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
+    }
+
+    @Test
+    void
+            getOngoingPublicTrips_withRequestingUserId_whenUserFollowsSomeUsers_shouldPrioritizeFollowedUsers() {
+        // Given
+        UUID requestingUserId = UUID.randomUUID();
+        UUID followedUserId1 = UUID.randomUUID();
+        UUID followedUserId2 = UUID.randomUUID();
+        UUID notFollowedUserId = UUID.randomUUID();
+
+        Trip followedTrip1 =
+                TestEntityFactory.createTripWithUser(
+                        UUID.randomUUID(), followedUserId1, "Followed Trip 1");
+        followedTrip1.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        Trip followedTrip2 =
+                TestEntityFactory.createTripWithUser(
+                        UUID.randomUUID(), followedUserId2, "Followed Trip 2");
+        followedTrip2.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        Trip notFollowedTrip =
+                TestEntityFactory.createTripWithUser(
+                        UUID.randomUUID(), notFollowedUserId, "Not Followed Trip");
+        notFollowedTrip.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        UserFollow follow1 =
+                UserFollow.builder()
+                        .id(UUID.randomUUID())
+                        .followerId(requestingUserId)
+                        .followedId(followedUserId1)
+                        .build();
+
+        UserFollow follow2 =
+                UserFollow.builder()
+                        .id(UUID.randomUUID())
+                        .followerId(requestingUserId)
+                        .followedId(followedUserId2)
+                        .build();
+
+        when(tripRepository.findByVisibilityAndStatus(
+                        TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
+                .thenReturn(List.of(notFollowedTrip, followedTrip1, followedTrip2));
+        when(userFollowRepository.findByFollowerId(requestingUserId))
+                .thenReturn(List.of(follow1, follow2));
+
+        // When
+        List<TripDTO> result = tripService.getOngoingPublicTrips(requestingUserId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(3);
+        // Followed trips should come first
+        assertThat(result.get(0).name()).isEqualTo("Followed Trip 1");
+        assertThat(result.get(1).name()).isEqualTo("Followed Trip 2");
+        assertThat(result.get(2).name()).isEqualTo("Not Followed Trip");
+
+        verify(tripRepository)
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
+        verify(userFollowRepository).findByFollowerId(requestingUserId);
+    }
+
+    @Test
+    void getOngoingPublicTrips_withRequestingUserId_whenUserFollowsNoOne_shouldReturnAllTrips() {
+        // Given
+        UUID requestingUserId = UUID.randomUUID();
+
+        Trip trip1 =
+                TestEntityFactory.createTrip(UUID.randomUUID(), "Trip 1", TripVisibility.PUBLIC);
+        trip1.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        Trip trip2 =
+                TestEntityFactory.createTrip(UUID.randomUUID(), "Trip 2", TripVisibility.PUBLIC);
+        trip2.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        when(tripRepository.findByVisibilityAndStatus(
+                        TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
+                .thenReturn(List.of(trip1, trip2));
+        when(userFollowRepository.findByFollowerId(requestingUserId))
+                .thenReturn(Collections.emptyList());
+
+        // When
+        List<TripDTO> result = tripService.getOngoingPublicTrips(requestingUserId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).name()).isEqualTo("Trip 1");
+        assertThat(result.get(1).name()).isEqualTo("Trip 2");
+
+        verify(tripRepository)
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
+        verify(userFollowRepository).findByFollowerId(requestingUserId);
+    }
+
+    @Test
+    void
+            getOngoingPublicTrips_withRequestingUserId_whenAllTripsAreFromFollowedUsers_shouldReturnAllInOrder() {
+        // Given
+        UUID requestingUserId = UUID.randomUUID();
+        UUID followedUserId1 = UUID.randomUUID();
+        UUID followedUserId2 = UUID.randomUUID();
+
+        Trip followedTrip1 =
+                TestEntityFactory.createTripWithUser(
+                        UUID.randomUUID(), followedUserId1, "Followed Trip 1");
+        followedTrip1.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        Trip followedTrip2 =
+                TestEntityFactory.createTripWithUser(
+                        UUID.randomUUID(), followedUserId2, "Followed Trip 2");
+        followedTrip2.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        UserFollow follow1 =
+                UserFollow.builder()
+                        .id(UUID.randomUUID())
+                        .followerId(requestingUserId)
+                        .followedId(followedUserId1)
+                        .build();
+
+        UserFollow follow2 =
+                UserFollow.builder()
+                        .id(UUID.randomUUID())
+                        .followerId(requestingUserId)
+                        .followedId(followedUserId2)
+                        .build();
+
+        when(tripRepository.findByVisibilityAndStatus(
+                        TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
+                .thenReturn(List.of(followedTrip1, followedTrip2));
+        when(userFollowRepository.findByFollowerId(requestingUserId))
+                .thenReturn(List.of(follow1, follow2));
+
+        // When
+        List<TripDTO> result = tripService.getOngoingPublicTrips(requestingUserId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).name()).isEqualTo("Followed Trip 1");
+        assertThat(result.get(1).name()).isEqualTo("Followed Trip 2");
+
+        verify(tripRepository)
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
+        verify(userFollowRepository).findByFollowerId(requestingUserId);
+    }
+
+    @Test
+    void
+            getOngoingPublicTrips_withRequestingUserId_whenNoTripsFromFollowedUsers_shouldReturnAllTrips() {
+        // Given
+        UUID requestingUserId = UUID.randomUUID();
+        UUID followedUserId = UUID.randomUUID();
+        UUID notFollowedUserId1 = UUID.randomUUID();
+        UUID notFollowedUserId2 = UUID.randomUUID();
+
+        Trip notFollowedTrip1 =
+                TestEntityFactory.createTripWithUser(
+                        UUID.randomUUID(), notFollowedUserId1, "Not Followed Trip 1");
+        notFollowedTrip1.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        Trip notFollowedTrip2 =
+                TestEntityFactory.createTripWithUser(
+                        UUID.randomUUID(), notFollowedUserId2, "Not Followed Trip 2");
+        notFollowedTrip2.getTripSettings().setTripStatus(TripStatus.IN_PROGRESS);
+
+        UserFollow follow =
+                UserFollow.builder()
+                        .id(UUID.randomUUID())
+                        .followerId(requestingUserId)
+                        .followedId(followedUserId)
+                        .build();
+
+        when(tripRepository.findByVisibilityAndStatus(
+                        TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
+                .thenReturn(List.of(notFollowedTrip1, notFollowedTrip2));
+        when(userFollowRepository.findByFollowerId(requestingUserId))
+                .thenReturn(List.of(follow));
+
+        // When
+        List<TripDTO> result = tripService.getOngoingPublicTrips(requestingUserId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).name()).isEqualTo("Not Followed Trip 1");
+        assertThat(result.get(1).name()).isEqualTo("Not Followed Trip 2");
+
+        verify(tripRepository)
+                .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);
+        verify(userFollowRepository).findByFollowerId(requestingUserId);
+    }
+
+    @Test
+    void getOngoingPublicTrips_withRequestingUserId_whenNoTripsExist_shouldReturnEmptyList() {
+        // Given
+        UUID requestingUserId = UUID.randomUUID();
+
+        when(tripRepository.findByVisibilityAndStatus(
+                        TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
+                .thenReturn(Collections.emptyList());
+
+        // When
+        List<TripDTO> result = tripService.getOngoingPublicTrips(requestingUserId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEmpty();
 
         verify(tripRepository)
                 .findByVisibilityAndStatus(TripVisibility.PUBLIC, TripStatus.IN_PROGRESS);

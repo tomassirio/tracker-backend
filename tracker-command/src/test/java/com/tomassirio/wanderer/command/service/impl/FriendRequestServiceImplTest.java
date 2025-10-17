@@ -178,4 +178,14 @@ class FriendRequestServiceImplTest {
                 IllegalArgumentException.class,
                 () -> friendRequestService.declineFriendRequest(requestId, wrongUser));
     }
+
+    @Test
+    void declineFriendRequest_NotPending_ThrowsException() {
+        friendRequest.setStatus(FriendRequestStatus.DECLINED);
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> friendRequestService.declineFriendRequest(requestId, receiverId));
+    }
 }

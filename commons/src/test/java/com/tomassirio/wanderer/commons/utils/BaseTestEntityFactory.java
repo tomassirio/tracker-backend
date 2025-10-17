@@ -66,6 +66,39 @@ public class BaseTestEntityFactory {
                 .build();
     }
 
+    public static Trip createTripWithUser(UUID tripId, UUID userId, String name) {
+        return createTripWithUser(tripId, userId, name, TripVisibility.PUBLIC);
+    }
+
+    public static Trip createTripWithUser(
+            UUID tripId, UUID userId, String name, TripVisibility visibility) {
+        TripSettings tripSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(visibility)
+                        .updateRefresh(null)
+                        .build();
+
+        TripDetails tripDetails =
+                TripDetails.builder()
+                        .startTimestamp(Instant.now())
+                        .endTimestamp(null)
+                        .startLocation(null)
+                        .endLocation(null)
+                        .build();
+
+        return Trip.builder()
+                .id(tripId)
+                .name(name)
+                .userId(userId)
+                .tripSettings(tripSettings)
+                .tripDetails(tripDetails)
+                .tripPlanId(null)
+                .creationTimestamp(Instant.now())
+                .enabled(true)
+                .build();
+    }
+
     public static TripDTO createTripDTO(UUID tripId, UUID userId, String name) {
         TripSettingsDTO tripSettings =
                 new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PUBLIC, null);
