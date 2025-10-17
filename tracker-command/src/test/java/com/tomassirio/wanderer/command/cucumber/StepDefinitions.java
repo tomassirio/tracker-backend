@@ -1,5 +1,8 @@
 package com.tomassirio.wanderer.command.cucumber;
 
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -17,6 +20,7 @@ import io.cucumber.java.en.When;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -81,6 +85,9 @@ public class StepDefinitions {
         setLastCreatedTripId(null);
         setLastCreatedTripPlanId(null);
         setLastCreatedCommentId(null);
+        lastCreatedFriendRequestId = null;
+        firstUserIdInScenario = null;
+        lastCreatedFollowId = null;
     }
 
     @When("I create a user with username {string} and email {string}")
@@ -151,7 +158,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"));
+        assertTrue(json.containsKey("id"));
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -160,6 +167,15 @@ public class StepDefinitions {
     public void a_user_exists(String username, String email) throws Exception {
         i_create_a_user_with_username_and_email(username, email);
         Assertions.assertEquals(201, latestResponse.getStatusCode().value());
+
+        // Store first user ID for later reference
+        if (firstUserIdInScenario == null) {
+            Optional<User> user = userRepository.findByUsername(username);
+            if (user.isPresent()) {
+                firstUserIdInScenario = user.get().getId();
+                log.info("[Cucumber] Stored first user ID: {}", firstUserIdInScenario);
+            }
+        }
     }
 
     @Given("I have a valid token for that user with roles {string}")
@@ -318,7 +334,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
+        assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
         String actualName = json.get("name").toString();
         Assertions.assertEquals(expectedName, actualName, "Trip name does not match");
     }
@@ -437,7 +453,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
+        assertTrue(json.containsKey("name"), "Response does not contain 'name' field");
         String actualName = json.get("name").toString();
         Assertions.assertEquals(expectedName, actualName, "Trip plan name does not match");
     }
@@ -583,7 +599,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         Map<?, ?> json = mapper.readValue(body, Map.class);
-        Assertions.assertTrue(json.containsKey("id"), "Response does not contain 'id' field");
+        assertTrue(json.containsKey("id"), "Response does not contain 'id' field");
         UUID parsed = UUID.fromString(json.get("id").toString());
         Assertions.assertNotNull(parsed);
     }
@@ -619,5 +635,247 @@ public class StepDefinitions {
         payload.put("roles", roles);
         if (extraClaims != null) payload.putAll(extraClaims);
         return JwtBuilder.buildJwt(payload, secret);
+    }
+
+    // Friend Request Steps
+    private UUID lastCreatedFriendRequestId;
+    private UUID firstUserIdInScenario;
+
+    @When("I send a friend request to that user using that token")
+    public void i_send_a_friend_request_to_that_user_using_that_token() throws Exception {
+        String receiverUsername = getLastCreatedUsername();
+        Optional<User> receiver = userRepository.findByUsername(receiverUsername);
+        assertTrue(receiver.isPresent(), "Receiver user not found");
+        UUID receiverId = receiver.get().getId();
+
+        Map<String, Object> body = Map.of("receiverId", receiverId.toString());
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/users/friends/requests";
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+        log.info(
+                "[Cucumber] POST {} response status: {}",
+                url,
+                latestResponse.getStatusCode().value());
+
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                lastCreatedFriendRequestId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored friend request ID: {}", lastCreatedFriendRequestId);
+            }
+        }
+    }
+
+    @When("I send a friend request to myself using that token")
+    public void i_send_a_friend_request_to_myself_using_that_token() throws Exception {
+        String username = getLastCreatedUsername();
+        Optional<User> user = userRepository.findByUsername(username);
+        assertTrue(user.isPresent(), "User not found");
+        UUID userId = user.get().getId();
+
+        Map<String, Object> body = Map.of("receiverId", userId.toString());
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/users/friends/requests";
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+    }
+
+    @When("I accept that friend request using that token")
+    public void i_accept_that_friend_request_using_that_token() throws Exception {
+        Assertions.assertNotNull(lastCreatedFriendRequestId, "No friend request ID stored");
+        String url = API_BASE + "/users/friends/requests/" + lastCreatedFriendRequestId + "/accept";
+        HttpEntity<String> request = createJsonRequest(Map.of(), getTempAuthHeader());
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+    }
+
+    @When("I decline that friend request using that token")
+    public void i_decline_that_friend_request_using_that_token() throws Exception {
+        Assertions.assertNotNull(lastCreatedFriendRequestId, "No friend request ID stored");
+        String url =
+                API_BASE + "/users/friends/requests/" + lastCreatedFriendRequestId + "/decline";
+        HttpEntity<String> request = createJsonRequest(Map.of(), getTempAuthHeader());
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+    }
+
+    @When("I get my received friend requests using that token")
+    public void i_get_my_received_friend_requests_using_that_token() throws Exception {
+        String url = API_BASE + "/users/friends/requests/received";
+        HttpHeaders headers = new HttpHeaders();
+        String authHeader = getTempAuthHeader();
+        if (authHeader != null) headers.set("Authorization", authHeader);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.GET, request, String.class);
+    }
+
+    @When("I get my sent friend requests using that token")
+    public void i_get_my_sent_friend_requests_using_that_token() throws Exception {
+        String url = API_BASE + "/users/friends/requests/sent";
+        HttpHeaders headers = new HttpHeaders();
+        String authHeader = getTempAuthHeader();
+        if (authHeader != null) headers.set("Authorization", authHeader);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.GET, request, String.class);
+    }
+
+    @When("I send a friend request to the first user using that token")
+    public void i_send_a_friend_request_to_the_first_user_using_that_token() throws Exception {
+        Assertions.assertNotNull(firstUserIdInScenario, "No first user ID stored");
+        Map<String, Object> body = Map.of("receiverId", firstUserIdInScenario.toString());
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/users/friends/requests";
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                lastCreatedFriendRequestId = UUID.fromString(json.get("id").toString());
+            }
+        }
+    }
+
+    @And("I have a valid token for the first user with roles {string}")
+    public void i_have_a_valid_token_for_the_first_user_with_roles(String roles) throws Exception {
+        Assertions.assertNotNull(firstUserIdInScenario, "No first user ID stored");
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("sub", firstUserIdInScenario.toString());
+        payload.put("roles", roles);
+        String token = JwtBuilder.buildJwt(payload, TEST_SECRET);
+        setTempAuthHeader("Bearer " + token);
+    }
+
+    @And("the response contains a friend request id")
+    public void the_response_contains_a_friend_request_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        assertTrue(json.containsKey("id"));
+        UUID parsed = UUID.fromString(json.get("id").toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @And("the friend request status should be {string}")
+    public void the_friend_request_status_should_be(String expectedStatus) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        assertTrue(json.containsKey("status"));
+        Assertions.assertEquals(expectedStatus, json.get("status").toString());
+    }
+
+    @And("the response contains friend requests")
+    public void the_response_contains_friend_requests() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Object json = mapper.readValue(body, Object.class);
+        assertTrue(json instanceof java.util.List);
+        Assertions.assertFalse(((java.util.List<?>) json).isEmpty());
+    }
+
+    // User Follow Steps
+    private UUID lastCreatedFollowId;
+
+    @When("I follow that user using that token")
+    public void i_follow_that_user_using_that_token() throws Exception {
+        String followedUsername = getLastCreatedUsername();
+        Optional<User> followed = userRepository.findByUsername(followedUsername);
+        assertTrue(followed.isPresent(), "Followed user not found");
+        UUID followedId = followed.get().getId();
+
+        Map<String, Object> body = Map.of("followedId", followedId.toString());
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/users/follows";
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+
+        if (latestResponse.getStatusCode().is2xxSuccessful()) {
+            String responseBody = latestResponse.getBody();
+            Map<?, ?> json = mapper.readValue(responseBody, Map.class);
+            if (json.containsKey("id")) {
+                lastCreatedFollowId = UUID.fromString(json.get("id").toString());
+                log.info("[Cucumber] Stored follow ID: {}", lastCreatedFollowId);
+            }
+        }
+    }
+
+    @When("I unfollow that user using that token")
+    public void i_unfollow_that_user_using_that_token() throws Exception {
+        String followedUsername = getLastCreatedUsername();
+        Optional<User> followed = userRepository.findByUsername(followedUsername);
+        assertTrue(followed.isPresent(), "Followed user not found");
+        UUID followedId = followed.get().getId();
+
+        String url = API_BASE + "/users/follows/" + followedId;
+        HttpHeaders headers = new HttpHeaders();
+        String authHeader = getTempAuthHeader();
+        if (authHeader != null) headers.set("Authorization", authHeader);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.DELETE, request, String.class);
+    }
+
+    @When("I follow myself using that token")
+    public void i_follow_myself_using_that_token() throws Exception {
+        String username = getLastCreatedUsername();
+        Optional<User> user = userRepository.findByUsername(username);
+        assertTrue(user.isPresent(), "User not found");
+        UUID userId = user.get().getId();
+
+        Map<String, Object> body = Map.of("followedId", userId.toString());
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/users/follows";
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+    }
+
+    @And("I follow user {string} using that token")
+    public void i_follow_user_using_that_token(String username) throws Exception {
+        Optional<User> followed = userRepository.findByUsername(username);
+        assertTrue(followed.isPresent(), "Followed user not found: " + username);
+        UUID followedId = followed.get().getId();
+
+        Map<String, Object> body = Map.of("followedId", followedId.toString());
+        HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
+        String url = API_BASE + "/users/follows";
+        latestResponse = restTemplate.postForEntity(url, request, String.class);
+    }
+
+    @When("I get ongoing public trips using that token")
+    public void i_get_ongoing_public_trips_using_that_token() throws Exception {
+        String url = API_BASE + "/trips/public";
+        HttpHeaders headers = new HttpHeaders();
+        String authHeader = getTempAuthHeader();
+        if (authHeader != null) headers.set("Authorization", authHeader);
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        latestResponse =
+                restTemplate.exchange(
+                        url, org.springframework.http.HttpMethod.GET, request, String.class);
+    }
+
+    @And("the response contains a follow id")
+    public void the_response_contains_a_follow_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        assertTrue(json.containsKey("id"));
+        UUID parsed = UUID.fromString(json.get("id").toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @And("the first trip should be from followed user")
+    public void the_first_trip_should_be_from_followed_user() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Object json = mapper.readValue(body, Object.class);
+        assertInstanceOf(List.class, json);
+        java.util.List<?> trips = (java.util.List<?>) json;
+        Assertions.assertFalse(trips.isEmpty(), "No trips returned");
+
+        Map<?, ?> firstTrip = (Map<?, ?>) trips.getFirst();
+        String firstTripName = firstTrip.get("name").toString();
+        assertTrue(firstTripName.contains("Bob"), "First trip should be from Bob (followed user)");
     }
 }

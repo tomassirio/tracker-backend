@@ -42,7 +42,7 @@ public class UserQueryController {
         return ResponseEntity.ok(userQueryService.getUserByUsername(username));
     }
 
-    @GetMapping(ApiConstants.ME_ENDPOINT)
+    @GetMapping(ApiConstants.ME_SUFFIX)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get current authenticated user's profile",

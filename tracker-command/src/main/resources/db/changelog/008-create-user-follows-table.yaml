@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-create-user-follows-table
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: user_follows
+      changes:
+        - createTable:
+            tableName: user_follows
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: follower_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: followed_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: user_follows
+            baseColumnNames: follower_id
+            constraintName: fk_user_follows_follower
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: user_follows
+            baseColumnNames: followed_id
+            constraintName: fk_user_follows_followed
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: user_follows
+            columnNames: follower_id, followed_id
+            constraintName: uk_user_follows_follower_followed
+        - createIndex:
+            tableName: user_follows
+            indexName: idx_user_follows_follower
+            columns:
+              - column:
+                  name: follower_id
+        - createIndex:
+            tableName: user_follows
+            indexName: idx_user_follows_followed
+            columns:
+              - column:
+                  name: followed_id

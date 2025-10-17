@@ -46,7 +46,7 @@ public class TripPlanController {
         return ResponseEntity.ok(tripPlan);
     }
 
-    @GetMapping(ApiConstants.ME_ENDPOINT)
+    @GetMapping(ApiConstants.ME_SUFFIX)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get my trip plans",

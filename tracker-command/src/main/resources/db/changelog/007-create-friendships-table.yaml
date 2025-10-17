@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-create-friendships-table
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: friendships
+      changes:
+        - createTable:
+            tableName: friendships
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: friend_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: friendships
+            baseColumnNames: user_id
+            constraintName: fk_friendships_user
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: friendships
+            baseColumnNames: friend_id
+            constraintName: fk_friendships_friend
+            referencedTableName: users
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - addUniqueConstraint:
+            tableName: friendships
+            columnNames: user_id, friend_id
+            constraintName: uk_friendships_user_friend
+        - createIndex:
+            tableName: friendships
+            indexName: idx_friendships_user
+            columns:
+              - column:
+                  name: user_id
+        - createIndex:
+            tableName: friendships
+            indexName: idx_friendships_friend
+            columns:
+              - column:
+                  name: friend_id

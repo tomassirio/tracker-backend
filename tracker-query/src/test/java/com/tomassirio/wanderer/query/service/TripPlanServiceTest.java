@@ -51,7 +51,7 @@ class TripPlanServiceTest {
         assertThat(result.planType()).isEqualTo(TripPlanType.MULTI_DAY);
         assertThat(result.startDate()).isNotNull();
         assertThat(result.endDate()).isNotNull();
-        assertThat(result.creationTimestamp()).isNotNull();
+        assertThat(result.createdTimestamp()).isNotNull();
 
         verify(tripPlanRepository).findById(planId);
     }
@@ -232,7 +232,7 @@ class TripPlanServiceTest {
         assertThat(dto.startLocation()).isNotNull();
         assertThat(dto.endLocation()).isNotNull();
         assertThat(dto.waypoints()).hasSize(1);
-        assertThat(dto.creationTimestamp()).isNotNull();
+        assertThat(dto.createdTimestamp()).isNotNull();
 
         verify(tripPlanRepository).findByUserId(userId);
     }

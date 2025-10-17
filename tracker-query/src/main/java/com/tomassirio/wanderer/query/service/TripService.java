@@ -56,18 +56,21 @@ public interface TripService {
     List<TripDTO> getTripsForUser(UUID userId);
 
     /**
-     * Retrieves trips by another user, respecting visibility rules. Returns PUBLIC and PROTECTED
-     * trips.
+     * Retrieves trips by another user, respecting visibility rules. Returns PUBLIC trips and
+     * PROTECTED trips if the requesting user is friends with the trip owner.
      *
      * @param userId the UUID of the user whose trips to retrieve
+     * @param requestingUserId the UUID of the user making the request (optional)
      * @return a list of {@link TripDTO} objects representing visible trips owned by the user
      */
-    List<TripDTO> getTripsForUserWithVisibility(UUID userId);
+    List<TripDTO> getTripsForUserWithVisibility(UUID userId, UUID requestingUserId);
 
     /**
-     * Retrieves all ongoing public trips (trips that are PUBLIC and IN_PROGRESS).
+     * Retrieves all ongoing public trips (trips that are PUBLIC and IN_PROGRESS). If a requesting
+     * user ID is provided, trips from followed users are prioritized.
      *
+     * @param requestingUserId the UUID of the user making the request (optional)
      * @return a list of {@link TripDTO} objects representing ongoing public trips
      */
-    List<TripDTO> getOngoingPublicTrips();
+    List<TripDTO> getOngoingPublicTrips(UUID requestingUserId);
 }

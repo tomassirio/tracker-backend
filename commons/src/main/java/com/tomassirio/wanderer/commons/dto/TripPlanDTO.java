@@ -16,4 +16,4 @@ public record TripPlanDTO(
         GeoLocation startLocation,
         GeoLocation endLocation,
         List<GeoLocation> waypoints,
-        Instant creationTimestamp) {}
+        Instant createdTimestamp) {}

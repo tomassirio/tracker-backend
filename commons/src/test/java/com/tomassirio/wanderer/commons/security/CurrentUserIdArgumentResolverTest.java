@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.commons.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -32,6 +33,10 @@ class CurrentUserIdArgumentResolverTest {
         public void noAnnotation(UUID id) {}
 
         public void unsupportedParam(@CurrentUserId Integer id) {}
+
+        public void optionalUuidParam(@CurrentUserId(required = false) UUID id) {}
+
+        public void optionalStringParam(@CurrentUserId(required = false) String id) {}
     }
 
     @BeforeEach
@@ -129,5 +134,113 @@ class CurrentUserIdArgumentResolverTest {
                                         mock(WebDataBinderFactory.class)));
         // verify it's internal server error
         assertEquals(500, ex.getStatusCode().value());
+    }
+
+    @Test
+    void resolveArgument_nullWebRequest_throws500() throws Exception {
+        MethodParameter uuidParam = paramFor("uuidParam", UUID.class);
+
+        ResponseStatusException ex =
+                assertThrows(
+                        ResponseStatusException.class,
+                        () ->
+                                resolver.resolveArgument(
+                                        uuidParam,
+                                        new ModelAndViewContainer(),
+                                        null,
+                                        mock(WebDataBinderFactory.class)));
+        assertEquals(500, ex.getStatusCode().value());
+        assertTrue(ex.getReason() != null && ex.getReason().contains("Request context not available"));
+    }
+
+    @Test
+    void resolveArgument_blankAuthHeader_throws401() throws Exception {
+        MethodParameter uuidParam = paramFor("uuidParam", UUID.class);
+        MockHttpServletRequest servlet = new MockHttpServletRequest();
+        ServletWebRequest webRequest = new ServletWebRequest(servlet);
+        servlet.addHeader("Authorization", "   "); // Blank header
+
+        assertThrows(
+                ResponseStatusException.class,
+                () ->
+                        resolver.resolveArgument(
+                                uuidParam,
+                                new ModelAndViewContainer(),
+                                webRequest,
+                                mock(WebDataBinderFactory.class)));
+    }
+
+    @Test
+    void resolveArgument_optionalWithMissingHeader_returnsNull() throws Exception {
+        MethodParameter optionalParam = paramFor("optionalUuidParam", UUID.class);
+        MockHttpServletRequest servlet = new MockHttpServletRequest();
+        ServletWebRequest webRequest = new ServletWebRequest(servlet);
+        // No Authorization header
+
+        Object resolved =
+                resolver.resolveArgument(
+                        optionalParam,
+                        new ModelAndViewContainer(),
+                        webRequest,
+                        mock(WebDataBinderFactory.class));
+        assertNull(resolved);
+    }
+
+    @Test
+    void resolveArgument_optionalWithBlankHeader_returnsNull() throws Exception {
+        MethodParameter optionalParam = paramFor("optionalStringParam", String.class);
+        MockHttpServletRequest servlet = new MockHttpServletRequest();
+        ServletWebRequest webRequest = new ServletWebRequest(servlet);
+        servlet.addHeader("Authorization", ""); // Blank header
+
+        Object resolved =
+                resolver.resolveArgument(
+                        optionalParam,
+                        new ModelAndViewContainer(),
+                        webRequest,
+                        mock(WebDataBinderFactory.class));
+        assertNull(resolved);
+    }
+
+    @Test
+    void resolveArgument_optionalWithValidHeader_returnsUuid() throws Exception {
+        MethodParameter optionalParam = paramFor("optionalUuidParam", UUID.class);
+        MockHttpServletRequest servlet = new MockHttpServletRequest();
+        ServletWebRequest webRequest = new ServletWebRequest(servlet);
+        UUID expectedUuid = UUID.fromString("00000000-0000-0000-0000-000000000004");
+        when(jwtUtils.getUserIdFromAuthorizationHeader("Bearer token")).thenReturn(expectedUuid);
+        servlet.addHeader("Authorization", "Bearer token");
+
+        Object resolved =
+                resolver.resolveArgument(
+                        optionalParam,
+                        new ModelAndViewContainer(),
+                        webRequest,
+                        mock(WebDataBinderFactory.class));
+        assertEquals(expectedUuid, resolved);
+    }
+
+    @Test
+    void resolveArgument_optionalWithValidHeader_returnsString() throws Exception {
+        MethodParameter optionalParam = paramFor("optionalStringParam", String.class);
+        MockHttpServletRequest servlet = new MockHttpServletRequest();
+        ServletWebRequest webRequest = new ServletWebRequest(servlet);
+        UUID expectedUuid = UUID.fromString("00000000-0000-0000-0000-000000000005");
+        when(jwtUtils.getUserIdFromAuthorizationHeader("Bearer token")).thenReturn(expectedUuid);
+        servlet.addHeader("Authorization", "Bearer token");
+
+        Object resolved =
+                resolver.resolveArgument(
+                        optionalParam,
+                        new ModelAndViewContainer(),
+                        webRequest,
+                        mock(WebDataBinderFactory.class));
+        assertEquals("00000000-0000-0000-0000-000000000005", resolved);
+    }
+
+    @Test
+    void supportsParameter_unsupportedType_returnsFalse() throws Exception {
+        MethodParameter unsupportedParam = paramFor("unsupportedParam", Integer.class);
+        assertFalse(resolver.supportsParameter(unsupportedParam));
     }
 }

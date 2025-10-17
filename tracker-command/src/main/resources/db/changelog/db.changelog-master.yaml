@@ -9,3 +9,9 @@ databaseChangeLog:
       file: db/changelog/004-create-comments-table.yaml
   - include:
       file: db/changelog/005-create-trip-plans-table.yaml
+  - include:
+      file: db/changelog/006-create-friend-requests-table.yaml
+  - include:
+      file: db/changelog/007-create-friendships-table.yaml
+  - include:
+      file: db/changelog/008-create-user-follows-table.yaml

@@ -56,7 +56,7 @@ public class TripController {
         return ResponseEntity.ok(trips);
     }
 
-    @GetMapping(ApiConstants.ME_ENDPOINT)
+    @GetMapping(ApiConstants.ME_SUFFIX)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get trips for current authenticated user",
@@ -71,29 +71,37 @@ public class TripController {
         return ResponseEntity.ok(trips);
     }
 
-    @GetMapping("/users/{userId}")
+    @GetMapping(ApiConstants.TRIPS_BY_USER_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get trips by another user",
             description =
-                    "Retrieves trips by another user, respecting visibility (PUBLIC and PROTECTED)")
-    public ResponseEntity<List<TripDTO>> getTripsByUser(@PathVariable UUID userId) {
-        log.info("Received request to retrieve trips for user: {}", userId);
+                    "Retrieves trips by another user, respecting visibility (PUBLIC and PROTECTED if friends)")
+    public ResponseEntity<List<TripDTO>> getTripsByUser(
+            @Parameter(hidden = true) @CurrentUserId UUID requestingUserId,
+            @PathVariable UUID userId) {
+        log.info(
+                "Received request to retrieve trips for user {} from user {}",
+                userId,
+                requestingUserId);
 
-        List<TripDTO> trips = tripService.getTripsForUserWithVisibility(userId);
+        List<TripDTO> trips = tripService.getTripsForUserWithVisibility(userId, requestingUserId);
 
         log.info("Successfully retrieved {} trips for user {}", trips.size(), userId);
         return ResponseEntity.ok(trips);
     }
 
-    @GetMapping("/public")
+    @GetMapping(ApiConstants.TRIPS_PUBLIC_ENDPOINT)
     @Operation(
             summary = "Get ongoing public trips",
-            description = "Retrieves all public trips that are currently in progress")
-    public ResponseEntity<List<TripDTO>> getOngoingPublicTrips() {
-        log.info("Received request to retrieve ongoing public trips");
+            description =
+                    "Retrieves all public trips that are currently in progress, prioritizing followed users if authenticated")
+    public ResponseEntity<List<TripDTO>> getOngoingPublicTrips(
+            @Parameter(hidden = true) @CurrentUserId(required = false) UUID requestingUserId) {
+        log.info(
+                "Received request to retrieve ongoing public trips from user {}", requestingUserId);
 
-        List<TripDTO> trips = tripService.getOngoingPublicTrips();
+        List<TripDTO> trips = tripService.getOngoingPublicTrips(requestingUserId);
 
         log.info("Successfully retrieved {} ongoing public trips", trips.size());
         return ResponseEntity.ok(trips);
