@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.auth.client;
 
+import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.domain.User;
 import java.util.Map;
 import java.util.UUID;
@@ -9,9 +10,9 @@ import org.springframework.web.bind.annotation.*;
 @FeignClient(name = "tracker-command", url = "${tracker.command.url}")
 public interface TrackerCommandClient {
 
-    @PostMapping("/api/1/users")
+    @PostMapping(ApiConstants.USERS_PATH)
     User createUser(@RequestBody Map<String, String> payload);
 
-    @DeleteMapping("/api/1/users/{id}")
+    @DeleteMapping(ApiConstants.USERS_PATH + ApiConstants.USER_BY_ID_ENDPOINT)
     void deleteUser(@PathVariable UUID id);
 }

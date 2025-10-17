@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,6 +63,7 @@ public class AuthController {
     }
 
     @PostMapping(ApiConstants.LOGOUT_ENDPOINT)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "User logout",
             description =
@@ -110,6 +112,7 @@ public class AuthController {
     }
 
     @PutMapping(ApiConstants.PASSWORD_CHANGE_ENDPOINT)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Change password",
             description = "Changes the password for the authenticated user",
