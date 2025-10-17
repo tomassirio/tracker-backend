@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.4.0
  */
 @RestController
-@RequestMapping(ApiConstants.USERS_PATH + "/follows")
+@RequestMapping(ApiConstants.FOLLOWS_PATH)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "User Follows", description = "Endpoints for managing user follows")
@@ -51,7 +51,7 @@ public class UserFollowController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @DeleteMapping("/{followedId}")
+    @DeleteMapping(ApiConstants.FOLLOW_BY_ID_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Unfollow a user", description = "Unfollow a user")
     public ResponseEntity<Void> unfollowUser(

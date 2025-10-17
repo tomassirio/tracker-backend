@@ -646,7 +646,7 @@ public class StepDefinitions {
 
         Map<String, Object> body = Map.of("receiverId", receiverId.toString());
         HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
-        String url = API_BASE + "/users/friend-requests";
+        String url = API_BASE + "/users/friends/requests";
         latestResponse = restTemplate.postForEntity(url, request, String.class);
         log.info(
                 "[Cucumber] POST {} response status: {}",
@@ -672,14 +672,14 @@ public class StepDefinitions {
 
         Map<String, Object> body = Map.of("receiverId", userId.toString());
         HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
-        String url = API_BASE + "/users/friend-requests";
+        String url = API_BASE + "/users/friends/requests";
         latestResponse = restTemplate.postForEntity(url, request, String.class);
     }
 
     @When("I accept that friend request using that token")
     public void i_accept_that_friend_request_using_that_token() throws Exception {
         Assertions.assertNotNull(lastCreatedFriendRequestId, "No friend request ID stored");
-        String url = API_BASE + "/users/friend-requests/" + lastCreatedFriendRequestId + "/accept";
+        String url = API_BASE + "/users/friends/requests/" + lastCreatedFriendRequestId + "/accept";
         HttpEntity<String> request = createJsonRequest(Map.of(), getTempAuthHeader());
         latestResponse = restTemplate.postForEntity(url, request, String.class);
     }
@@ -687,14 +687,14 @@ public class StepDefinitions {
     @When("I decline that friend request using that token")
     public void i_decline_that_friend_request_using_that_token() throws Exception {
         Assertions.assertNotNull(lastCreatedFriendRequestId, "No friend request ID stored");
-        String url = API_BASE + "/users/friend-requests/" + lastCreatedFriendRequestId + "/decline";
+        String url = API_BASE + "/users/friends/requests/" + lastCreatedFriendRequestId + "/decline";
         HttpEntity<String> request = createJsonRequest(Map.of(), getTempAuthHeader());
         latestResponse = restTemplate.postForEntity(url, request, String.class);
     }
 
     @When("I get my received friend requests using that token")
     public void i_get_my_received_friend_requests_using_that_token() throws Exception {
-        String url = API_BASE + "/users/friend-requests/received";
+        String url = API_BASE + "/users/friends/requests/received";
         HttpHeaders headers = new HttpHeaders();
         String authHeader = getTempAuthHeader();
         if (authHeader != null) headers.set("Authorization", authHeader);
@@ -706,7 +706,7 @@ public class StepDefinitions {
 
     @When("I get my sent friend requests using that token")
     public void i_get_my_sent_friend_requests_using_that_token() throws Exception {
-        String url = API_BASE + "/users/friend-requests/sent";
+        String url = API_BASE + "/users/friends/requests/sent";
         HttpHeaders headers = new HttpHeaders();
         String authHeader = getTempAuthHeader();
         if (authHeader != null) headers.set("Authorization", authHeader);
@@ -721,7 +721,7 @@ public class StepDefinitions {
         Assertions.assertNotNull(firstUserIdInScenario, "No first user ID stored");
         Map<String, Object> body = Map.of("receiverId", firstUserIdInScenario.toString());
         HttpEntity<String> request = createJsonRequest(body, getTempAuthHeader());
-        String url = API_BASE + "/users/friend-requests";
+        String url = API_BASE + "/users/friends/requests";
         latestResponse = restTemplate.postForEntity(url, request, String.class);
 
         if (latestResponse.getStatusCode().is2xxSuccessful()) {

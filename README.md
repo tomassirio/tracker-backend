@@ -192,21 +192,24 @@ POST /api/1/auth/register   → Register new user, returns JWT token
 
 #### Command (tracker-command) - Port 8081
 ```
-POST /api/1/users           → Create new user
-POST /api/1/users/friend-requests → Send a friend request
-POST /api/1/users/friend-requests/{id}/accept → Accept a friend request
-POST /api/1/users/friend-requests/{id}/decline → Decline a friend request
-POST /api/1/users/follows → Follow a user
-DELETE /api/1/users/follows/{id} → Unfollow a user
+POST /api/1/users                              → Create new user
+POST /api/1/users/friends/requests             → Send a friend request
+POST /api/1/users/friends/requests/{id}/accept → Accept a friend request
+POST /api/1/users/friends/requests/{id}/decline → Decline a friend request
+POST /api/1/users/follows                      → Follow a user
+DELETE /api/1/users/follows/{id}               → Unfollow a user
 ```
 
 #### Query (tracker-query) - Port 8082
 ```
-GET /api/1/users/{id}              → Get user by ID (Auth: ADMIN, USER)
-GET /api/1/users/username/{username} → Get user by username (Public)
-GET /api/1/users/me                → Get current authenticated user profile
-GET /api/1/users/friend-requests/received → Get pending received friend requests
-GET /api/1/users/friend-requests/sent → Get pending sent friend requests
+GET /api/1/users/{id}                          → Get user by ID (Auth: ADMIN, USER)
+GET /api/1/users/username/{username}           → Get user by username (Public)
+GET /api/1/users/me                            → Get current authenticated user profile
+GET /api/1/users/friends                       → Get user's friends list
+GET /api/1/users/friends/requests/received     → Get pending received friend requests
+GET /api/1/users/friends/requests/sent         → Get pending sent friend requests
+GET /api/1/users/follows/following             → Get users that current user follows
+GET /api/1/users/follows/followers             → Get users that follow current user
 ```
 
 ### Trip APIs

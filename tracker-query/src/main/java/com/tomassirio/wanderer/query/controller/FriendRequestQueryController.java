@@ -24,7 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.4.0
  */
 @RestController
-@RequestMapping(ApiConstants.USERS_PATH + "/friend-requests")
+@RequestMapping(ApiConstants.FRIEND_REQUESTS_PATH)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Friend Requests Query", description = "Endpoints for querying friend requests")
@@ -32,7 +32,7 @@ public class FriendRequestQueryController {
 
     private final FriendRequestQueryService friendRequestQueryService;
 
-    @GetMapping("/received")
+    @GetMapping(ApiConstants.FRIEND_REQUESTS_RECEIVED_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get received friend requests",
@@ -46,7 +46,7 @@ public class FriendRequestQueryController {
         return ResponseEntity.ok(requests);
     }
 
-    @GetMapping("/sent")
+    @GetMapping(ApiConstants.FRIEND_REQUESTS_SENT_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get sent friend requests",

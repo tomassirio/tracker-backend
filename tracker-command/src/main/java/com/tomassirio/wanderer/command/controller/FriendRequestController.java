@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.4.0
  */
 @RestController
-@RequestMapping(ApiConstants.USERS_PATH + "/friend-requests")
+@RequestMapping(ApiConstants.FRIEND_REQUESTS_PATH)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Friend Requests", description = "Endpoints for managing friend requests")
@@ -54,7 +54,7 @@ public class FriendRequestController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @PostMapping("/{requestId}/accept")
+    @PostMapping(ApiConstants.FRIEND_REQUEST_ACCEPT_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Accept a friend request", description = "Accept a pending friend request")
     public ResponseEntity<FriendRequestResponse> acceptFriendRequest(
@@ -66,7 +66,7 @@ public class FriendRequestController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/{requestId}/decline")
+    @PostMapping(ApiConstants.FRIEND_REQUEST_DECLINE_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Decline a friend request",

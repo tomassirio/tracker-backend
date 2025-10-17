@@ -34,6 +34,16 @@ public final class ApiConstants {
     public static final String USERNAME_ENDPOINT = "/username/{username}";
     public static final String USER_BY_ID_ENDPOINT = UUID_PATH_VARIABLE;
 
+    // Friends and Follow endpoints
+    public static final String FRIENDS_PATH = USERS_PATH + "/friends";
+    public static final String FRIEND_REQUESTS_PATH = FRIENDS_PATH + "/requests";
+    public static final String FRIEND_REQUEST_ACCEPT_ENDPOINT = "/{requestId}/accept";
+    public static final String FRIEND_REQUEST_DECLINE_ENDPOINT = "/{requestId}/decline";
+    public static final String FRIEND_REQUESTS_RECEIVED_ENDPOINT = "/received";
+    public static final String FRIEND_REQUESTS_SENT_ENDPOINT = "/sent";
+    public static final String FOLLOWS_PATH = USERS_PATH + "/follows";
+    public static final String FOLLOW_BY_ID_ENDPOINT = "/{followedId}";
+
     // Trip endpoints
     public static final String TRIP_BY_ID_ENDPOINT = UUID_PATH_VARIABLE;
     public static final String TRIP_VISIBILITY_ENDPOINT = "/{id}/visibility";
@@ -45,11 +55,6 @@ public final class ApiConstants {
     // Comment endpoints base paths
     public static final String TRIP_COMMENTS_ENDPOINT = "/{tripId}/comments";
     public static final String COMMENT_REACTIONS_ENDPOINT = "/comments/{commentId}/reactions";
-
-    // Friend Request endpoints
-    public static final String FRIEND_REQUESTS_PATH = USERS_PATH + "/friend-requests";
-    public static final String FRIEND_REQUESTS_RECEIVED_ENDPOINT = "/received";
-    public static final String FRIEND_REQUESTS_SENT_ENDPOINT = "/sent";
 
     // Trip Plan endpoints
     public static final String TRIP_PLAN_BY_ID_ENDPOINT = "/{planId}";
