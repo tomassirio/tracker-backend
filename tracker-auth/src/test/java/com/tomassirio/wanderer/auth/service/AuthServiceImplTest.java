@@ -41,6 +41,8 @@ class AuthServiceImplTest {
 
     @Mock private JwtService jwtService;
 
+    @Mock private TokenService tokenService;
+
     @Mock private TrackerCommandClient trackerCommandClient;
 
     @Mock private TrackerQueryClient trackerQueryClient;
@@ -65,20 +67,28 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void login_whenValidCredentials_shouldReturnToken() {
+    void login_whenValidCredentials_shouldReturnLoginResponse() {
         String password = "password123";
-        String token = "jwt.token";
+        String accessToken = "jwt.access.token";
+        String refreshToken = "refresh.token";
+        long expiresIn = 3600000L;
 
         when(trackerQueryClient.getUserByUsername(testUser.getUsername())).thenReturn(testUser);
         when(credentialRepository.findById(testUser.getId()))
                 .thenReturn(Optional.of(testCredential));
         when(passwordEncoder.matches(password, testCredential.getPasswordHash())).thenReturn(true);
-        when(jwtService.generateToken(testUser)).thenReturn(token);
+        when(jwtService.generateTokenWithJti(any(), any())).thenReturn(accessToken);
+        when(tokenService.createRefreshToken(testUser.getId())).thenReturn(refreshToken);
+        when(jwtService.getExpirationMs()).thenReturn(expiresIn);
 
-        String result = authService.login(testUser.getUsername(), password);
+        LoginResponse result = authService.login(testUser.getUsername(), password);
 
-        assertEquals(token, result);
-        verify(jwtService).generateToken(testUser);
+        assertEquals(accessToken, result.accessToken());
+        assertEquals(refreshToken, result.refreshToken());
+        assertEquals("Bearer", result.tokenType());
+        assertEquals(expiresIn, result.expiresIn());
+        verify(jwtService).generateTokenWithJti(any(), any());
+        verify(tokenService).createRefreshToken(testUser.getId());
     }
 
     @Test
@@ -137,18 +147,22 @@ class AuthServiceImplTest {
     void register_whenValidRequest_shouldReturnLoginResponse() {
         RegisterRequest request =
                 new RegisterRequest("testuser", "test@example.com", "password123");
-        String token = "jwt.token";
+        String accessToken = "jwt.access.token";
+        String refreshToken = "refresh.token";
         long expiresIn = 3600000L;
 
         when(trackerCommandClient.createUser(any())).thenReturn(testUser);
         when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
+        when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
-        when(jwtService.generateToken(testUser)).thenReturn(token);
+        when(jwtService.generateTokenWithJti(any(), any())).thenReturn(accessToken);
+        when(tokenService.createRefreshToken(testUser.getId())).thenReturn(refreshToken);
         when(jwtService.getExpirationMs()).thenReturn(expiresIn);
 
         LoginResponse result = authService.register(request);
 
-        assertEquals(token, result.accessToken());
+        assertEquals(accessToken, result.accessToken());
+        assertEquals(refreshToken, result.refreshToken());
         assertEquals("Bearer", result.tokenType());
         assertEquals(expiresIn, result.expiresIn());
         verify(credentialRepository).save(any(Credential.class));
@@ -193,5 +207,116 @@ class AuthServiceImplTest {
         assertThrows(IllegalStateException.class, () -> authService.register(request));
         verify(credentialRepository, never()).save(any());
         verify(trackerCommandClient).deleteUser(testUser.getId());
+    }
+
+    @Test
+    void logout_shouldBlacklistTokenAndRevokeRefreshTokens() {
+        String token = "jwt.access.token";
+
+        authService.logout(token, testUser.getId());
+
+        verify(tokenService).blacklistToken(token);
+        verify(tokenService).revokeAllRefreshTokensForUser(testUser.getId());
+    }
+
+    @Test
+    void initiatePasswordReset_whenEmailExists_shouldReturnResetToken() {
+        String email = "user@email.com";
+        String resetToken = "reset.token";
+
+        when(credentialRepository.findByEmail(email)).thenReturn(Optional.of(testCredential));
+        when(tokenService.createPasswordResetToken(testCredential.getUserId()))
+                .thenReturn(resetToken);
+
+        String result = authService.initiatePasswordReset(email);
+
+        assertEquals(resetToken, result);
+        verify(tokenService).createPasswordResetToken(testCredential.getUserId());
+    }
+
+    @Test
+    void initiatePasswordReset_whenEmailNotFound_shouldThrowException() {
+        String email = "nonexistent@email.com";
+
+        when(credentialRepository.findByEmail(email)).thenReturn(Optional.empty());
+
+        assertThrows(
+                IllegalArgumentException.class, () -> authService.initiatePasswordReset(email));
+    }
+
+    @Test
+    void resetPassword_whenValidToken_shouldUpdatePassword() {
+        String token = "reset.token";
+        String newPassword = "newPassword123";
+        UUID userId = testUser.getId();
+
+        when(tokenService.validatePasswordResetToken(token)).thenReturn(userId);
+        when(credentialRepository.findById(userId)).thenReturn(Optional.of(testCredential));
+        when(passwordEncoder.encode(newPassword)).thenReturn("hashedNewPassword");
+
+        authService.resetPassword(token, newPassword);
+
+        verify(credentialRepository).save(testCredential);
+        verify(tokenService).markPasswordResetTokenAsUsed(token);
+        verify(tokenService).revokeAllRefreshTokensForUser(userId);
+    }
+
+    @Test
+    void resetPassword_whenCredentialNotFound_shouldThrowException() {
+        String token = "reset.token";
+        String newPassword = "newPassword123";
+        UUID userId = UUID.randomUUID();
+
+        when(tokenService.validatePasswordResetToken(token)).thenReturn(userId);
+        when(credentialRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(
+                IllegalStateException.class, () -> authService.resetPassword(token, newPassword));
+    }
+
+    @Test
+    void changePassword_whenValidCurrentPassword_shouldUpdatePassword() {
+        String currentPassword = "currentPassword";
+        String newPassword = "newPassword123";
+        UUID userId = testUser.getId();
+
+        when(credentialRepository.findById(userId)).thenReturn(Optional.of(testCredential));
+        when(passwordEncoder.matches(currentPassword, testCredential.getPasswordHash()))
+                .thenReturn(true);
+        when(passwordEncoder.encode(newPassword)).thenReturn("hashedNewPassword");
+
+        authService.changePassword(userId, currentPassword, newPassword);
+
+        verify(credentialRepository).save(testCredential);
+        verify(tokenService).revokeAllRefreshTokensForUser(userId);
+    }
+
+    @Test
+    void changePassword_whenInvalidCurrentPassword_shouldThrowException() {
+        String currentPassword = "wrongPassword";
+        String newPassword = "newPassword123";
+        UUID userId = testUser.getId();
+
+        when(credentialRepository.findById(userId)).thenReturn(Optional.of(testCredential));
+        when(passwordEncoder.matches(currentPassword, testCredential.getPasswordHash()))
+                .thenReturn(false);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.changePassword(userId, currentPassword, newPassword));
+        verify(credentialRepository, never()).save(any());
+    }
+
+    @Test
+    void changePassword_whenCredentialNotFound_shouldThrowException() {
+        String currentPassword = "currentPassword";
+        String newPassword = "newPassword123";
+        UUID userId = UUID.randomUUID();
+
+        when(credentialRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.changePassword(userId, currentPassword, newPassword));
     }
 }

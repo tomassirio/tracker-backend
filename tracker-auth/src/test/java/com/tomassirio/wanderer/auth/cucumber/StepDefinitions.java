@@ -38,10 +38,14 @@ public class StepDefinitions {
 
     // per-scenario state
     @Getter @Setter private String tempAuthToken;
+    @Getter @Setter private String tempRefreshToken;
+    @Getter @Setter private String tempResetToken;
 
     @Given("an empty auth system")
     public void an_empty_auth_system() {
         setTempAuthToken(null);
+        setTempRefreshToken(null);
+        setTempResetToken(null);
     }
 
     @When("I register a user with username {string}, email {string}, and password {string}")
@@ -91,7 +95,17 @@ public class StepDefinitions {
         Assertions.assertTrue(
                 responseBody.containsKey("accessToken"), "Response does not contain accessToken");
         Assertions.assertNotNull(responseBody.get("accessToken"), "accessToken is null");
-        setTempAuthToken((String) responseBody.get("accessToken"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @And("the response should contain a refresh token")
+    public void the_response_should_contain_a_refresh_token() throws Exception {
+        Assertions.assertNotNull(latestResponse.getBody(), "Response body is null");
+        Map<String, Object> responseBody =
+                (Map<String, Object>) mapper.readValue(latestResponse.getBody(), Map.class);
+        Assertions.assertTrue(
+                responseBody.containsKey("refreshToken"), "Response does not contain refreshToken");
+        Assertions.assertNotNull(responseBody.get("refreshToken"), "refreshToken is null");
     }
 
     @And("the response should contain an error message")
@@ -99,6 +113,100 @@ public class StepDefinitions {
         Assertions.assertNotNull(latestResponse.getBody(), "Response body is null");
         // For error responses, the body might be a simple string or JSON
         log.info("Error response body: {}", latestResponse.getBody());
+    }
+
+    @SuppressWarnings("unchecked")
+    @And("I save the access token")
+    public void i_save_the_access_token() throws Exception {
+        Assertions.assertNotNull(latestResponse.getBody(), "Response body is null");
+        Map<String, Object> responseBody =
+                (Map<String, Object>) mapper.readValue(latestResponse.getBody(), Map.class);
+        setTempAuthToken((String) responseBody.get("accessToken"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @And("I save the refresh token")
+    public void i_save_the_refresh_token() throws Exception {
+        Assertions.assertNotNull(latestResponse.getBody(), "Response body is null");
+        Map<String, Object> responseBody =
+                (Map<String, Object>) mapper.readValue(latestResponse.getBody(), Map.class);
+        setTempRefreshToken((String) responseBody.get("refreshToken"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @And("I save the reset token")
+    public void i_save_the_reset_token() throws Exception {
+        Assertions.assertNotNull(latestResponse.getBody(), "Response body is null");
+        Map<String, Object> responseBody =
+                (Map<String, Object>) mapper.readValue(latestResponse.getBody(), Map.class);
+        setTempResetToken((String) responseBody.get("token"));
+    }
+
+    @When("I refresh the access token")
+    public void i_refresh_the_access_token() throws Exception {
+        Map<String, Object> body = Map.of("refreshToken", getTempRefreshToken());
+        HttpEntity<String> request = createJsonRequest(body);
+        latestResponse = restTemplate.postForEntity("/api/1/auth/refresh", request, String.class);
+        log.info(
+                "[Cucumber] POST /api/1/auth/refresh response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I logout")
+    public void i_logout() throws Exception {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Authorization", "Bearer " + getTempAuthToken());
+        HttpEntity<String> request = new HttpEntity<>(headers);
+        latestResponse = restTemplate.postForEntity("/api/1/auth/logout", request, String.class);
+        log.info(
+                "[Cucumber] POST /api/1/auth/logout response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I request password reset for email {string}")
+    public void i_request_password_reset_for_email(String email) throws Exception {
+        Map<String, Object> body = Map.of("email", email);
+        HttpEntity<String> request = createJsonRequest(body);
+        latestResponse =
+                restTemplate.postForEntity("/api/1/auth/password/reset", request, String.class);
+        log.info(
+                "[Cucumber] POST /api/1/auth/password/reset response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I reset password with new password {string}")
+    public void i_reset_password_with_new_password(String newPassword) throws Exception {
+        Map<String, Object> body = Map.of("token", getTempResetToken(), "newPassword", newPassword);
+        HttpEntity<String> request = createJsonRequest(body);
+        latestResponse =
+                restTemplate.exchange(
+                        "/api/1/auth/password/reset",
+                        org.springframework.http.HttpMethod.PUT,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] PUT /api/1/auth/password/reset response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I change password from {string} to {string}")
+    public void i_change_password_from_to(String currentPassword, String newPassword)
+            throws Exception {
+        Map<String, Object> body =
+                Map.of("currentPassword", currentPassword, "newPassword", newPassword);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + getTempAuthToken());
+        HttpEntity<String> request = new HttpEntity<>(mapper.writeValueAsString(body), headers);
+        latestResponse =
+                restTemplate.exchange(
+                        "/api/1/auth/password/change",
+                        org.springframework.http.HttpMethod.PUT,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] PUT /api/1/auth/password/change response status: {}",
+                latestResponse.getStatusCode().value());
     }
 
     private HttpEntity<String> createJsonRequest(Map<String, Object> body)

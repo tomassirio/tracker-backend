@@ -11,7 +11,6 @@ import com.tomassirio.wanderer.auth.dto.LoginRequest;
 import com.tomassirio.wanderer.auth.dto.LoginResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import com.tomassirio.wanderer.auth.service.AuthService;
-import com.tomassirio.wanderer.auth.service.JwtService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,7 +31,7 @@ class AuthControllerTest {
 
     @Mock private AuthService authService;
 
-    @Mock private JwtService jwtService;
+    @Mock private com.tomassirio.wanderer.auth.service.TokenService tokenService;
 
     @InjectMocks private AuthController authController;
 
@@ -47,20 +46,20 @@ class AuthControllerTest {
     @Test
     void login_whenValidRequest_shouldReturnOk() throws Exception {
         LoginRequest request = new LoginRequest("testuser", "password123");
-        String token = "jwt.token.here";
-        long expiresIn = 3600000L;
+        LoginResponse response =
+                new LoginResponse("jwt.access.token", "refresh.token", "Bearer", 3600000L);
 
-        when(authService.login(request.username(), request.password())).thenReturn(token);
-        when(jwtService.getExpirationMs()).thenReturn(expiresIn);
+        when(authService.login(request.username(), request.password())).thenReturn(response);
 
         mockMvc.perform(
                         post("/api/1/auth/login")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.accessToken").value(token))
+                .andExpect(jsonPath("$.accessToken").value("jwt.access.token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh.token"))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(expiresIn));
+                .andExpect(jsonPath("$.expiresIn").value(3600000L));
     }
 
     @Test
@@ -78,7 +77,8 @@ class AuthControllerTest {
     void register_whenValidRequest_shouldReturnCreated() throws Exception {
         RegisterRequest request =
                 new RegisterRequest("testuser", "test@example.com", "password123");
-        LoginResponse response = new LoginResponse("jwt.token", "Bearer", 3600000L);
+        LoginResponse response =
+                new LoginResponse("jwt.access.token", "refresh.token", "Bearer", 3600000L);
 
         when(authService.register(any(RegisterRequest.class))).thenReturn(response);
 
@@ -87,7 +87,8 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.accessToken").value("jwt.token"))
+                .andExpect(jsonPath("$.accessToken").value("jwt.access.token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh.token"))
                 .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andExpect(jsonPath("$.expiresIn").value(3600000L));
     }
