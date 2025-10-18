@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.auth.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -318,5 +319,109 @@ class AuthServiceImplTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> authService.changePassword(userId, currentPassword, newPassword));
+    }
+
+    @Test
+    void login_whenUserReturnsNull_shouldThrowIllegalArgumentException() {
+        // Test the null check after successful FeignClient call
+        when(trackerQueryClient.getUserByUsername("testuser")).thenReturn(null);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> authService.login("testuser", "password"));
+
+        assertEquals("Invalid credentials", exception.getMessage());
+        verify(credentialRepository, never()).findById(any());
+    }
+
+    @Test
+    void login_whenFeignExceptionNon404_shouldThrowIllegalStateException() {
+        // Test FeignException with status code other than 404 (e.g., 500, 503)
+        Request dummyRequest =
+                Request.create(
+                        Request.HttpMethod.GET,
+                        "http://dummy",
+                        Map.of(),
+                        null,
+                        StandardCharsets.UTF_8);
+        FeignException.InternalServerError serverError =
+                new FeignException.InternalServerError(
+                        "Internal Server Error",
+                        dummyRequest,
+                        null,
+                        null);
+
+        when(trackerQueryClient.getUserByUsername("testuser")).thenThrow(serverError);
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> authService.login("testuser", "password"));
+
+        assertEquals("Failed to contact user query service", exception.getMessage());
+        assertEquals(serverError, exception.getCause());
+        verify(credentialRepository, never()).findById(any());
+    }
+
+    @Test
+    void register_whenCredentialSaveFailsAndRollbackFails_shouldThrowCompositeException() {
+        RegisterRequest request =
+                new RegisterRequest("testuser", "test@example.com", "password123");
+
+        // User creation succeeds
+        when(trackerCommandClient.createUser(any())).thenReturn(testUser);
+        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
+        when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+
+        // Credential save fails
+        when(credentialRepository.save(any(Credential.class)))
+                .thenThrow(new RuntimeException("Database error"));
+
+        // Rollback (delete user) also fails - use doThrow for void methods
+        Request dummyRequest =
+                Request.create(
+                        Request.HttpMethod.DELETE,
+                        "http://dummy",
+                        Map.of(),
+                        null,
+                        StandardCharsets.UTF_8);
+        doThrow(new FeignException.InternalServerError(
+                        "Delete failed",
+                        dummyRequest,
+                        null,
+                        null))
+                .when(trackerCommandClient).deleteUser(testUser.getId());
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> authService.register(request));
+
+        assertEquals(
+                "Failed to create credentials and failed to rollback user creation: Delete failed",
+                exception.getMessage());
+        verify(trackerCommandClient).deleteUser(testUser.getId());
+    }
+
+    @Test
+    void register_whenCredentialSaveFailsButRollbackSucceeds_shouldThrowIllegalStateException() {
+        RegisterRequest request =
+                new RegisterRequest("testuser", "test@example.com", "password123");
+
+        // User creation succeeds
+        when(trackerCommandClient.createUser(any())).thenReturn(testUser);
+        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
+        when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+
+        // Credential save fails
+        when(credentialRepository.save(any(Credential.class)))
+                .thenThrow(new RuntimeException("Database error"));
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> authService.register(request));
+
+        assertEquals("Failed to create credentials, rolled back user creation", exception.getMessage());
+        verify(trackerCommandClient).deleteUser(testUser.getId());
     }
 }

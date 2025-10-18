@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.auth.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -269,5 +270,133 @@ class TokenServiceImplTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> tokenService.validatePasswordResetToken("expiredToken"));
+    }
+
+    @Test
+    void markPasswordResetTokenAsUsed_whenTokenExists_shouldMarkAsUsed() {
+        // Given
+        String token = "validResetToken";
+        PasswordResetToken resetToken =
+                PasswordResetToken.builder()
+                        .tokenId(UUID.randomUUID())
+                        .userId(testUserId)
+                        .tokenHash("hashedToken")
+                        .expiresAt(Instant.now().plusSeconds(3600))
+                        .used(false)
+                        .build();
+
+        when(passwordResetTokenRepository.findByTokenHash(anyString()))
+                .thenReturn(Optional.of(resetToken));
+
+        // When
+        tokenService.markPasswordResetTokenAsUsed(token);
+
+        // Then
+        ArgumentCaptor<PasswordResetToken> captor =
+                ArgumentCaptor.forClass(PasswordResetToken.class);
+        verify(passwordResetTokenRepository, times(1)).save(captor.capture());
+        assertTrue(captor.getValue().isUsed());
+    }
+
+    @Test
+    void markPasswordResetTokenAsUsed_whenTokenNotFound_shouldNotThrowException() {
+        // Given
+        when(passwordResetTokenRepository.findByTokenHash(anyString()))
+                .thenReturn(Optional.empty());
+
+        // When/Then - should not throw exception
+        tokenService.markPasswordResetTokenAsUsed("nonExistentToken");
+
+        // Verify save was never called
+        verify(passwordResetTokenRepository, times(0)).save(any(PasswordResetToken.class));
+    }
+
+    @Test
+    void revokeAllRefreshTokensForUser_shouldDeleteAllTokens() {
+        // When
+        tokenService.revokeAllRefreshTokensForUser(testUserId);
+
+        // Then
+        verify(refreshTokenRepository, times(1)).deleteAllByUserId(testUserId);
+    }
+
+    @Test
+    void refreshAccessToken_whenUserFetchFails_shouldThrowIllegalStateException() {
+        // Given
+        String refreshToken = "validRefreshToken";
+        RefreshToken storedToken =
+                RefreshToken.builder()
+                        .tokenId(UUID.randomUUID())
+                        .userId(testUserId)
+                        .tokenHash("hashedToken")
+                        .expiresAt(Instant.now().plusSeconds(3600))
+                        .revoked(false)
+                        .build();
+
+        when(refreshTokenRepository.findByTokenHash(anyString()))
+                .thenReturn(Optional.of(storedToken));
+        when(trackerQueryClient.getUserById(testUserId))
+                .thenThrow(feign.FeignException.NotFound.class);
+
+        // When/Then
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> tokenService.refreshAccessToken(refreshToken));
+
+        assertEquals("Failed to fetch user information", exception.getMessage());
+        assertInstanceOf(feign.FeignException.class, exception.getCause());
+    }
+
+    @Test
+    void blacklistToken_whenInvalidToken_shouldThrowIllegalArgumentException() {
+        // Given
+        String invalidToken = "invalid.token.value";
+        when(jwtService.parseToken(invalidToken))
+                .thenThrow(new io.jsonwebtoken.MalformedJwtException("Invalid JWT"));
+
+        // When/Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> tokenService.blacklistToken(invalidToken));
+
+        assertEquals("Invalid token", exception.getMessage());
+        assertInstanceOf(io.jsonwebtoken.MalformedJwtException.class, exception.getCause());
+    }
+
+    @Test
+    void blacklistToken_whenTokenWithBlankJti_shouldThrowException() {
+        // Given
+        String token = "tokenWithBlankJti";
+        Claims claims = new DefaultClaims();
+        claims.setId("   "); // Blank JTI
+
+        when(jwtService.parseToken(token)).thenReturn(claims);
+
+        // When/Then
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> tokenService.blacklistToken(token));
+
+        assertEquals("Token does not contain a JTI", exception.getMessage());
+    }
+
+    @Test
+    void blacklistToken_whenTokenAlreadyBlacklisted_shouldNotAddAgain() {
+        // Given
+        String token = "validJwtToken";
+        String jti = UUID.randomUUID().toString();
+        Claims claims = new DefaultClaims();
+        claims.setId(jti);
+        claims.setExpiration(new Date(System.currentTimeMillis() + 3600000));
+
+        when(jwtService.parseToken(token)).thenReturn(claims);
+        when(tokenBlacklistRepository.existsByTokenJti(jti)).thenReturn(true);
+
+        // When
+        tokenService.blacklistToken(token);
+
+        // Then - save should never be called since token is already blacklisted
+        verify(tokenBlacklistRepository, times(0))
+                .save(any(com.tomassirio.wanderer.auth.domain.TokenBlacklist.class));
     }
 }
