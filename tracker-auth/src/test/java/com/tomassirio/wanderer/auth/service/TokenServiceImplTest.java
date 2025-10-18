@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +25,8 @@ import com.tomassirio.wanderer.auth.service.impl.TokenServiceImpl;
 import com.tomassirio.wanderer.commons.domain.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.impl.DefaultClaims;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
@@ -33,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -398,5 +403,40 @@ class TokenServiceImplTest {
         // Then - save should never be called since token is already blacklisted
         verify(tokenBlacklistRepository, times(0))
                 .save(any(com.tomassirio.wanderer.auth.domain.TokenBlacklist.class));
+    }
+
+    @Test
+    void createRefreshToken_whenSHA256Unavailable_shouldThrowIllegalStateException() {
+        // Given - Mock MessageDigest to throw NoSuchAlgorithmException
+
+        try (MockedStatic<MessageDigest> mockedDigest = mockStatic(MessageDigest.class)) {
+            mockedDigest.when(() -> MessageDigest.getInstance(eq("SHA-256")))
+                    .thenThrow(new NoSuchAlgorithmException("SHA-256 not available"));
+
+            // When/Then - Should throw IllegalStateException wrapping NoSuchAlgorithmException
+            IllegalStateException exception = assertThrows(
+                    IllegalStateException.class,
+                    () -> tokenService.createRefreshToken(testUserId));
+
+            assertEquals("SHA-256 algorithm not available", exception.getMessage());
+            assertInstanceOf(NoSuchAlgorithmException.class, exception.getCause());
+        }
+    }
+
+    @Test
+    void createPasswordResetToken_whenSHA256Unavailable_shouldThrowIllegalStateException() {
+        // Given - Mock MessageDigest to throw NoSuchAlgorithmException
+        try (MockedStatic<MessageDigest> mockedDigest = mockStatic(MessageDigest.class)) {
+            mockedDigest.when(() -> MessageDigest.getInstance(eq("SHA-256")))
+                    .thenThrow(new NoSuchAlgorithmException("SHA-256 not available"));
+
+            // When/Then - Should throw IllegalStateException wrapping NoSuchAlgorithmException
+            IllegalStateException exception = assertThrows(
+                    IllegalStateException.class,
+                    () -> tokenService.createPasswordResetToken(testUserId));
+
+            assertEquals("SHA-256 algorithm not available", exception.getMessage());
+            assertInstanceOf(NoSuchAlgorithmException.class, exception.getCause());
+        }
     }
 }
