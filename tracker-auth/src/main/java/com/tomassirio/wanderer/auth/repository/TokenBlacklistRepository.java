@@ -1,6 +1,6 @@
-package com.tomassirio.wanderer.commons.repository;
+package com.tomassirio.wanderer.auth.repository;
 
-import com.tomassirio.wanderer.commons.domain.TokenBlacklist;
+import com.tomassirio.wanderer.auth.domain.TokenBlacklist;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;

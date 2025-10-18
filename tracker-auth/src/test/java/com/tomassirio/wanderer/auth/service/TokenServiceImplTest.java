@@ -20,9 +20,9 @@ import com.tomassirio.wanderer.auth.domain.RefreshToken;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
 import com.tomassirio.wanderer.auth.repository.PasswordResetTokenRepository;
 import com.tomassirio.wanderer.auth.repository.RefreshTokenRepository;
+import com.tomassirio.wanderer.auth.repository.TokenBlacklistRepository;
 import com.tomassirio.wanderer.auth.service.impl.TokenServiceImpl;
 import com.tomassirio.wanderer.commons.domain.User;
-import com.tomassirio.wanderer.commons.repository.TokenBlacklistRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.impl.DefaultClaims;
 import java.security.MessageDigest;
@@ -168,8 +168,8 @@ class TokenServiceImplTest {
 
         tokenService.blacklistToken(token);
 
-        ArgumentCaptor<com.tomassirio.wanderer.commons.domain.TokenBlacklist> captor =
-                ArgumentCaptor.forClass(com.tomassirio.wanderer.commons.domain.TokenBlacklist.class);
+        ArgumentCaptor<com.tomassirio.wanderer.auth.domain.TokenBlacklist> captor =
+                ArgumentCaptor.forClass(com.tomassirio.wanderer.auth.domain.TokenBlacklist.class);
         verify(tokenBlacklistRepository, times(1)).save(captor.capture());
         assertEquals(jti, captor.getValue().getTokenJti());
     }
@@ -404,7 +404,7 @@ class TokenServiceImplTest {
 
         // Then - save should never be called since token is already blacklisted
         verify(tokenBlacklistRepository, times(0))
-                .save(any(com.tomassirio.wanderer.commons.domain.TokenBlacklist.class));
+                .save(any(com.tomassirio.wanderer.auth.domain.TokenBlacklist.class));
     }
 
     @Test
