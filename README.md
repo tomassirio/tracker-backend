@@ -34,6 +34,12 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ### CQRS Multi-Module Structure
 - **Commons**: Shared domain entities, DTOs, and CQRS infrastructure
+- **Tracker-Auth**: Authentication and authorization service - Port 8083
+  - User registration and login
+  - JWT token generation and validation
+  - Refresh token management with rotation
+  - Password reset and change functionality
+  - Token blacklisting for logout
 - **Tracker-Command**: Write operations (location updates, messages) - Port 8081
 - **Tracker-Query**: Read operations (location history, achievements, weather) - Port 8082
 
@@ -184,8 +190,13 @@ Below is a quick reference of available endpoints. For detailed documentation, s
 
 ### Authentication API (tracker-auth) - Port 8083
 ```
-POST /api/1/auth/login      → Login with username/password, returns JWT token
-POST /api/1/auth/register   → Register new user, returns JWT token
+POST /api/1/auth/login           → Login with username/password, returns access & refresh tokens
+POST /api/1/auth/register        → Register new user, returns access & refresh tokens
+POST /api/1/auth/logout          → Logout user, invalidates access token and revokes refresh tokens (Auth: USER, ADMIN)
+POST /api/1/auth/refresh         → Exchange refresh token for new access & refresh tokens
+POST /api/1/auth/password/reset  → Initiate password reset, generates reset token
+PUT  /api/1/auth/password/reset  → Complete password reset with token
+PUT  /api/1/auth/password/change → Change password for authenticated user (Auth: USER, ADMIN)
 ```
 
 ### User APIs
@@ -280,10 +291,29 @@ GET  /api/1/{tripId}/weather/latest    → Live weather data (planned)
 
 ## 🔒 Security
 
-- JWT Bearer token authentication for OwnTracks and frontend
-- HTTPS-only communication
-- API keys or per-device credentials
-- Optional IP filtering for ingestion endpoints
+### Authentication & Authorization
+- **JWT Bearer Tokens**: Access tokens with 1-hour expiration (configurable)
+- **Refresh Tokens**: Long-lived tokens (7 days) for obtaining new access tokens
+- **Token Rotation**: New refresh token issued on each refresh for enhanced security
+- **Token Blacklisting**: JTI-based blacklist for immediate logout functionality
+- **Role-Based Access Control**: USER and ADMIN roles with method-level security
+- **Password Security**: Bcrypt hashing with configurable strength
+
+### Password Management
+- **Password Reset**: Time-limited (1 hour), one-time-use reset tokens
+- **Password Change**: Authenticated users can change passwords (revokes all refresh tokens)
+- **Password Requirements**: Minimum 8 characters
+
+### API Security
+- HTTPS-only communication in production
+- Method-level authorization with `@PreAuthorize` annotations
+- Public endpoints: login, register, refresh, password reset
+- Protected endpoints: logout, password change, all data access
+
+### Token Storage
+- All tokens hashed with SHA-256 before database storage
+- Automatic cleanup of expired tokens
+- Separate tables for refresh tokens, password reset tokens, and blacklist
 
 ## 🚨 Error Handling
 
@@ -318,6 +348,11 @@ mvn clean install -pl tracker-query
 ```
 
 ### Running the Applications
+
+#### Auth Service (Port 8083)
+```bash
+mvn spring-boot:run -pl tracker-auth
+```
 
 #### Command Service (Port 8081)
 ```bash
@@ -386,7 +421,8 @@ The companion frontend application will feature:
 - ✅ Domain entities and CQRS infrastructure
 - ✅ REST API implementation (User, Trip, TripPlan, TripUpdate)
 - ✅ Database integration (PostgreSQL with JPA/Hibernate)
-- ✅ Security implementation (JWT authentication, Role-based authorization)
+- ✅ Security implementation (JWT authentication with refresh tokens, Role-based authorization)
+- ✅ Authentication service (Login, Register, Logout, Token refresh, Password reset/change)
 - ✅ User management (Create, Query by ID/username, Current user context)
 - ✅ Trip CRUD operations (Create, Read, Update, Delete)
 - ✅ Trip status and visibility management

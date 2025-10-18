@@ -31,6 +31,10 @@ public class JwtServiceImpl implements JwtService {
     @Value("${jwt.expiration-ms:3600000}")
     private long expirationMs;
 
+    @Getter
+    @Value("${jwt.refresh-expiration-ms:604800000}")
+    private long refreshExpirationMs;
+
     @Override
     public String generateToken(User user) {
         Key key = getSigningKey();
@@ -38,6 +42,22 @@ public class JwtServiceImpl implements JwtService {
         Date expiry = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
                 .setSubject(user.getId().toString())
+                .claim("username", user.getUsername())
+                .claim("roles", List.of(Role.USER))
+                .setIssuedAt(now)
+                .setExpiration(expiry)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    @Override
+    public String generateTokenWithJti(User user, String jti) {
+        Key key = getSigningKey();
+        Date now = new Date();
+        Date expiry = new Date(now.getTime() + expirationMs);
+        return Jwts.builder()
+                .setSubject(user.getId().toString())
+                .setId(jti)
                 .claim("username", user.getUsername())
                 .claim("roles", List.of(Role.USER))
                 .setIssuedAt(now)

@@ -366,8 +366,7 @@ class TripServiceTest {
     }
 
     @Test
-    void
-            getTripsForUserWithVisibility_whenNotFriendsAndNoPublicTrips_shouldReturnEmptyList() {
+    void getTripsForUserWithVisibility_whenNotFriendsAndNoPublicTrips_shouldReturnEmptyList() {
         // Given
         UUID userId = UUID.randomUUID();
         UUID requestingUserId = UUID.randomUUID();
@@ -639,8 +638,7 @@ class TripServiceTest {
         when(tripRepository.findByVisibilityAndStatus(
                         TripVisibility.PUBLIC, TripStatus.IN_PROGRESS))
                 .thenReturn(List.of(notFollowedTrip1, notFollowedTrip2));
-        when(userFollowRepository.findByFollowerId(requestingUserId))
-                .thenReturn(List.of(follow));
+        when(userFollowRepository.findByFollowerId(requestingUserId)).thenReturn(List.of(follow));
 
         // When
         List<TripDTO> result = tripService.getOngoingPublicTrips(requestingUserId);

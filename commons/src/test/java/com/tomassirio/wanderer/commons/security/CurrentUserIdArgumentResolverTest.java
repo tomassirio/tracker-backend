@@ -150,7 +150,8 @@ class CurrentUserIdArgumentResolverTest {
                                         null,
                                         mock(WebDataBinderFactory.class)));
         assertEquals(500, ex.getStatusCode().value());
-        assertTrue(ex.getReason() != null && ex.getReason().contains("Request context not available"));
+        assertTrue(
+                ex.getReason() != null && ex.getReason().contains("Request context not available"));
     }
 
     @Test
