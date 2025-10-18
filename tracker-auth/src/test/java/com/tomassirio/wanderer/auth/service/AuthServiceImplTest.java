@@ -94,13 +94,13 @@ class AuthServiceImplTest {
 
     @Test
     void login_whenUserNotFound_shouldThrowIllegalArgumentException() {
-        Request dummyRequest =
-                Request.create(
-                        Request.HttpMethod.GET,
-                        "http://dummy",
-                        Map.of(),
-                        null,
-                        StandardCharsets.UTF_8);
+        Request dummyRequest = Request.create(
+                Request.HttpMethod.GET,
+                "http://dummy",
+                Map.of(),
+                null,
+                StandardCharsets.UTF_8,
+                null);
         when(trackerQueryClient.getUserByUsername("nonexistent"))
                 .thenThrow(new NotFound("User not found", dummyRequest, null, null));
 
@@ -337,13 +337,13 @@ class AuthServiceImplTest {
     @Test
     void login_whenFeignExceptionNon404_shouldThrowIllegalStateException() {
         // Test FeignException with status code other than 404 (e.g., 500, 503)
-        Request dummyRequest =
-                Request.create(
-                        Request.HttpMethod.GET,
-                        "http://dummy",
-                        Map.of(),
-                        null,
-                        StandardCharsets.UTF_8);
+        Request dummyRequest = Request.create(
+                Request.HttpMethod.GET,
+                "http://dummy",
+                Map.of(),
+                null,
+                StandardCharsets.UTF_8,
+                null);
         FeignException.InternalServerError serverError =
                 new FeignException.InternalServerError(
                         "Internal Server Error",
@@ -378,13 +378,13 @@ class AuthServiceImplTest {
                 .thenThrow(new RuntimeException("Database error"));
 
         // Rollback (delete user) also fails - use doThrow for void methods
-        Request dummyRequest =
-                Request.create(
-                        Request.HttpMethod.DELETE,
-                        "http://dummy",
-                        Map.of(),
-                        null,
-                        StandardCharsets.UTF_8);
+        Request dummyRequest = Request.create(
+                Request.HttpMethod.DELETE,
+                "http://dummy",
+                Map.of(),
+                null,
+                StandardCharsets.UTF_8,
+                null);
         doThrow(new FeignException.InternalServerError(
                         "Delete failed",
                         dummyRequest,
