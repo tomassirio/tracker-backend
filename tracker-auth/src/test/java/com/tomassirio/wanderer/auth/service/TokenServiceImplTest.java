@@ -20,15 +20,11 @@ import com.tomassirio.wanderer.auth.domain.RefreshToken;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
 import com.tomassirio.wanderer.auth.repository.PasswordResetTokenRepository;
 import com.tomassirio.wanderer.auth.repository.RefreshTokenRepository;
-import com.tomassirio.wanderer.auth.repository.TokenBlacklistRepository;
 import com.tomassirio.wanderer.auth.service.impl.TokenServiceImpl;
 import com.tomassirio.wanderer.commons.domain.User;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.impl.DefaultClaims;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,8 +40,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TokenServiceImplTest {
 
     @Mock private RefreshTokenRepository refreshTokenRepository;
-
-    @Mock private TokenBlacklistRepository tokenBlacklistRepository;
 
     @Mock private PasswordResetTokenRepository passwordResetTokenRepository;
 
@@ -155,50 +149,9 @@ class TokenServiceImplTest {
                 () -> tokenService.refreshAccessToken("expiredToken"));
     }
 
-    @Test
-    void blacklistToken_whenValidToken_shouldAddToBlacklist() {
-        String token = "validJwtToken";
-        String jti = UUID.randomUUID().toString();
-        Claims claims = new DefaultClaims();
-        claims.setId(jti);
-        claims.setExpiration(new Date(System.currentTimeMillis() + 3600000));
 
-        when(jwtService.parseToken(token)).thenReturn(claims);
-        when(tokenBlacklistRepository.existsByTokenJti(jti)).thenReturn(false);
 
-        tokenService.blacklistToken(token);
 
-        ArgumentCaptor<com.tomassirio.wanderer.auth.domain.TokenBlacklist> captor =
-                ArgumentCaptor.forClass(com.tomassirio.wanderer.auth.domain.TokenBlacklist.class);
-        verify(tokenBlacklistRepository, times(1)).save(captor.capture());
-        assertEquals(jti, captor.getValue().getTokenJti());
-    }
-
-    @Test
-    void blacklistToken_whenTokenWithoutJti_shouldThrowException() {
-        String token = "tokenWithoutJti";
-        Claims claims = new DefaultClaims();
-
-        when(jwtService.parseToken(token)).thenReturn(claims);
-
-        assertThrows(IllegalArgumentException.class, () -> tokenService.blacklistToken(token));
-    }
-
-    @Test
-    void isTokenBlacklisted_whenExists_shouldReturnTrue() {
-        String jti = UUID.randomUUID().toString();
-        when(tokenBlacklistRepository.existsByTokenJti(jti)).thenReturn(true);
-
-        assertTrue(tokenService.isTokenBlacklisted(jti));
-    }
-
-    @Test
-    void isTokenBlacklisted_whenNotExists_shouldReturnFalse() {
-        String jti = UUID.randomUUID().toString();
-        when(tokenBlacklistRepository.existsByTokenJti(jti)).thenReturn(false);
-
-        assertFalse(tokenService.isTokenBlacklisted(jti));
-    }
 
     @Test
     void createPasswordResetToken_shouldCreateAndReturnToken() {
@@ -353,59 +306,8 @@ class TokenServiceImplTest {
         assertInstanceOf(feign.FeignException.class, exception.getCause());
     }
 
-    @Test
-    void blacklistToken_whenInvalidToken_shouldThrowIllegalArgumentException() {
-        // Given
-        String invalidToken = "invalid.token.value";
-        when(jwtService.parseToken(invalidToken))
-                .thenThrow(new io.jsonwebtoken.MalformedJwtException("Invalid JWT"));
 
-        // When/Then
-        IllegalArgumentException exception =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () -> tokenService.blacklistToken(invalidToken));
 
-        assertEquals("Invalid token", exception.getMessage());
-        assertInstanceOf(io.jsonwebtoken.MalformedJwtException.class, exception.getCause());
-    }
-
-    @Test
-    void blacklistToken_whenTokenWithBlankJti_shouldThrowException() {
-        // Given
-        String token = "tokenWithBlankJti";
-        Claims claims = new DefaultClaims();
-        claims.setId("   "); // Blank JTI
-
-        when(jwtService.parseToken(token)).thenReturn(claims);
-
-        // When/Then
-        IllegalArgumentException exception =
-                assertThrows(
-                        IllegalArgumentException.class, () -> tokenService.blacklistToken(token));
-
-        assertEquals("Token does not contain a JTI", exception.getMessage());
-    }
-
-    @Test
-    void blacklistToken_whenTokenAlreadyBlacklisted_shouldNotAddAgain() {
-        // Given
-        String token = "validJwtToken";
-        String jti = UUID.randomUUID().toString();
-        Claims claims = new DefaultClaims();
-        claims.setId(jti);
-        claims.setExpiration(new Date(System.currentTimeMillis() + 3600000));
-
-        when(jwtService.parseToken(token)).thenReturn(claims);
-        when(tokenBlacklistRepository.existsByTokenJti(jti)).thenReturn(true);
-
-        // When
-        tokenService.blacklistToken(token);
-
-        // Then - save should never be called since token is already blacklisted
-        verify(tokenBlacklistRepository, times(0))
-                .save(any(com.tomassirio.wanderer.auth.domain.TokenBlacklist.class));
-    }
 
     @Test
     void createRefreshToken_whenSHA256Unavailable_shouldThrowIllegalStateException() {

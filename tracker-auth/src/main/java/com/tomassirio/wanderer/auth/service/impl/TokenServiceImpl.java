@@ -3,16 +3,13 @@ package com.tomassirio.wanderer.auth.service.impl;
 import com.tomassirio.wanderer.auth.client.TrackerQueryClient;
 import com.tomassirio.wanderer.auth.domain.PasswordResetToken;
 import com.tomassirio.wanderer.auth.domain.RefreshToken;
-import com.tomassirio.wanderer.auth.domain.TokenBlacklist;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
 import com.tomassirio.wanderer.auth.repository.PasswordResetTokenRepository;
 import com.tomassirio.wanderer.auth.repository.RefreshTokenRepository;
-import com.tomassirio.wanderer.auth.repository.TokenBlacklistRepository;
 import com.tomassirio.wanderer.auth.service.JwtService;
 import com.tomassirio.wanderer.auth.service.TokenService;
 import com.tomassirio.wanderer.commons.domain.User;
 import feign.FeignException;
-import io.jsonwebtoken.Claims;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -26,15 +23,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service implementation for token management operations. Handles refresh tokens, token blacklist,
- * and password reset tokens.
+ * Service implementation for token management operations. Handles refresh tokens and password reset
+ * tokens.
  */
 @Service
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final TokenBlacklistRepository tokenBlacklistRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final JwtService jwtService;
     private final TrackerQueryClient trackerQueryClient;
@@ -113,43 +109,6 @@ public class TokenServiceImpl implements TokenService {
 
         return new RefreshTokenResponse(
                 newAccessToken, newRefreshToken, "Bearer", jwtService.getExpirationMs());
-    }
-
-    @Override
-    @Transactional
-    public void blacklistToken(String token) {
-        // Parse token to extract JTI and expiration
-        Claims claims;
-        try {
-            claims = jwtService.parseToken(token);
-        } catch (Exception e) {
-            throw new IllegalArgumentException("Invalid token", e);
-        }
-
-        String jti = claims.getId();
-        if (jti == null || jti.isBlank()) {
-            throw new IllegalArgumentException("Token does not contain a JTI");
-        }
-
-        // Don't blacklist if already blacklisted
-        if (tokenBlacklistRepository.existsByTokenJti(jti)) {
-            return;
-        }
-
-        // Create blacklist entry
-        TokenBlacklist blacklistEntry =
-                TokenBlacklist.builder()
-                        .id(UUID.randomUUID())
-                        .tokenJti(jti)
-                        .expiresAt(claims.getExpiration().toInstant())
-                        .build();
-
-        tokenBlacklistRepository.save(blacklistEntry);
-    }
-
-    @Override
-    public boolean isTokenBlacklisted(String jti) {
-        return tokenBlacklistRepository.existsByTokenJti(jti);
     }
 
     @Override
