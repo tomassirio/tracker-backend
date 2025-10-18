@@ -94,13 +94,14 @@ class AuthServiceImplTest {
 
     @Test
     void login_whenUserNotFound_shouldThrowIllegalArgumentException() {
-        Request dummyRequest = Request.create(
-                Request.HttpMethod.GET,
-                "http://dummy",
-                Map.of(),
-                null,
-                StandardCharsets.UTF_8,
-                null);
+        Request dummyRequest =
+                Request.create(
+                        Request.HttpMethod.GET,
+                        "http://dummy",
+                        Map.of(),
+                        null,
+                        StandardCharsets.UTF_8,
+                        null);
         when(trackerQueryClient.getUserByUsername("nonexistent"))
                 .thenThrow(new NotFound("User not found", dummyRequest, null, null));
 
@@ -326,9 +327,10 @@ class AuthServiceImplTest {
         // Test the null check after successful FeignClient call
         when(trackerQueryClient.getUserByUsername("testuser")).thenReturn(null);
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> authService.login("testuser", "password"));
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> authService.login("testuser", "password"));
 
         assertEquals("Invalid credentials", exception.getMessage());
         verify(credentialRepository, never()).findById(any());
@@ -337,25 +339,24 @@ class AuthServiceImplTest {
     @Test
     void login_whenFeignExceptionNon404_shouldThrowIllegalStateException() {
         // Test FeignException with status code other than 404 (e.g., 500, 503)
-        Request dummyRequest = Request.create(
-                Request.HttpMethod.GET,
-                "http://dummy",
-                Map.of(),
-                null,
-                StandardCharsets.UTF_8,
-                null);
+        Request dummyRequest =
+                Request.create(
+                        Request.HttpMethod.GET,
+                        "http://dummy",
+                        Map.of(),
+                        null,
+                        StandardCharsets.UTF_8,
+                        null);
         FeignException.InternalServerError serverError =
                 new FeignException.InternalServerError(
-                        "Internal Server Error",
-                        dummyRequest,
-                        null,
-                        null);
+                        "Internal Server Error", dummyRequest, null, null);
 
         when(trackerQueryClient.getUserByUsername("testuser")).thenThrow(serverError);
 
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
-                () -> authService.login("testuser", "password"));
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> authService.login("testuser", "password"));
 
         assertEquals("Failed to contact user query service", exception.getMessage());
         assertEquals(serverError, exception.getCause());
@@ -378,23 +379,20 @@ class AuthServiceImplTest {
                 .thenThrow(new RuntimeException("Database error"));
 
         // Rollback (delete user) also fails - use doThrow for void methods
-        Request dummyRequest = Request.create(
-                Request.HttpMethod.DELETE,
-                "http://dummy",
-                Map.of(),
-                null,
-                StandardCharsets.UTF_8,
-                null);
-        doThrow(new FeignException.InternalServerError(
-                        "Delete failed",
-                        dummyRequest,
+        Request dummyRequest =
+                Request.create(
+                        Request.HttpMethod.DELETE,
+                        "http://dummy",
+                        Map.of(),
                         null,
-                        null))
-                .when(trackerCommandClient).deleteUser(testUser.getId());
+                        StandardCharsets.UTF_8,
+                        null);
+        doThrow(new FeignException.InternalServerError("Delete failed", dummyRequest, null, null))
+                .when(trackerCommandClient)
+                .deleteUser(testUser.getId());
 
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
-                () -> authService.register(request));
+        IllegalStateException exception =
+                assertThrows(IllegalStateException.class, () -> authService.register(request));
 
         assertEquals(
                 "Failed to create credentials and failed to rollback user creation: Delete failed",
@@ -417,11 +415,11 @@ class AuthServiceImplTest {
         when(credentialRepository.save(any(Credential.class)))
                 .thenThrow(new RuntimeException("Database error"));
 
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
-                () -> authService.register(request));
+        IllegalStateException exception =
+                assertThrows(IllegalStateException.class, () -> authService.register(request));
 
-        assertEquals("Failed to create credentials, rolled back user creation", exception.getMessage());
+        assertEquals(
+                "Failed to create credentials, rolled back user creation", exception.getMessage());
         verify(trackerCommandClient).deleteUser(testUser.getId());
     }
 }

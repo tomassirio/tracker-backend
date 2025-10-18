@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.auth.domain;
+package com.tomassirio.wanderer.commons.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

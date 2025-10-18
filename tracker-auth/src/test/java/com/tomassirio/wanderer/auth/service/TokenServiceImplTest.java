@@ -20,9 +20,9 @@ import com.tomassirio.wanderer.auth.domain.RefreshToken;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
 import com.tomassirio.wanderer.auth.repository.PasswordResetTokenRepository;
 import com.tomassirio.wanderer.auth.repository.RefreshTokenRepository;
-import com.tomassirio.wanderer.auth.repository.TokenBlacklistRepository;
 import com.tomassirio.wanderer.auth.service.impl.TokenServiceImpl;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.repository.TokenBlacklistRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.impl.DefaultClaims;
 import java.security.MessageDigest;
@@ -168,8 +168,8 @@ class TokenServiceImplTest {
 
         tokenService.blacklistToken(token);
 
-        ArgumentCaptor<com.tomassirio.wanderer.auth.domain.TokenBlacklist> captor =
-                ArgumentCaptor.forClass(com.tomassirio.wanderer.auth.domain.TokenBlacklist.class);
+        ArgumentCaptor<com.tomassirio.wanderer.commons.domain.TokenBlacklist> captor =
+                ArgumentCaptor.forClass(com.tomassirio.wanderer.commons.domain.TokenBlacklist.class);
         verify(tokenBlacklistRepository, times(1)).save(captor.capture());
         assertEquals(jti, captor.getValue().getTokenJti());
     }
@@ -344,9 +344,10 @@ class TokenServiceImplTest {
                 .thenThrow(feign.FeignException.NotFound.class);
 
         // When/Then
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
-                () -> tokenService.refreshAccessToken(refreshToken));
+        IllegalStateException exception =
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> tokenService.refreshAccessToken(refreshToken));
 
         assertEquals("Failed to fetch user information", exception.getMessage());
         assertInstanceOf(feign.FeignException.class, exception.getCause());
@@ -360,9 +361,10 @@ class TokenServiceImplTest {
                 .thenThrow(new io.jsonwebtoken.MalformedJwtException("Invalid JWT"));
 
         // When/Then
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> tokenService.blacklistToken(invalidToken));
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> tokenService.blacklistToken(invalidToken));
 
         assertEquals("Invalid token", exception.getMessage());
         assertInstanceOf(io.jsonwebtoken.MalformedJwtException.class, exception.getCause());
@@ -378,9 +380,9 @@ class TokenServiceImplTest {
         when(jwtService.parseToken(token)).thenReturn(claims);
 
         // When/Then
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> tokenService.blacklistToken(token));
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class, () -> tokenService.blacklistToken(token));
 
         assertEquals("Token does not contain a JTI", exception.getMessage());
     }
@@ -402,7 +404,7 @@ class TokenServiceImplTest {
 
         // Then - save should never be called since token is already blacklisted
         verify(tokenBlacklistRepository, times(0))
-                .save(any(com.tomassirio.wanderer.auth.domain.TokenBlacklist.class));
+                .save(any(com.tomassirio.wanderer.commons.domain.TokenBlacklist.class));
     }
 
     @Test
@@ -410,13 +412,15 @@ class TokenServiceImplTest {
         // Given - Mock MessageDigest to throw NoSuchAlgorithmException
 
         try (MockedStatic<MessageDigest> mockedDigest = mockStatic(MessageDigest.class)) {
-            mockedDigest.when(() -> MessageDigest.getInstance(eq("SHA-256")))
+            mockedDigest
+                    .when(() -> MessageDigest.getInstance(eq("SHA-256")))
                     .thenThrow(new NoSuchAlgorithmException("SHA-256 not available"));
 
             // When/Then - Should throw IllegalStateException wrapping NoSuchAlgorithmException
-            IllegalStateException exception = assertThrows(
-                    IllegalStateException.class,
-                    () -> tokenService.createRefreshToken(testUserId));
+            IllegalStateException exception =
+                    assertThrows(
+                            IllegalStateException.class,
+                            () -> tokenService.createRefreshToken(testUserId));
 
             assertEquals("SHA-256 algorithm not available", exception.getMessage());
             assertInstanceOf(NoSuchAlgorithmException.class, exception.getCause());
@@ -427,13 +431,15 @@ class TokenServiceImplTest {
     void createPasswordResetToken_whenSHA256Unavailable_shouldThrowIllegalStateException() {
         // Given - Mock MessageDigest to throw NoSuchAlgorithmException
         try (MockedStatic<MessageDigest> mockedDigest = mockStatic(MessageDigest.class)) {
-            mockedDigest.when(() -> MessageDigest.getInstance(eq("SHA-256")))
+            mockedDigest
+                    .when(() -> MessageDigest.getInstance(eq("SHA-256")))
                     .thenThrow(new NoSuchAlgorithmException("SHA-256 not available"));
 
             // When/Then - Should throw IllegalStateException wrapping NoSuchAlgorithmException
-            IllegalStateException exception = assertThrows(
-                    IllegalStateException.class,
-                    () -> tokenService.createPasswordResetToken(testUserId));
+            IllegalStateException exception =
+                    assertThrows(
+                            IllegalStateException.class,
+                            () -> tokenService.createPasswordResetToken(testUserId));
 
             assertEquals("SHA-256 algorithm not available", exception.getMessage());
             assertInstanceOf(NoSuchAlgorithmException.class, exception.getCause());

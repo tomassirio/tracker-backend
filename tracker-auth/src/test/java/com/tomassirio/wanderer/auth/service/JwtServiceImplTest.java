@@ -83,10 +83,12 @@ class JwtServiceImplTest {
         assertNotNull(claims.getIssuedAt());
         assertNotNull(claims.getExpiration());
 
-        long actualExpirationDuration = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+        long actualExpirationDuration =
+                claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
 
         // Allow for up to 1 second difference due to JWT's second-level precision
-        assertTrue(Math.abs(actualExpirationDuration - 3600000L) <= 1000L,
+        assertTrue(
+                Math.abs(actualExpirationDuration - 3600000L) <= 1000L,
                 "Expected duration close to 3600000ms, but was " + actualExpirationDuration + "ms");
     }
 
@@ -124,10 +126,12 @@ class JwtServiceImplTest {
         assertNotNull(claims.getIssuedAt());
         assertNotNull(claims.getExpiration());
 
-        long actualExpirationDuration = claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
+        long actualExpirationDuration =
+                claims.getExpiration().getTime() - claims.getIssuedAt().getTime();
 
         // Allow for up to 1 second difference due to JWT's second-level precision
-        assertTrue(Math.abs(actualExpirationDuration - 3600000L) <= 1000L,
+        assertTrue(
+                Math.abs(actualExpirationDuration - 3600000L) <= 1000L,
                 "Expected duration close to 3600000ms, but was " + actualExpirationDuration + "ms");
     }
 
