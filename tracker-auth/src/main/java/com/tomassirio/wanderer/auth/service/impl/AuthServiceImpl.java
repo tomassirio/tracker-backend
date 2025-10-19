@@ -140,10 +140,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void logout(String token, UUID userId) {
-        // Revoke all refresh tokens for the user
-        // Note: The access token will remain valid until it expires naturally.
-        // For better security, use short-lived access tokens (e.g., 15 minutes).
+    public void logout(UUID userId) {
         tokenService.revokeAllRefreshTokensForUser(userId);
     }
 

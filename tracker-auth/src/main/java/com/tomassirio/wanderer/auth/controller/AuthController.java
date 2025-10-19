@@ -25,7 +25,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -69,12 +68,9 @@ public class AuthController {
             description =
                     "Invalidates the current access token and all refresh tokens for the user",
             security = @SecurityRequirement(name = "Bearer Authentication"))
-    public ResponseEntity<Map<String, String>> logout(
-            @RequestHeader("Authorization") String authHeader, @AuthenticationPrincipal Jwt jwt) {
-        // Extract token from Authorization header
-        String token = authHeader.replace("Bearer ", "");
+    public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
-        authService.logout(token, userId);
+        authService.logout(userId);
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 

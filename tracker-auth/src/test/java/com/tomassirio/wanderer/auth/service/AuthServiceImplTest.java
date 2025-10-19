@@ -213,9 +213,7 @@ class AuthServiceImplTest {
 
     @Test
     void logout_shouldRevokeRefreshTokens() {
-        String token = "jwt.access.token";
-
-        authService.logout(token, testUser.getId());
+        authService.logout(testUser.getId());
 
         verify(tokenService).revokeAllRefreshTokensForUser(testUser.getId());
     }

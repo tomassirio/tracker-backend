@@ -38,12 +38,11 @@ public interface AuthService {
     LoginResponse register(RegisterRequest request);
 
     /**
-     * Logs out a user by blacklisting the provided JWT token and revoking all refresh tokens.
+     * Logs out a user by revoking all refresh tokens.
      *
-     * @param token the JWT token to blacklist
      * @param userId the user ID (extracted from authenticated user)
      */
-    void logout(String token, UUID userId);
+    void logout(UUID userId);
 
     /**
      * Initiates a password reset by creating a reset token and returning it. In a production
