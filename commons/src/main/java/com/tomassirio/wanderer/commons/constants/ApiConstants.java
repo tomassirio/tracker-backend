@@ -45,6 +45,10 @@ public final class ApiConstants {
     public static final String AUTH_PATH = API_V1 + "/auth";
     public static final String LOGIN_ENDPOINT = "/login";
     public static final String REGISTER_ENDPOINT = "/register";
+    public static final String LOGOUT_ENDPOINT = "/logout";
+    public static final String REFRESH_ENDPOINT = "/refresh";
+    public static final String PASSWORD_RESET_ENDPOINT = "/password/reset";
+    public static final String PASSWORD_CHANGE_ENDPOINT = "/password/change";
 
     // ============================================================
     // User endpoints

@@ -14,16 +14,17 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 public class JwtConfig {
 
     @Bean
-    public JwtDecoder jwtDecoder(@Value("${security.jwt.secret:${jwt.secret:}}") String secret) {
+    public JwtDecoder jwtDecoder(@Value("${jwt.secret}") String secret) {
+        SecretKey key;
         if (secret == null || secret.isBlank()) {
-            return NimbusJwtDecoder.withSecretKey(
-                            new SecretKeySpec(new byte[32], SignatureAlgorithm.HS256.getJcaName()))
-                    .build();
+            key = new SecretKeySpec(new byte[32], SignatureAlgorithm.HS256.getJcaName());
+        } else {
+            key =
+                    new SecretKeySpec(
+                            secret.getBytes(StandardCharsets.UTF_8),
+                            SignatureAlgorithm.HS256.getJcaName());
         }
-        SecretKey key =
-                new SecretKeySpec(
-                        secret.getBytes(StandardCharsets.UTF_8),
-                        SignatureAlgorithm.HS256.getJcaName());
+
         return NimbusJwtDecoder.withSecretKey(key).build();
     }
 }

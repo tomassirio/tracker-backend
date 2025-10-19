@@ -8,12 +8,14 @@ import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.service.AuthService;
 import com.tomassirio.wanderer.auth.service.JwtService;
+import com.tomassirio.wanderer.auth.service.TokenService;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.security.Role;
 import feign.FeignException;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -29,15 +31,16 @@ public class AuthServiceImpl implements AuthService {
     private final CredentialRepository credentialRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final TokenService tokenService;
     private final TrackerCommandClient trackerCommandClient;
     private final TrackerQueryClient trackerQueryClient;
 
     /**
-     * Verify credentials and return a JWT when valid.
+     * Verify credentials and return access token and refresh token when valid.
      *
      * @throws IllegalArgumentException when credentials are invalid
      */
-    public String login(String username, String password) {
+    public LoginResponse login(String username, String password) {
         // Lookup user via query service (read side)
         User user;
         try {
@@ -69,7 +72,12 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Invalid credentials");
         }
 
-        return jwtService.generateToken(user);
+        // Generate tokens
+        String jti = UUID.randomUUID().toString();
+        String accessToken = jwtService.generateTokenWithJti(user, jti);
+        String refreshToken = tokenService.createRefreshToken(user.getId());
+
+        return new LoginResponse(accessToken, refreshToken, "Bearer", jwtService.getExpirationMs());
     }
 
     /**
@@ -124,8 +132,76 @@ public class AuthServiceImpl implements AuthService {
                     "Failed to create credentials, rolled back user creation", e);
         }
 
-        // 3) Issue JWT
-        String token = jwtService.generateToken(createdUser);
-        return new LoginResponse(token, "Bearer", jwtService.getExpirationMs());
+        // 3) Issue JWT and refresh token
+        String jti = UUID.randomUUID().toString();
+        String accessToken = jwtService.generateTokenWithJti(createdUser, jti);
+        String refreshToken = tokenService.createRefreshToken(createdUser.getId());
+        return new LoginResponse(accessToken, refreshToken, "Bearer", jwtService.getExpirationMs());
+    }
+
+    @Override
+    public void logout(UUID userId) {
+        tokenService.revokeAllRefreshTokensForUser(userId);
+    }
+
+    @Override
+    public String initiatePasswordReset(String email) {
+        // Find credential by email
+        Optional<Credential> maybeCred = credentialRepository.findByEmail(email);
+        if (maybeCred.isEmpty()) {
+            throw new IllegalArgumentException("No user found with the provided email");
+        }
+
+        Credential cred = maybeCred.get();
+        return tokenService.createPasswordResetToken(cred.getUserId());
+    }
+
+    @Override
+    public void resetPassword(String token, String newPassword) {
+        // Validate the reset token and get user ID
+        UUID userId = tokenService.validatePasswordResetToken(token);
+
+        // Find the credential
+        Optional<Credential> maybeCred = credentialRepository.findById(userId);
+        if (maybeCred.isEmpty()) {
+            throw new IllegalStateException("Credential not found for user");
+        }
+
+        Credential cred = maybeCred.get();
+
+        // Update the password
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        cred.setPasswordHash(hashedPassword);
+        credentialRepository.save(cred);
+
+        // Mark the token as used
+        tokenService.markPasswordResetTokenAsUsed(token);
+
+        // Revoke all refresh tokens for security
+        tokenService.revokeAllRefreshTokensForUser(userId);
+    }
+
+    @Override
+    public void changePassword(UUID userId, String currentPassword, String newPassword) {
+        // Find the credential
+        Optional<Credential> maybeCred = credentialRepository.findById(userId);
+        if (maybeCred.isEmpty()) {
+            throw new IllegalArgumentException("Credential not found");
+        }
+
+        Credential cred = maybeCred.get();
+
+        // Verify current password
+        if (!passwordEncoder.matches(currentPassword, cred.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+
+        // Update the password
+        String hashedPassword = passwordEncoder.encode(newPassword);
+        cred.setPasswordHash(hashedPassword);
+        credentialRepository.save(cred);
+
+        // Revoke all refresh tokens for security
+        tokenService.revokeAllRefreshTokensForUser(userId);
     }
 }

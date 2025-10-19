@@ -21,6 +21,15 @@ public interface JwtService {
     String generateToken(User user);
 
     /**
+     * Generates a JWT token with a custom JTI for the given user.
+     *
+     * @param user the user for whom the token is generated
+     * @param jti the JWT ID to include in the token
+     * @return the generated JWT token as a String
+     */
+    String generateTokenWithJti(User user, String jti);
+
+    /**
      * Parses the given JWT token and returns the claims.
      *
      * @param token the JWT token to parse
@@ -35,4 +44,11 @@ public interface JwtService {
      * @return the expiration time in milliseconds
      */
     long getExpirationMs();
+
+    /**
+     * Returns the expiration time in milliseconds for refresh tokens.
+     *
+     * @return the expiration time in milliseconds
+     */
+    long getRefreshExpirationMs();
 }
