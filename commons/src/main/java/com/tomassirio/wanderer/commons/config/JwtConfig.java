@@ -14,7 +14,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 public class JwtConfig {
 
     @Bean
-    public JwtDecoder jwtDecoder(@Value("${security.jwt.secret:${jwt.secret:}}") String secret) {
+    public JwtDecoder jwtDecoder(@Value("${jwt.secret}") String secret) {
         SecretKey key;
         if (secret == null || secret.isBlank()) {
             key = new SecretKeySpec(new byte[32], SignatureAlgorithm.HS256.getJcaName());

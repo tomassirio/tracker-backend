@@ -22,7 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Component
 public class JwtUtils {
 
-    @Value("${jwt.secret:}")
+    @Value("${jwt.secret}")
     private String secret;
 
     private final ObjectMapper mapper = new ObjectMapper();
@@ -45,7 +45,8 @@ public class JwtUtils {
 
         try {
             String payloadJson = base64UrlDecodeToString(payloadB64);
-            return mapper.readValue(payloadJson, new TypeReference<Map<String, Object>>() {});
+            return mapper.readValue(payloadJson, new TypeReference<>() {
+            });
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid JWT payload", ex);
         }

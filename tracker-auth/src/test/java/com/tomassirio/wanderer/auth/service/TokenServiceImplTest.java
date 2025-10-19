@@ -149,10 +149,6 @@ class TokenServiceImplTest {
                 () -> tokenService.refreshAccessToken("expiredToken"));
     }
 
-
-
-
-
     @Test
     void createPasswordResetToken_shouldCreateAndReturnToken() {
         String token = tokenService.createPasswordResetToken(testUserId);
@@ -305,9 +301,6 @@ class TokenServiceImplTest {
         assertEquals("Failed to fetch user information", exception.getMessage());
         assertInstanceOf(feign.FeignException.class, exception.getCause());
     }
-
-
-
 
     @Test
     void createRefreshToken_whenSHA256Unavailable_shouldThrowIllegalStateException() {
