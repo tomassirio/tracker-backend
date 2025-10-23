@@ -100,6 +100,7 @@ public final class ApiConstants {
     public static final String TRIP_STATUS_ENDPOINT = "/{id}/status";
     public static final String TRIP_UPDATES_ENDPOINT = "/{tripId}/updates";
     public static final String TRIP_COMMENTS_ENDPOINT = "/{tripId}/comments";
+    public static final String TRIPS_AVAILABLE_ENDPOINT = ME_SUFFIX + "/available";
 
     // ============================================================
     // Trip Plan endpoints
