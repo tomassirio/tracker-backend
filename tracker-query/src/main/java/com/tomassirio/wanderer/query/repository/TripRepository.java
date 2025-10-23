@@ -40,8 +40,8 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
             @Param("statuses") List<TripStatus> statuses);
 
     /**
-     * Find all trips available to a user. This includes: - All trips owned by the user - All
-     * PUBLIC trips from other users - All PROTECTED trips from friends
+     * Find all trips available to a user. This includes: - All trips owned by the user - All PUBLIC
+     * trips from other users - All PROTECTED trips from friends
      */
     @Query(
             "SELECT t FROM Trip t WHERE "

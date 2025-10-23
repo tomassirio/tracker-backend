@@ -1,8 +1,10 @@
 package com.tomassirio.wanderer.query.controller;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USERNAME;
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -329,6 +331,126 @@ class TripControllerTest {
                 .andExpect(jsonPath("$[0].tripSettings.visibility").value("PUBLIC"));
     }
 
+    @Test
+    void getAllAvailableTrips_whenAvailableTripsExist_shouldReturnAllAvailableTrips()
+            throws Exception {
+        // Given
+        List<TripDTO> availableTrips =
+                List.of(
+                        createTripDTO(UUID.randomUUID(), "My Trip", TripVisibility.PRIVATE),
+                        createTripDTO(UUID.randomUUID(), "Public Trip", TripVisibility.PUBLIC),
+                        createTripDTO(UUID.randomUUID(), "Friend Trip", TripVisibility.PROTECTED));
+        when(tripService.getAllAvailableTripsForUser(any(UUID.class))).thenReturn(availableTrips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/me/available"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].name").value("My Trip"))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PRIVATE"))
+                .andExpect(jsonPath("$[1].name").value("Public Trip"))
+                .andExpect(jsonPath("$[1].tripSettings.visibility").value("PUBLIC"))
+                .andExpect(jsonPath("$[2].name").value("Friend Trip"))
+                .andExpect(jsonPath("$[2].tripSettings.visibility").value("PROTECTED"));
+    }
+
+    @Test
+    void getAllAvailableTrips_whenNoAvailableTripsExist_shouldReturnEmptyList() throws Exception {
+        // Given
+        when(tripService.getAllAvailableTripsForUser(any(UUID.class))).thenReturn(List.of());
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/me/available"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getAllAvailableTrips_shouldIncludeOwnPrivateTrips() throws Exception {
+        // Given
+        List<TripDTO> availableTrips =
+                List.of(
+                        createTripDTO(
+                                UUID.randomUUID(), "My Private Trip", TripVisibility.PRIVATE));
+        when(tripService.getAllAvailableTripsForUser(any(UUID.class))).thenReturn(availableTrips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/me/available"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("My Private Trip"))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PRIVATE"));
+    }
+
+    @Test
+    void getAllAvailableTrips_shouldIncludePublicTripsFromOtherUsers() throws Exception {
+        // Given
+        List<TripDTO> availableTrips =
+                List.of(
+                        createTripDTO(
+                                UUID.randomUUID(), "Other User Public", TripVisibility.PUBLIC));
+        when(tripService.getAllAvailableTripsForUser(any(UUID.class))).thenReturn(availableTrips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/me/available"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Other User Public"))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PUBLIC"));
+    }
+
+    @Test
+    void getAllAvailableTrips_shouldIncludeProtectedTripsFromFriends() throws Exception {
+        // Given
+        List<TripDTO> availableTrips =
+                List.of(
+                        createTripDTO(
+                                UUID.randomUUID(), "Friend Protected", TripVisibility.PROTECTED));
+        when(tripService.getAllAvailableTripsForUser(any(UUID.class))).thenReturn(availableTrips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/me/available"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Friend Protected"))
+                .andExpect(jsonPath("$[0].tripSettings.visibility").value("PROTECTED"));
+    }
+
+    @Test
+    void getAllAvailableTrips_withMultipleVisibilityTypes_shouldReturnAllTypes() throws Exception {
+        // Given
+        List<TripDTO> availableTrips =
+                List.of(
+                        createTripDTO(UUID.randomUUID(), "Trip 1", TripVisibility.PUBLIC),
+                        createTripDTO(UUID.randomUUID(), "Trip 2", TripVisibility.PRIVATE),
+                        createTripDTO(UUID.randomUUID(), "Trip 3", TripVisibility.PROTECTED),
+                        createTripDTO(UUID.randomUUID(), "Trip 4", TripVisibility.PUBLIC),
+                        createTripDTO(UUID.randomUUID(), "Trip 5", TripVisibility.PROTECTED));
+        when(tripService.getAllAvailableTripsForUser(any(UUID.class))).thenReturn(availableTrips);
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/me/available"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(5));
+    }
+
+    @Test
+    void getAllAvailableTrips_shouldCallServiceWithCorrectUserId() throws Exception {
+        // Given
+        when(tripService.getAllAvailableTripsForUser(USER_ID)).thenReturn(List.of());
+
+        // When & Then
+        mockMvc.perform(get(TRIPS_BASE_URL + "/me/available")).andExpect(status().isOk());
+
+        verify(tripService).getAllAvailableTripsForUser(USER_ID);
+    }
+
     private TripDTO createTripDTO(UUID tripId, String name, TripVisibility visibility) {
         TripSettingsDTO tripSettings = new TripSettingsDTO(TripStatus.CREATED, visibility, null);
         TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
@@ -337,6 +459,7 @@ class TripControllerTest {
                 tripId.toString(),
                 name,
                 USER_ID.toString(),
+                USERNAME, // username
                 tripSettings,
                 tripDetails,
                 null, // tripPlanId
@@ -355,6 +478,7 @@ class TripControllerTest {
                 tripId.toString(),
                 name,
                 USER_ID.toString(),
+                USERNAME,
                 tripSettings,
                 tripDetails,
                 null, // tripPlanId

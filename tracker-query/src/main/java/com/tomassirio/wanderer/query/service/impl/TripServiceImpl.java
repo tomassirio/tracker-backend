@@ -36,9 +36,10 @@ public class TripServiceImpl implements TripService {
 
     @Override
     public TripDTO getTrip(UUID id) {
-        Trip trip = tripRepository
-                .findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+        Trip trip =
+                tripRepository
+                        .findById(id)
+                        .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
         return enrichWithUsername(tripMapper.toDTO(trip));
     }
 
@@ -85,12 +86,10 @@ public class TripServiceImpl implements TripService {
     public List<TripDTO> getOngoingPublicTrips(UUID requestingUserId) {
         List<Trip> publicTrips =
                 tripRepository.findByVisibilityAndStatusIn(
-                        TripVisibility.PUBLIC,
-                        List.of(TripStatus.CREATED, TripStatus.IN_PROGRESS));
+                        TripVisibility.PUBLIC, List.of(TripStatus.CREATED, TripStatus.IN_PROGRESS));
 
         if (requestingUserId == null) {
-            return enrichListWithUsernames(
-                    publicTrips.stream().map(tripMapper::toDTO).toList());
+            return enrichListWithUsernames(publicTrips.stream().map(tripMapper::toDTO).toList());
         }
 
         // Get followed user IDs

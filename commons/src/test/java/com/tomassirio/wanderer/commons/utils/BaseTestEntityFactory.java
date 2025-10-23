@@ -13,6 +13,15 @@ public class BaseTestEntityFactory {
     public static final double LATITUDE = 33.95036882906084;
     public static final double LONGITUDE = -105.33119262037046;
     public static final UUID USER_ID = UUID.randomUUID();
+    public static final String USERNAME = "testuser";
+
+    public static User createUser() {
+        return createUser(USER_ID, USERNAME);
+    }
+
+    public static User createUser(UUID userId, String username) {
+        return User.builder().id(userId).username(username).build();
+    }
 
     public static GeoLocation createGeoLocation() {
         return GeoLocation.builder().lat(LATITUDE).lon(LONGITUDE).build();
@@ -99,7 +108,7 @@ public class BaseTestEntityFactory {
                 .build();
     }
 
-    public static TripDTO createTripDTO(UUID tripId, UUID userId, String name) {
+    public static TripDTO createTripDTO(UUID tripId, UUID userId, String username, String name) {
         TripSettingsDTO tripSettings =
                 new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PUBLIC, null);
 
@@ -109,6 +118,7 @@ public class BaseTestEntityFactory {
                 tripId.toString(),
                 name,
                 userId.toString(),
+                username,
                 tripSettings,
                 tripDetails,
                 null,

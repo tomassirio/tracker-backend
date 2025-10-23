@@ -45,8 +45,7 @@ public class JwtUtils {
 
         try {
             String payloadJson = base64UrlDecodeToString(payloadB64);
-            return mapper.readValue(payloadJson, new TypeReference<>() {
-            });
+            return mapper.readValue(payloadJson, new TypeReference<>() {});
         } catch (Exception ex) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid JWT payload", ex);
         }
