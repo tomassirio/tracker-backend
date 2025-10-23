@@ -73,4 +73,14 @@ public interface TripService {
      * @return a list of {@link TripDTO} objects representing ongoing public trips
      */
     List<TripDTO> getOngoingPublicTrips(UUID requestingUserId);
+
+    /**
+     * Retrieves all trips available to the current user. This includes: - All trips owned by the
+     * user (regardless of visibility) - All public trips from other users - All protected trips
+     * from users who are friends with the requesting user
+     *
+     * @param userId the UUID of the user making the request
+     * @return a list of {@link TripDTO} objects representing all available trips for the user
+     */
+    List<TripDTO> getAllAvailableTripsForUser(UUID userId);
 }
