@@ -139,12 +139,22 @@ public class StepDefinitions {
         user.setId(UUID.randomUUID());
         user.setUsername(username);
         users.put(username, user);
+        usersMap.put(username, user);
         setLastCreatedUsername(username);
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(userRepository.findAll()).thenReturn(List.of(user));
+        when(userRepository.findAll()).thenReturn(new ArrayList<>(users.values()));
+        when(userRepository.findAllById(Mockito.anyCollection()))
+                .thenReturn(new ArrayList<>(users.values()));
         when(tripRepository.findByUserId(user.getId())).thenReturn(new ArrayList<>());
+
+        // Initialize friendship repository mock for this user (empty by default)
+        when(friendshipRepository.findByUserId(user.getId()))
+                .thenReturn(
+                        friendships.values().stream()
+                                .filter(f -> f.getUserId().equals(user.getId()))
+                                .toList());
     }
 
     @Given("a trip exists with name {string}")
@@ -183,7 +193,91 @@ public class StepDefinitions {
 
         when(tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
         when(tripRepository.findAll()).thenReturn(new ArrayList<>(trips.values()));
-        when(tripRepository.findByUserId(owner.getId())).thenReturn(List.of(trip));
+
+        // Update the mock to return all trips for this user
+        List<Trip> userTrips =
+                trips.values().stream().filter(t -> t.getUserId().equals(owner.getId())).toList();
+        when(tripRepository.findByUserId(owner.getId())).thenReturn(userTrips);
+
+        // Update the mock for available trips
+        updateAvailableTripsForAllUsers();
+    }
+
+    @Given("a trip exists with name {string} and visibility {string}")
+    public void a_trip_exists_with_name_and_visibility(String name, String visibility) {
+        User owner = users.get(getLastCreatedUsername());
+        Assertions.assertNotNull(owner, "No user exists to own the trip");
+
+        TripVisibility tripVisibility = TripVisibility.valueOf(visibility);
+
+        TripSettings tripSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(tripVisibility)
+                        .updateRefresh(null)
+                        .build();
+
+        TripDetails tripDetails =
+                TripDetails.builder()
+                        .startTimestamp(Instant.now())
+                        .endTimestamp(null)
+                        .startLocation(null)
+                        .endLocation(null)
+                        .build();
+
+        Trip trip =
+                Trip.builder()
+                        .id(UUID.randomUUID())
+                        .name(name)
+                        .userId(owner.getId())
+                        .tripSettings(tripSettings)
+                        .tripDetails(tripDetails)
+                        .tripPlanId(null)
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+        trips.put(trip.getId(), trip);
+        setLastCreatedTripId(trip.getId());
+
+        when(tripRepository.findById(trip.getId())).thenReturn(Optional.of(trip));
+        when(tripRepository.findAll()).thenReturn(new ArrayList<>(trips.values()));
+
+        // Update the mock to return all trips for this user
+        List<Trip> userTrips =
+                trips.values().stream().filter(t -> t.getUserId().equals(owner.getId())).toList();
+        when(tripRepository.findByUserId(owner.getId())).thenReturn(userTrips);
+
+        // Update the mock for available trips
+        updateAvailableTripsForAllUsers();
+    }
+
+    private void updateAvailableTripsForAllUsers() {
+        // For each user, calculate their available trips based on friendships
+        for (User user : users.values()) {
+            List<UUID> friendIds =
+                    friendships.values().stream()
+                            .filter(f -> f.getUserId().equals(user.getId()))
+                            .map(Friendship::getFriendId)
+                            .toList();
+
+            List<Trip> availableTrips =
+                    trips.values().stream()
+                            .filter(
+                                    trip ->
+                                            trip.getUserId().equals(user.getId()) // Own trips
+                                                    || trip.getTripSettings().getVisibility()
+                                                            == TripVisibility.PUBLIC // Public trips
+                                                    || (trip.getTripSettings().getVisibility()
+                                                                    == TripVisibility.PROTECTED
+                                                            && friendIds.contains(
+                                                                    trip
+                                                                            .getUserId())) // Protected trips from friends
+                                    )
+                            .toList();
+
+            when(tripRepository.findAllAvailableTripsForUser(user.getId(), friendIds))
+                    .thenReturn(availableTrips);
+        }
     }
 
     @Given("a trip plan exists with name {string}")
@@ -273,6 +367,27 @@ public class StepDefinitions {
                 latestResponse.getBody());
     }
 
+    @When("I get available trips")
+    public void i_get_available_trips() throws JsonProcessingException {
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.TRIPS_PATH + ApiConstants.TRIPS_AVAILABLE_ENDPOINT,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET {}{} response status: {}",
+                ApiConstants.TRIPS_PATH,
+                ApiConstants.TRIPS_AVAILABLE_ENDPOINT,
+                latestResponse.getStatusCode().value());
+        log.info(
+                "[Cucumber] GET {}{} response body: {}",
+                ApiConstants.TRIPS_PATH,
+                ApiConstants.TRIPS_AVAILABLE_ENDPOINT,
+                latestResponse.getBody());
+    }
+
     @When("I get the last created trip")
     public void i_get_the_last_created_trip() throws JsonProcessingException {
         String id = getLastCreatedTripId().toString();
@@ -324,6 +439,17 @@ public class StepDefinitions {
         String body = latestResponse.getBody();
         List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
         assertTrue(json.isEmpty(), "Expected response array to be empty");
+    }
+
+    @Then("the response should contain {int} trips")
+    public void the_response_should_contain_trips(int expectedCount) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        Assertions.assertEquals(
+                expectedCount,
+                json.size(),
+                "Expected " + expectedCount + " trips in response but got " + json.size());
     }
 
     @When("I get user by username {string}")
@@ -951,6 +1077,8 @@ public class StepDefinitions {
                         friendships.values().stream()
                                 .filter(f -> f.getUserId().equals(user2.getId()))
                                 .toList());
+
+        updateAvailableTripsForAllUsers();
     }
 
     @Given("user {string} and user {string} are no longer friends")

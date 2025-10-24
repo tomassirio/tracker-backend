@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.controller;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USERNAME;
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -80,6 +81,7 @@ class TripControllerTest {
                         tripId.toString(),
                         "Summer Road Trip 2025",
                         USER_ID.toString(),
+                        USERNAME,
                         tripSettings,
                         tripDetails,
                         null,
@@ -124,6 +126,7 @@ class TripControllerTest {
                         tripId.toString(),
                         "Private Road Trip",
                         USER_ID.toString(),
+                        USERNAME,
                         tripSettings,
                         tripDetails,
                         null,
@@ -217,6 +220,7 @@ class TripControllerTest {
                         tripId.toString(),
                         "Protected Trip",
                         USER_ID.toString(),
+                        USERNAME,
                         tripSettings,
                         tripDetails,
                         null,
@@ -257,6 +261,7 @@ class TripControllerTest {
                         tripId.toString(),
                         "Updated Trip Name",
                         USER_ID.toString(),
+                        USERNAME,
                         tripSettings,
                         tripDetails,
                         null,
@@ -296,6 +301,7 @@ class TripControllerTest {
                         tripId.toString(),
                         "Trip Name",
                         USER_ID.toString(),
+                        USERNAME,
                         tripSettings,
                         tripDetails,
                         null,

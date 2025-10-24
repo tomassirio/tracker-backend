@@ -40,3 +40,70 @@ Feature: Trips Query
     When I get my trips
     Then the response status should be 200
     And the response should be empty
+
+  Scenario: Get available trips - user with own trips
+    Given a user exists with username "alice" and email "alice@example.com"
+    And a trip exists with name "Alice's Public Trip" and visibility "PUBLIC"
+    And a trip exists with name "Alice's Private Trip" and visibility "PRIVATE"
+    And I have a valid token for that user with roles "USER"
+    When I get available trips
+    Then the response status should be 200
+    And the response should contain 2 trips
+
+  Scenario: Get available trips - includes public trips from other users
+    Given a user exists with username "alice" and email "alice@example.com"
+    And a trip exists with name "Alice's Trip" and visibility "PUBLIC"
+    And a user exists with username "bob" and email "bob@example.com"
+    And a trip exists with name "Bob's Public Trip" and visibility "PUBLIC"
+    And I have a valid token for that user with roles "USER"
+    When I get available trips
+    Then the response status should be 200
+    And the response should contain 2 trips
+
+  Scenario: Get available trips - excludes protected trips from non-friends
+    Given a user exists with username "alice" and email "alice@example.com"
+    And a trip exists with name "Alice's Protected Trip" and visibility "PROTECTED"
+    And a user exists with username "bob" and email "bob@example.com"
+    And I have a valid token for that user with roles "USER"
+    When I get available trips
+    Then the response status should be 200
+    And the response should be empty
+
+  Scenario: Get available trips - includes protected trips from friends
+    Given a user exists with username "alice" and email "alice@example.com"
+    And a trip exists with name "Alice's Protected Trip" and visibility "PROTECTED"
+    And a user exists with username "bob" and email "bob@example.com"
+    And user "alice" and user "bob" are friends
+    And I have a valid token for that user with roles "USER"
+    When I get available trips
+    Then the response status should be 200
+    And the response should contain 1 trips
+
+  Scenario: Get available trips - complex scenario with multiple users and visibilities
+    Given a user exists with username "alice" and email "alice@example.com"
+    And a trip exists with name "Alice's Public Trip" and visibility "PUBLIC"
+    And a trip exists with name "Alice's Protected Trip" and visibility "PROTECTED"
+    And a trip exists with name "Alice's Private Trip" and visibility "PRIVATE"
+    And a user exists with username "bob" and email "bob@example.com"
+    And a trip exists with name "Bob's Public Trip" and visibility "PUBLIC"
+    And a trip exists with name "Bob's Protected Trip" and visibility "PROTECTED"
+    And a user exists with username "carol" and email "carol@example.com"
+    And a trip exists with name "Carol's Own Trip" and visibility "PRIVATE"
+    And user "carol" and user "alice" are friends
+    And I have a valid token for that user with roles "USER"
+    When I get available trips
+    Then the response status should be 200
+    And the response should contain 4 trips
+
+  Scenario: Get available trips - unauthorized
+    Given a user exists with username "alice" and email "alice@example.com"
+    And a trip exists with name "Alice's Trip"
+    When I get available trips
+    Then the response status should be 401
+
+  Scenario: Get available trips - no trips available
+    Given a user exists with username "alice" and email "alice@example.com"
+    And I have a valid token for that user with roles "USER"
+    When I get available trips
+    Then the response status should be 200
+    And the response should be empty

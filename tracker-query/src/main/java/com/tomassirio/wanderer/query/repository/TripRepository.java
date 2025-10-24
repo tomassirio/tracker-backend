@@ -31,4 +31,23 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
             "SELECT t FROM Trip t WHERE t.tripSettings.visibility = :visibility AND t.tripSettings.tripStatus = :status")
     List<Trip> findByVisibilityAndStatus(
             @Param("visibility") TripVisibility visibility, @Param("status") TripStatus status);
+
+    /** Find all public trips that are in any of the specified statuses. */
+    @Query(
+            "SELECT t FROM Trip t WHERE t.tripSettings.visibility = :visibility AND t.tripSettings.tripStatus IN :statuses")
+    List<Trip> findByVisibilityAndStatusIn(
+            @Param("visibility") TripVisibility visibility,
+            @Param("statuses") List<TripStatus> statuses);
+
+    /**
+     * Find all trips available to a user. This includes: - All trips owned by the user - All PUBLIC
+     * trips from other users - All PROTECTED trips from friends
+     */
+    @Query(
+            "SELECT t FROM Trip t WHERE "
+                    + "t.userId = :userId OR "
+                    + "t.tripSettings.visibility = 'PUBLIC' OR "
+                    + "(t.tripSettings.visibility = 'PROTECTED' AND t.userId IN :friendIds)")
+    List<Trip> findAllAvailableTripsForUser(
+            @Param("userId") UUID userId, @Param("friendIds") List<UUID> friendIds);
 }

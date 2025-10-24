@@ -23,6 +23,7 @@ public interface TripMapper {
     @Mapping(
             target = "userId",
             expression = "java(trip.getUserId() != null ? trip.getUserId().toString() : null)")
+    @Mapping(target = "username", ignore = true)
     @Mapping(
             target = "tripPlanId",
             expression =

@@ -7,6 +7,7 @@ public record TripDTO(
         String id,
         String name,
         String userId,
+        String username,
         TripSettingsDTO tripSettings,
         TripDetailsDTO tripDetails,
         String tripPlanId,

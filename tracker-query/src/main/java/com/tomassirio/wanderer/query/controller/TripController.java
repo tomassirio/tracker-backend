@@ -71,6 +71,25 @@ public class TripController {
         return ResponseEntity.ok(trips);
     }
 
+    @GetMapping(ApiConstants.TRIPS_AVAILABLE_ENDPOINT)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Get all available trips for current user",
+            description =
+                    "Retrieves all trips available to the authenticated user. This includes: "
+                            + "all trips owned by the user (regardless of visibility), "
+                            + "all public trips from other users, "
+                            + "and all protected trips from friends")
+    public ResponseEntity<List<TripDTO>> getAllAvailableTrips(
+            @Parameter(hidden = true) @CurrentUserId UUID userId) {
+        log.info("Received request to retrieve all available trips for user: {}", userId);
+
+        List<TripDTO> trips = tripService.getAllAvailableTripsForUser(userId);
+
+        log.info("Successfully retrieved {} available trips for user {}", trips.size(), userId);
+        return ResponseEntity.ok(trips);
+    }
+
     @GetMapping(ApiConstants.TRIPS_BY_USER_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(

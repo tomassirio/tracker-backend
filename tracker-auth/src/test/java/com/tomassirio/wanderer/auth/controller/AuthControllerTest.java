@@ -52,22 +52,22 @@ class AuthControllerTest {
                 MockMvcBuilders.standaloneSetup(authController)
                         .setControllerAdvice(new GlobalExceptionHandler())
                         .setCustomArgumentResolvers(
-                                new org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver())
+                                new org.springframework.security.web.method.annotation
+                                        .AuthenticationPrincipalArgumentResolver())
                         .build();
         SecurityContextHolder.clearContext();
     }
 
-    /**
-     * Helper method to create a JWT authentication request post processor
-     */
+    /** Helper method to create a JWT authentication request post processor */
     private RequestPostProcessor jwtAuth(String subject) {
         return request -> {
-            Jwt jwt = Jwt.withTokenValue("mock.jwt.token")
-                    .header("alg", "HS256")
-                    .subject(subject)
-                    .issuedAt(Instant.now())
-                    .expiresAt(Instant.now().plusSeconds(3600))
-                    .build();
+            Jwt jwt =
+                    Jwt.withTokenValue("mock.jwt.token")
+                            .header("alg", "HS256")
+                            .subject(subject)
+                            .issuedAt(Instant.now())
+                            .expiresAt(Instant.now().plusSeconds(3600))
+                            .build();
             JwtAuthenticationToken authentication = new JwtAuthenticationToken(jwt);
             SecurityContextHolder.getContext().setAuthentication(authentication);
             return request;
@@ -178,9 +178,7 @@ class AuthControllerTest {
 
         doNothing().when(authService).logout(userId);
 
-        mockMvc.perform(
-                        post("/api/1/auth/logout")
-                                .with(jwtAuth(userId.toString())))
+        mockMvc.perform(post("/api/1/auth/logout").with(jwtAuth(userId.toString())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Logged out successfully"));
 
@@ -234,7 +232,8 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.message").value("Password changed successfully"));
 
-        verify(authService).changePassword(userId, request.currentPassword(), request.newPassword());
+        verify(authService)
+                .changePassword(userId, request.currentPassword(), request.newPassword());
     }
 
     @Test
