@@ -30,7 +30,6 @@ public class UserQueryController {
     private final UserQueryService userQueryService;
 
     @GetMapping(ApiConstants.USER_BY_ID_ENDPOINT)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Get user by ID", description = "Retrieves a specific user by their ID")
     public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
         return ResponseEntity.ok(userQueryService.getUserById(id));

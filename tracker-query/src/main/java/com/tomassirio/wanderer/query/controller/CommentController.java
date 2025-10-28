@@ -10,7 +10,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +30,6 @@ public class CommentController {
     private final CommentService commentService;
 
     @GetMapping("/comments/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get comment by ID",
             description = "Retrieves a specific comment by its ID")
@@ -45,7 +43,6 @@ public class CommentController {
     }
 
     @GetMapping("/trips/{tripId}/comments")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get all comments for a trip",
             description = "Retrieves all top-level comments with their replies for a specific trip")

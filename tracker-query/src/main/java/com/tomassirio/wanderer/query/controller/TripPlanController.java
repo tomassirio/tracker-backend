@@ -33,7 +33,6 @@ public class TripPlanController {
     private final TripPlanService tripPlanService;
 
     @GetMapping(ApiConstants.TRIP_PLAN_BY_ID_ENDPOINT)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get trip plan by ID",
             description = "Retrieves a specific trip plan by its ID")

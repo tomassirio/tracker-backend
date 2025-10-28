@@ -33,7 +33,6 @@ public class TripController {
     private final TripService tripService;
 
     @GetMapping(ApiConstants.TRIP_BY_ID_ENDPOINT)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(summary = "Get trip by ID", description = "Retrieves a specific trip by its ID")
     public ResponseEntity<TripDTO> getTrip(@PathVariable UUID id) {
         log.info("Received request to retrieve trip: {}", id);
