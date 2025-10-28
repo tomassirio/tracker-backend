@@ -116,4 +116,67 @@ public final class ApiConstants {
 
     public static final String COMMENTS_PATH = API_V1 + "/comments";
     public static final String COMMENT_REACTIONS_ENDPOINT = "/{commentId}/reactions";
+
+    // ============================================================
+    // Public endpoint patterns (for SecurityConfig)
+    // ============================================================
+
+    /**
+     * Public endpoint patterns that don't require authentication. These patterns use UUID regex for
+     * path matching to ensure only valid requests are processed.
+     *
+     * @since 0.4.3
+     */
+    public static final class PublicEndpoints {
+
+        private PublicEndpoints() {
+            throw new UnsupportedOperationException(
+                    "This is a utility class and cannot be instantiated");
+        }
+
+        // User endpoints
+        public static final String USER_BY_ID = USERS_PATH + "/{id:" + UUID_REGEX + "}";
+        public static final String USER_BY_USERNAME = USERS_PATH + "/username/**";
+
+        // Trip endpoints
+        public static final String TRIP_BY_ID = TRIPS_PATH + "/{id:" + UUID_REGEX + "}";
+        public static final String TRIPS_PUBLIC = TRIPS_PATH + PUBLIC_SUFFIX;
+
+        // Trip comments endpoints
+        public static final String TRIP_COMMENTS =
+                TRIPS_PATH + "/{tripId:" + UUID_REGEX + "}/comments";
+
+        // Trip updates endpoints
+        public static final String TRIP_UPDATES =
+                TRIPS_PATH + "/{tripId:" + UUID_REGEX + "}/updates";
+        public static final String TRIP_UPDATE_BY_ID =
+                TRIPS_PATH + "/updates/{id:" + UUID_REGEX + "}";
+
+        // Trip plan endpoints
+        public static final String TRIP_PLAN_BY_ID = TRIP_PLANS_PATH + "/{planId}";
+
+        // API documentation endpoints
+        public static final String SWAGGER_UI = "/swagger-ui/**";
+        public static final String API_DOCS = "/v3/api-docs/**";
+
+        /**
+         * Returns all public endpoints as an array for use in Spring Security configuration.
+         *
+         * @return Array of public endpoint patterns
+         */
+        public static String[] getAll() {
+            return new String[] {
+                USER_BY_ID,
+                USER_BY_USERNAME,
+                TRIP_BY_ID,
+                TRIPS_PUBLIC,
+                TRIP_COMMENTS,
+                TRIP_UPDATES,
+                TRIP_UPDATE_BY_ID,
+                TRIP_PLAN_BY_ID,
+                SWAGGER_UI,
+                API_DOCS
+            };
+        }
+    }
 }

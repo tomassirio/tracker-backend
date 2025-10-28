@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.query.config;
 
 import com.tomassirio.wanderer.commons.config.JwtConfig;
 import com.tomassirio.wanderer.commons.config.JwtConverterConfig;
+import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,11 +34,7 @@ public class SecurityConfig {
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         authz ->
-                                authz.requestMatchers("/api/1/users/**")
-                                        .permitAll()
-                                        .requestMatchers("/api/1/trips/public")
-                                        .permitAll()
-                                        .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
+                                authz.requestMatchers(ApiConstants.PublicEndpoints.getAll())
                                         .permitAll()
                                         .anyRequest()
                                         .authenticated())

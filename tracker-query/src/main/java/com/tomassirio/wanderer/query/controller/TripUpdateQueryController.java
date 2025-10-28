@@ -10,7 +10,6 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,7 +30,6 @@ public class TripUpdateQueryController {
     private final TripUpdateService tripUpdateService;
 
     @GetMapping("/updates/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get trip update by ID",
             description = "Retrieves a specific trip update by its ID")
@@ -45,7 +43,6 @@ public class TripUpdateQueryController {
     }
 
     @GetMapping(ApiConstants.TRIP_UPDATES_ENDPOINT)
-    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get all trip updates for a trip",
             description =
