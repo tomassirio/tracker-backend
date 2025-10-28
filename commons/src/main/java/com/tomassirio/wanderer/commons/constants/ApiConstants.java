@@ -81,8 +81,8 @@ public final class ApiConstants {
     // ============================================================
 
     public static final String FOLLOWS_PATH = USERS_PATH + "/follows";
-    public static final String FOLLOWS_FOLLOWING_PATH = FOLLOWS_PATH + FOLLOWING_SUFFIX;
-    public static final String FOLLOWS_FOLLOWERS_PATH = FOLLOWS_PATH + FOLLOWERS_SUFFIX;
+    public static final String FOLLOWING_PATH = USERS_PATH + "/following";
+    public static final String FOLLOWERS_PATH = USERS_PATH + "/followers";
     public static final String FOLLOWS_FOLLOWING_ENDPOINT = FOLLOWING_SUFFIX;
     public static final String FOLLOWS_FOLLOWERS_ENDPOINT = FOLLOWERS_SUFFIX;
     public static final String FOLLOW_BY_ID_ENDPOINT = "/{followedId}";
@@ -99,7 +99,7 @@ public final class ApiConstants {
     public static final String TRIP_VISIBILITY_ENDPOINT = "/trips/{id}/visibility";
     public static final String TRIP_STATUS_ENDPOINT = "/trips/{id}/status";
     public static final String TRIP_UPDATES_ENDPOINT = "/{tripId}/updates";
-    public static final String TRIP_COMMENTS_ENDPOINT = "/trips/{tripId}/comments";
+    public static final String TRIP_COMMENTS_ENDPOINT = "/{tripId}/comments";
     public static final String TRIPS_AVAILABLE_ENDPOINT = ME_SUFFIX + "/available";
 
     // ============================================================
@@ -115,5 +115,5 @@ public final class ApiConstants {
     // ============================================================
 
     public static final String COMMENTS_PATH = API_V1 + "/comments";
-    public static final String COMMENT_REACTIONS_ENDPOINT = "/comments/{commentId}/reactions";
+    public static final String COMMENT_REACTIONS_ENDPOINT = "/{commentId}/reactions";
 }

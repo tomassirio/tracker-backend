@@ -44,7 +44,7 @@ public class CommentController {
         return ResponseEntity.ok(comment);
     }
 
-    @GetMapping(ApiConstants.TRIP_COMMENTS_ENDPOINT)
+    @GetMapping("/trips/{tripId}/comments")
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get all comments for a trip",

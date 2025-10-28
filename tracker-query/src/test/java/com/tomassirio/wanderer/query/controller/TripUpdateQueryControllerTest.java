@@ -301,4 +301,3 @@ class TripUpdateQueryControllerTest {
                 timestamp);
     }
 }
-

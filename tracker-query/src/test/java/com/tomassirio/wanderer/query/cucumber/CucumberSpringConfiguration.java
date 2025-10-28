@@ -7,6 +7,7 @@ import com.tomassirio.wanderer.query.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
 import com.tomassirio.wanderer.query.repository.TripPlanRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
+import com.tomassirio.wanderer.query.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.query.repository.UserFollowRepository;
 import com.tomassirio.wanderer.query.repository.UserRepository;
 import io.cucumber.spring.CucumberContextConfiguration;
@@ -32,4 +33,6 @@ public class CucumberSpringConfiguration extends BaseCucumberSpringConfiguration
     @MockitoBean public UserFollowRepository userFollowRepository;
 
     @MockitoBean public FriendRequestRepository friendRequestRepository;
+
+    @MockitoBean public TripUpdateRepository tripUpdateRepository;
 }

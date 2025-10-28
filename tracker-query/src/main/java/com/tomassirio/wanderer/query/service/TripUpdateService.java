@@ -35,4 +35,3 @@ public interface TripUpdateService {
      */
     List<TripUpdateDTO> getTripUpdatesForTrip(UUID tripId);
 }
-

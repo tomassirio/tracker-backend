@@ -105,8 +105,7 @@ class TripUpdateServiceTest {
 
         List<TripUpdate> tripUpdates = List.of(update1, update2, update3);
 
-        when(tripUpdateRepository.findByTripIdOrderByTimestampDesc(tripId))
-                .thenReturn(tripUpdates);
+        when(tripUpdateRepository.findByTripIdOrderByTimestampDesc(tripId)).thenReturn(tripUpdates);
 
         // When
         List<TripUpdateDTO> result = tripUpdateService.getTripUpdatesForTrip(tripId);
@@ -192,4 +191,3 @@ class TripUpdateServiceTest {
         assertThat(dto.timestamp()).isNotNull();
     }
 }
-
