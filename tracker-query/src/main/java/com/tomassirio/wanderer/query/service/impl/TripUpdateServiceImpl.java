@@ -38,4 +38,3 @@ public class TripUpdateServiceImpl implements TripUpdateService {
                 .collect(Collectors.toList());
     }
 }
-

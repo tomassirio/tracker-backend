@@ -57,7 +57,7 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.CREATED).body(createdComment);
     }
 
-    @PostMapping(ApiConstants.API_V1 + ApiConstants.COMMENT_REACTIONS_ENDPOINT)
+    @PostMapping(ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_REACTIONS_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Add a reaction to a comment",
@@ -80,7 +80,7 @@ public class CommentController {
         return ResponseEntity.ok(updatedComment);
     }
 
-    @DeleteMapping(ApiConstants.API_V1 + ApiConstants.COMMENT_REACTIONS_ENDPOINT)
+    @DeleteMapping(ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_REACTIONS_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Remove a reaction from a comment",

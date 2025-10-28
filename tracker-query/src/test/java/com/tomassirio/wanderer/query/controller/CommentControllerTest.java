@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.MockMvc;
 class CommentControllerTest {
 
     private static final String COMMENTS_BASE_URL = "/api/1/comments";
-    private static final String TRIP_COMMENTS_URL = "/api/1/{tripId}/comments";
+    private static final String TRIP_COMMENTS_URL = "/api/1/trips/{tripId}/comments";
 
     private MockMvc mockMvc;
 

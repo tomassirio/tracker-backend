@@ -55,11 +55,7 @@ public class TripUpdateQueryController {
 
         List<TripUpdateDTO> tripUpdates = tripUpdateService.getTripUpdatesForTrip(tripId);
 
-        log.info(
-                "Successfully retrieved {} trip updates for trip {}",
-                tripUpdates.size(),
-                tripId);
+        log.info("Successfully retrieved {} trip updates for trip {}", tripUpdates.size(), tripId);
         return ResponseEntity.ok(tripUpdates);
     }
 }
-

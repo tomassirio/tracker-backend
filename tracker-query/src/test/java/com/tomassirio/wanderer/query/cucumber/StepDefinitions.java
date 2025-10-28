@@ -14,6 +14,7 @@ import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
 import com.tomassirio.wanderer.commons.domain.Friendship;
+import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
@@ -21,6 +22,7 @@ import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
+import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
@@ -30,6 +32,7 @@ import com.tomassirio.wanderer.query.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
 import com.tomassirio.wanderer.query.repository.TripPlanRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
+import com.tomassirio.wanderer.query.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.query.repository.UserFollowRepository;
 import com.tomassirio.wanderer.query.repository.UserRepository;
 import io.cucumber.java.en.And;
@@ -68,6 +71,7 @@ public class StepDefinitions {
     @Autowired private FriendshipRepository friendshipRepository;
     @Autowired private UserFollowRepository userFollowRepository;
     @Autowired private FriendRequestRepository friendRequestRepository;
+    @Autowired private TripUpdateRepository tripUpdateRepository;
 
     private ResponseEntity<String> latestResponse;
 
@@ -90,6 +94,10 @@ public class StepDefinitions {
     @Getter @Setter private UUID lastCreatedTripId;
     @Getter @Setter private UUID lastCreatedTripPlanId;
     @Getter @Setter private UUID lastCreatedCommentId;
+    @Getter @Setter private UUID lastCreatedTripUpdateId;
+    private UUID lastCreatedFriendRequestId;
+    private UUID firstUserIdInScenario;
+    private UUID lastCreatedFollowId;
 
     // In-memory data
     private final Map<String, User> users = new HashMap<>();
@@ -99,6 +107,7 @@ public class StepDefinitions {
     private final Map<UUID, Friendship> friendships = new HashMap<>();
     private final Map<UUID, UserFollow> userFollows = new HashMap<>();
     private final Map<UUID, FriendRequest> friendRequests = new HashMap<>();
+    private final Map<UUID, TripUpdate> tripUpdates = new HashMap<>();
 
     @Given("an empty system")
     public void an_empty_system() {
@@ -109,12 +118,18 @@ public class StepDefinitions {
         friendships.clear();
         userFollows.clear();
         friendRequests.clear();
+        tripUpdates.clear();
 
         setTempAuthHeader(null);
         setLastCreatedUsername(null);
         setLastCreatedTripId(null);
         setLastCreatedTripPlanId(null);
         setLastCreatedCommentId(null);
+        usersMap.clear();
+        lastCreatedFriendRequestId = null;
+        firstUserIdInScenario = null;
+        lastCreatedFollowId = null;
+        setLastCreatedTripUpdateId(null);
 
         Mockito.reset(
                 tripRepository,
@@ -728,7 +743,7 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
         latestResponse =
                 restTemplate.exchange(
-                        ApiConstants.API_V1 + "/" + tripId + "/comments",
+                        ApiConstants.API_V1 + "/trips/" + tripId + "/comments",
                         HttpMethod.GET,
                         request,
                         String.class);
@@ -1140,7 +1155,206 @@ public class StepDefinitions {
                 expectedCount, json.size(), "Expected " + expectedCount + " friends in response");
     }
 
-    // ==================== USER FOLLOWS STEPS ====================
+    // ==================== TRIP UPDATE STEPS ====================
+
+    @Given("a trip update exists with message {string}")
+    public void a_trip_update_exists_with_message(String message) {
+        Trip trip = trips.get(getLastCreatedTripId());
+        Assertions.assertNotNull(trip, "No trip exists to associate with the trip update");
+
+        GeoLocation location = GeoLocation.builder().lat(42.3601).lon(-71.0589).build();
+
+        TripUpdate tripUpdate =
+                TripUpdate.builder()
+                        .id(UUID.randomUUID())
+                        .trip(trip)
+                        .location(location)
+                        .battery(85)
+                        .message(message)
+                        .reactions(new Reactions())
+                        .timestamp(Instant.now())
+                        .build();
+        tripUpdates.put(tripUpdate.getId(), tripUpdate);
+        setLastCreatedTripUpdateId(tripUpdate.getId());
+
+        when(tripUpdateRepository.findById(tripUpdate.getId())).thenReturn(Optional.of(tripUpdate));
+        when(tripUpdateRepository.findByTripIdOrderByTimestampDesc(trip.getId()))
+                .thenReturn(new ArrayList<>(tripUpdates.values()));
+    }
+
+    @Given("a trip update exists with message {string} and battery {int}")
+    public void a_trip_update_exists_with_message_and_battery(String message, Integer battery) {
+        Trip trip = trips.get(getLastCreatedTripId());
+        Assertions.assertNotNull(trip, "No trip exists to associate with the trip update");
+
+        GeoLocation location = GeoLocation.builder().lat(42.3601).lon(-71.0589).build();
+
+        TripUpdate tripUpdate =
+                TripUpdate.builder()
+                        .id(UUID.randomUUID())
+                        .trip(trip)
+                        .location(location)
+                        .battery(battery)
+                        .message(message)
+                        .reactions(new Reactions())
+                        .timestamp(Instant.now())
+                        .build();
+        tripUpdates.put(tripUpdate.getId(), tripUpdate);
+        setLastCreatedTripUpdateId(tripUpdate.getId());
+
+        when(tripUpdateRepository.findById(tripUpdate.getId())).thenReturn(Optional.of(tripUpdate));
+        when(tripUpdateRepository.findByTripIdOrderByTimestampDesc(trip.getId()))
+                .thenReturn(new ArrayList<>(tripUpdates.values()));
+    }
+
+    @Given("a trip update exists with message {string} and location {double}, {double}")
+    public void a_trip_update_exists_with_message_and_location(
+            String message, Double latitude, Double longitude) {
+        Trip trip = trips.get(getLastCreatedTripId());
+        Assertions.assertNotNull(trip, "No trip exists to associate with the trip update");
+
+        GeoLocation location = GeoLocation.builder().lat(latitude).lon(longitude).build();
+
+        TripUpdate tripUpdate =
+                TripUpdate.builder()
+                        .id(UUID.randomUUID())
+                        .trip(trip)
+                        .location(location)
+                        .battery(85)
+                        .message(message)
+                        .reactions(new Reactions())
+                        .timestamp(Instant.now())
+                        .build();
+        tripUpdates.put(tripUpdate.getId(), tripUpdate);
+        setLastCreatedTripUpdateId(tripUpdate.getId());
+
+        when(tripUpdateRepository.findById(tripUpdate.getId())).thenReturn(Optional.of(tripUpdate));
+        when(tripUpdateRepository.findByTripIdOrderByTimestampDesc(trip.getId()))
+                .thenReturn(new ArrayList<>(tripUpdates.values()));
+    }
+
+    @When("I get all trip updates for that trip")
+    public void i_get_all_trip_updates_for_that_trip() throws JsonProcessingException {
+        String tripId = getLastCreatedTripId().toString();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.TRIPS_PATH + "/" + tripId + "/updates",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /trips/{}/updates response status: {}",
+                tripId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get all trip updates for that trip without token")
+    public void i_get_all_trip_updates_for_that_trip_without_token()
+            throws JsonProcessingException {
+        String tripId = getLastCreatedTripId().toString();
+        HttpEntity<String> request = createJsonRequest(null, null);
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.TRIPS_PATH + "/" + tripId + "/updates",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /trips/{}/updates (no token) response status: {}",
+                tripId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get that trip update by id")
+    public void i_get_that_trip_update_by_id() throws JsonProcessingException {
+        String updateId = getLastCreatedTripUpdateId().toString();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.TRIPS_PATH + "/updates/" + updateId,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /trip-updates/{} response status: {}",
+                updateId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @When("I get that trip update by id without token")
+    public void i_get_that_trip_update_by_id_without_token() throws JsonProcessingException {
+        String updateId = getLastCreatedTripUpdateId().toString();
+        HttpEntity<String> request = createJsonRequest(null, null);
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.TRIPS_PATH + "/updates/" + updateId,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /trip-updates/{} (no token) response status: {}",
+                updateId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @Then("the response contains a trip update id")
+    public void the_response_contains_a_trip_update_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        assertTrue(json.containsKey("id"), "Response does not contain id");
+        UUID parsed = UUID.fromString(json.get("id").toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the response contains at least one trip update id")
+    public void the_response_contains_at_least_one_trip_update_id() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        Assertions.assertFalse(json.isEmpty(), "Expected at least one trip update in response");
+        Object maybeId = json.getFirst().get("id");
+        Assertions.assertNotNull(maybeId);
+        UUID parsed = UUID.fromString(maybeId.toString());
+        Assertions.assertNotNull(parsed);
+    }
+
+    @Then("the trip update message should be {string}")
+    public void the_trip_update_message_should_be(String expectedMessage) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        assertTrue(json.containsKey("message"), "Response does not contain message");
+        String actualMessage = json.get("message").toString();
+        Assertions.assertEquals(expectedMessage, actualMessage);
+    }
+
+    @Then("the trip update battery should be {int}")
+    public void the_trip_update_battery_should_be(Integer expectedBattery) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        assertTrue(json.containsKey("battery"), "Response does not contain battery");
+        Integer actualBattery = ((Number) json.get("battery")).intValue();
+        Assertions.assertEquals(expectedBattery, actualBattery);
+    }
+
+    @Then("the trip update location should be {double}, {double}")
+    public void the_trip_update_location_should_be(Double expectedLat, Double expectedLon)
+            throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        Map<?, ?> json = mapper.readValue(body, Map.class);
+        assertTrue(json.containsKey("location"), "Response does not contain location");
+        Map<?, ?> location = (Map<?, ?>) json.get("location");
+        Double actualLat = ((Number) location.get("lat")).doubleValue();
+        Double actualLon = ((Number) location.get("lon")).doubleValue();
+        Assertions.assertEquals(expectedLat, actualLat, 0.0001);
+        Assertions.assertEquals(expectedLon, actualLon, 0.0001);
+    }
+
+    // ==================== USER FOLLOW STEPS ====================
 
     @Given("user {string} follows user {string}")
     public void user_follows_user(String followerUsername, String followedUsername) {
@@ -1172,8 +1386,8 @@ public class StepDefinitions {
                                 .toList());
     }
 
-    @When("user {string} queries their following list")
-    public void user_queries_their_following_list(String username) throws JsonProcessingException {
+    @When("user {string} queries their followers")
+    public void user_queries_their_followers(String username) throws JsonProcessingException {
         User user = usersMap.get(username);
         Assertions.assertNotNull(user, "User not found: " + username);
 
@@ -1181,14 +1395,14 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
         latestResponse =
                 restTemplate.exchange(
-                        ApiConstants.FOLLOWS_FOLLOWING_PATH, HttpMethod.GET, request, String.class);
+                        ApiConstants.FOLLOWERS_PATH, HttpMethod.GET, request, String.class);
         log.info(
-                "[Cucumber] GET /users/follows/following response status: {}",
+                "[Cucumber] GET /users/followers response status: {}",
                 latestResponse.getStatusCode().value());
     }
 
-    @When("user {string} queries their followers list")
-    public void user_queries_their_followers_list(String username) throws JsonProcessingException {
+    @When("user {string} queries their following")
+    public void user_queries_their_following(String username) throws JsonProcessingException {
         User user = usersMap.get(username);
         Assertions.assertNotNull(user, "User not found: " + username);
 
@@ -1196,18 +1410,129 @@ public class StepDefinitions {
         HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
         latestResponse =
                 restTemplate.exchange(
-                        ApiConstants.FOLLOWS_FOLLOWERS_PATH, HttpMethod.GET, request, String.class);
+                        ApiConstants.FOLLOWING_PATH, HttpMethod.GET, request, String.class);
         log.info(
-                "[Cucumber] GET /users/follows/followers response status: {}",
+                "[Cucumber] GET /users/following response status: {}",
                 latestResponse.getStatusCode().value());
     }
 
-    @Then("the response should contain {int} follows")
-    public void the_response_should_contain_follows(int expectedCount) throws Exception {
+    @Then("the response should contain {int} followers")
+    public void the_response_should_contain_followers(int expectedCount) throws Exception {
         Assertions.assertNotNull(latestResponse);
         String body = latestResponse.getBody();
         List<?> json = mapper.readValue(body, List.class);
         Assertions.assertEquals(
-                expectedCount, json.size(), "Expected " + expectedCount + " follows in response");
+                expectedCount, json.size(), "Expected " + expectedCount + " followers in response");
+    }
+
+    @Then("the response should contain {int} following")
+    public void the_response_should_contain_following(int expectedCount) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<?> json = mapper.readValue(body, List.class);
+        Assertions.assertEquals(
+                expectedCount, json.size(), "Expected " + expectedCount + " following in response");
+    }
+
+    // ==================== ADDITIONAL TRIP UPDATE STEPS ====================
+
+    @Then("the response should contain {int} trip updates")
+    public void the_response_should_contain_trip_updates(int expectedCount) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        Assertions.assertEquals(
+                expectedCount,
+                json.size(),
+                "Expected " + expectedCount + " trip updates in response but got " + json.size());
+    }
+
+    @Then("the trip updates should be ordered by timestamp descending")
+    public void the_trip_updates_should_be_ordered_by_timestamp_descending() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        Assertions.assertFalse(json.isEmpty(), "Expected at least one trip update");
+
+        // Verify that each subsequent timestamp is earlier than or equal to the previous
+        for (int i = 1; i < json.size(); i++) {
+            String prevTimestamp = json.get(i - 1).get("timestamp").toString();
+            String currTimestamp = json.get(i).get("timestamp").toString();
+            Instant prevTime = Instant.parse(prevTimestamp);
+            Instant currTime = Instant.parse(currTimestamp);
+            assertTrue(
+                    !currTime.isAfter(prevTime),
+                    "Trip updates should be ordered by timestamp descending");
+        }
+    }
+
+    @Then("the trip updates should have location data")
+    public void the_trip_updates_should_have_location_data() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        Assertions.assertFalse(json.isEmpty(), "Expected at least one trip update");
+
+        for (Map<String, Object> update : json) {
+            assertTrue(update.containsKey("location"), "Trip update should have location data");
+            Map<?, ?> location = (Map<?, ?>) update.get("location");
+            Assertions.assertNotNull(location, "Location should not be null");
+            assertTrue(location.containsKey("lat"), "Location should have latitude");
+            assertTrue(location.containsKey("lon"), "Location should have longitude");
+        }
+    }
+
+    @When("I get all trip updates for non-existent trip")
+    public void i_get_all_trip_updates_for_non_existent_trip() throws JsonProcessingException {
+        UUID nonExistentTripId = UUID.randomUUID();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.TRIPS_PATH + "/" + nonExistentTripId + "/updates",
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /trips/{}/updates response status: {}",
+                nonExistentTripId,
+                latestResponse.getStatusCode().value());
+    }
+
+    @Then("the trip updates should have different battery levels")
+    public void the_trip_updates_should_have_different_battery_levels() throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<Map<String, Object>> json = mapper.readValue(body, new TypeReference<>() {});
+        Assertions.assertFalse(json.isEmpty(), "Expected at least one trip update");
+
+        // Collect all battery levels
+        List<Integer> batteryLevels = new ArrayList<>();
+        for (Map<String, Object> update : json) {
+            assertTrue(update.containsKey("battery"), "Trip update should have battery data");
+            Integer battery = ((Number) update.get("battery")).intValue();
+            batteryLevels.add(battery);
+        }
+
+        // Verify there are different battery levels (not all the same)
+        long uniqueBatteryLevels = batteryLevels.stream().distinct().count();
+        assertTrue(
+                uniqueBatteryLevels > 1,
+                "Expected different battery levels, but all were: " + batteryLevels.get(0));
+    }
+
+    @When("I get a non-existent trip update by id")
+    public void i_get_a_non_existent_trip_update_by_id() throws JsonProcessingException {
+        UUID nonExistentUpdateId = UUID.randomUUID();
+        HttpEntity<String> request = createJsonRequest(null, getTempAuthHeader());
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.TRIPS_PATH + "/updates/" + nonExistentUpdateId,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+        log.info(
+                "[Cucumber] GET /trip-updates/{} response status: {}",
+                nonExistentUpdateId,
+                latestResponse.getStatusCode().value());
     }
 }
