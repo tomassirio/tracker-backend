@@ -1,6 +1,15 @@
 package com.tomassirio.wanderer.commons.utils;
 
-import com.tomassirio.wanderer.commons.domain.*;
+import com.tomassirio.wanderer.commons.domain.Comment;
+import com.tomassirio.wanderer.commons.domain.GeoLocation;
+import com.tomassirio.wanderer.commons.domain.Reactions;
+import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripSettings;
+import com.tomassirio.wanderer.commons.domain.TripStatus;
+import com.tomassirio.wanderer.commons.domain.TripUpdate;
+import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import com.tomassirio.wanderer.commons.domain.User;
 
 import java.time.Instant;
 import java.util.List;
