@@ -17,7 +17,10 @@ public interface CommentMapper {
     @Mapping(
             target = "userId",
             expression =
-                    "java(comment.getUserId() != null ? comment.getUserId().toString() : null)")
+                    "java(comment.getUser() != null && comment.getUser().getId() != null ? comment.getUser().getId().toString() : null)")
+    @Mapping(
+            target = "username",
+            expression = "java(comment.getUser() != null ? comment.getUser().getUsername() : null)")
     @Mapping(
             target = "tripId",
             expression =
@@ -32,10 +35,7 @@ public interface CommentMapper {
             target = "id",
             expression =
                     "java(commentDTO.id() != null ? java.util.UUID.fromString(commentDTO.id()) : null)")
-    @Mapping(
-            target = "userId",
-            expression =
-                    "java(commentDTO.userId() != null ? java.util.UUID.fromString(commentDTO.userId()) : null)")
+    @Mapping(target = "user", ignore = true)
     @Mapping(target = "trip", ignore = true)
     @Mapping(target = "parentComment", ignore = true)
     @Mapping(target = "replies", ignore = true)

@@ -1,9 +1,16 @@
 package com.tomassirio.wanderer.commons.utils;
 
-import com.tomassirio.wanderer.commons.domain.*;
-import com.tomassirio.wanderer.commons.dto.TripDTO;
-import com.tomassirio.wanderer.commons.dto.TripDetailsDTO;
-import com.tomassirio.wanderer.commons.dto.TripSettingsDTO;
+import com.tomassirio.wanderer.commons.domain.Comment;
+import com.tomassirio.wanderer.commons.domain.GeoLocation;
+import com.tomassirio.wanderer.commons.domain.Reactions;
+import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripSettings;
+import com.tomassirio.wanderer.commons.domain.TripStatus;
+import com.tomassirio.wanderer.commons.domain.TripUpdate;
+import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import com.tomassirio.wanderer.commons.domain.User;
+
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -108,30 +115,10 @@ public class BaseTestEntityFactory {
                 .build();
     }
 
-    public static TripDTO createTripDTO(UUID tripId, UUID userId, String username, String name) {
-        TripSettingsDTO tripSettings =
-                new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PUBLIC, null);
-
-        TripDetailsDTO tripDetails = new TripDetailsDTO(Instant.now(), null, null, null);
-
-        return new TripDTO(
-                tripId.toString(),
-                name,
-                userId.toString(),
-                username,
-                tripSettings,
-                tripDetails,
-                null,
-                List.of(),
-                List.of(),
-                Instant.now(),
-                true);
-    }
-
-    public static Comment createComment(UUID commentId, UUID userId, Trip trip) {
+    public static Comment createComment(UUID commentId, User user, Trip trip) {
         return Comment.builder()
                 .id(commentId)
-                .userId(userId)
+                .user(user)
                 .trip(trip)
                 .message("Test comment")
                 .reactions(new Reactions())

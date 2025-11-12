@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.service.impl;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USERNAME;
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -11,10 +12,12 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.dto.CommentDTO;
 import com.tomassirio.wanderer.commons.mapper.CommentMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -44,22 +47,26 @@ class CommentServiceImplTest {
 
     @Mock private TripRepository tripRepository;
 
+    @Mock private UserRepository userRepository;
+
     @Spy private CommentMapper commentMapper = CommentMapper.INSTANCE;
 
     @InjectMocks private CommentServiceImpl commentService;
 
+    private User user;
     private Trip trip;
     private Comment topLevelComment;
     private Comment replyComment;
 
     @BeforeEach
     void setUp() {
+        user = User.builder().id(USER_ID).username(USERNAME).build();
         trip = Trip.builder().id(TRIP_ID).userId(USER_ID).name("Test Trip").build();
 
         topLevelComment =
                 Comment.builder()
                         .id(COMMENT_ID)
-                        .userId(USER_ID)
+                        .user(user)
                         .trip(trip)
                         .parentComment(null)
                         .message(COMMENT_MESSAGE)
@@ -71,7 +78,7 @@ class CommentServiceImplTest {
         replyComment =
                 Comment.builder()
                         .id(UUID.randomUUID())
-                        .userId(USER_ID)
+                        .user(user)
                         .trip(trip)
                         .parentComment(topLevelComment)
                         .message(REPLY_MESSAGE)
@@ -87,6 +94,7 @@ class CommentServiceImplTest {
     void createComment_whenValidTopLevelComment_shouldCreateAndReturnComment() {
         // Given
         CommentCreationRequest request = new CommentCreationRequest(COMMENT_MESSAGE, null);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
         when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
@@ -97,6 +105,7 @@ class CommentServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(COMMENT_ID.toString());
         assertThat(result.userId()).isEqualTo(USER_ID.toString());
+        assertThat(result.username()).isEqualTo(USERNAME);
         assertThat(result.tripId()).isEqualTo(TRIP_ID.toString());
         assertThat(result.parentCommentId()).isNull();
         assertThat(result.message()).isEqualTo(COMMENT_MESSAGE);
@@ -106,7 +115,7 @@ class CommentServiceImplTest {
         verify(commentRepository).save(commentCaptor.capture());
 
         Comment savedComment = commentCaptor.getValue();
-        assertThat(savedComment.getUserId()).isEqualTo(USER_ID);
+        assertThat(savedComment.getUser()).isEqualTo(user);
         assertThat(savedComment.getTrip()).isEqualTo(trip);
         assertThat(savedComment.getParentComment()).isNull();
         assertThat(savedComment.getMessage()).isEqualTo(COMMENT_MESSAGE);
@@ -117,6 +126,7 @@ class CommentServiceImplTest {
     void createComment_whenTripNotFound_shouldThrowEntityNotFoundException() {
         // Given
         CommentCreationRequest request = new CommentCreationRequest(COMMENT_MESSAGE, null);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.empty());
 
         // When & Then
@@ -134,6 +144,7 @@ class CommentServiceImplTest {
         // Given
         CommentCreationRequest request =
                 new CommentCreationRequest(REPLY_MESSAGE, PARENT_COMMENT_ID);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
         when(commentRepository.findById(PARENT_COMMENT_ID))
                 .thenReturn(Optional.of(topLevelComment));
@@ -145,6 +156,7 @@ class CommentServiceImplTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.userId()).isEqualTo(USER_ID.toString());
+        assertThat(result.username()).isEqualTo(USERNAME);
         assertThat(result.tripId()).isEqualTo(TRIP_ID.toString());
         assertThat(result.parentCommentId()).isNotNull();
         assertThat(result.message()).isEqualTo(REPLY_MESSAGE);
@@ -161,6 +173,7 @@ class CommentServiceImplTest {
         // Given
         CommentCreationRequest request =
                 new CommentCreationRequest(REPLY_MESSAGE, PARENT_COMMENT_ID);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
         when(commentRepository.findById(PARENT_COMMENT_ID)).thenReturn(Optional.empty());
 
@@ -177,6 +190,7 @@ class CommentServiceImplTest {
         // Given - Try to reply to a comment that is already a reply
         CommentCreationRequest request =
                 new CommentCreationRequest("Reply to reply", replyComment.getId());
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
         when(commentRepository.findById(replyComment.getId()))
                 .thenReturn(Optional.of(replyComment));

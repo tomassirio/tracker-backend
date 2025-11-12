@@ -95,9 +95,6 @@ public class StepDefinitions {
     @Getter @Setter private UUID lastCreatedTripPlanId;
     @Getter @Setter private UUID lastCreatedCommentId;
     @Getter @Setter private UUID lastCreatedTripUpdateId;
-    private UUID lastCreatedFriendRequestId;
-    private UUID firstUserIdInScenario;
-    private UUID lastCreatedFollowId;
 
     // In-memory data
     private final Map<String, User> users = new HashMap<>();
@@ -126,9 +123,6 @@ public class StepDefinitions {
         setLastCreatedTripPlanId(null);
         setLastCreatedCommentId(null);
         usersMap.clear();
-        lastCreatedFriendRequestId = null;
-        firstUserIdInScenario = null;
-        lastCreatedFollowId = null;
         setLastCreatedTripUpdateId(null);
 
         Mockito.reset(
@@ -328,7 +322,7 @@ public class StepDefinitions {
         Comment comment =
                 Comment.builder()
                         .id(UUID.randomUUID())
-                        .userId(owner.getId())
+                        .user(owner)
                         .trip(trip)
                         .message(content)
                         .parentComment(null)
@@ -338,7 +332,7 @@ public class StepDefinitions {
         comments.put(comment.getId(), comment);
         setLastCreatedCommentId(comment.getId());
 
-        when(commentRepository.findById(comment.getId())).thenReturn(Optional.of(comment));
+        when(commentRepository.findByIdWithUser(comment.getId())).thenReturn(Optional.of(comment));
         when(commentRepository.findTopLevelCommentsByTripId(trip.getId()))
                 .thenReturn(new ArrayList<>(comments.values()));
         when(commentRepository.findAll()).thenReturn(new ArrayList<>(comments.values()));
@@ -687,7 +681,7 @@ public class StepDefinitions {
         Comment comment =
                 Comment.builder()
                         .id(UUID.randomUUID())
-                        .userId(owner.getId())
+                        .user(owner)
                         .trip(trip)
                         .message(message)
                         .parentComment(null)
@@ -697,7 +691,7 @@ public class StepDefinitions {
         comments.put(comment.getId(), comment);
         setLastCreatedCommentId(comment.getId());
 
-        when(commentRepository.findById(comment.getId())).thenReturn(Optional.of(comment));
+        when(commentRepository.findByIdWithUser(comment.getId())).thenReturn(Optional.of(comment));
         when(commentRepository.findTopLevelCommentsByTripId(trip.getId()))
                 .thenReturn(new ArrayList<>(comments.values()));
     }
@@ -712,7 +706,7 @@ public class StepDefinitions {
         Comment reply =
                 Comment.builder()
                         .id(UUID.randomUUID())
-                        .userId(owner.getId())
+                        .user(owner)
                         .trip(parentComment.getTrip())
                         .message(message)
                         .parentComment(parentComment)
@@ -1401,8 +1395,8 @@ public class StepDefinitions {
                 latestResponse.getStatusCode().value());
     }
 
-    @When("user {string} queries their following")
-    public void user_queries_their_following(String username) throws JsonProcessingException {
+    @When("user {string} queries their following list")
+    public void user_queries_their_following_list(String username) throws JsonProcessingException {
         User user = usersMap.get(username);
         Assertions.assertNotNull(user, "User not found: " + username);
 
@@ -1414,6 +1408,30 @@ public class StepDefinitions {
         log.info(
                 "[Cucumber] GET /users/following response status: {}",
                 latestResponse.getStatusCode().value());
+    }
+
+    @When("user {string} queries their followers list")
+    public void user_queries_their_followers_list(String username) throws JsonProcessingException {
+        User user = usersMap.get(username);
+        Assertions.assertNotNull(user, "User not found: " + username);
+
+        String token = buildTokenForUser(user, "USER", TEST_SECRET);
+        HttpEntity<String> request = createJsonRequest(null, "Bearer " + token);
+        latestResponse =
+                restTemplate.exchange(
+                        ApiConstants.FOLLOWERS_PATH, HttpMethod.GET, request, String.class);
+        log.info(
+                "[Cucumber] GET /users/followers response status: {}",
+                latestResponse.getStatusCode().value());
+    }
+
+    @Then("the response should contain {int} follows")
+    public void the_response_should_contain_follows(int expectedCount) throws Exception {
+        Assertions.assertNotNull(latestResponse);
+        String body = latestResponse.getBody();
+        List<?> json = mapper.readValue(body, List.class);
+        Assertions.assertEquals(
+                expectedCount, json.size(), "Expected " + expectedCount + " follows in response");
     }
 
     @Then("the response should contain {int} followers")

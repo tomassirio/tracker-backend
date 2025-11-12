@@ -3,11 +3,13 @@ package com.tomassirio.wanderer.command.service.impl;
 import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.CommentService;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.dto.CommentDTO;
 import com.tomassirio.wanderer.commons.mapper.CommentMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,12 +27,18 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final TripRepository tripRepository;
+    private final UserRepository userRepository;
     private final CommentMapper commentMapper = CommentMapper.INSTANCE;
 
     @Override
     @Transactional
     public CommentDTO createComment(UUID userId, UUID tripId, CommentCreationRequest request) {
         log.info("Creating comment for trip {} by user {}", tripId, userId);
+
+        User user =
+                userRepository
+                        .findById(userId)
+                        .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         Trip trip =
                 tripRepository
@@ -55,7 +63,7 @@ public class CommentServiceImpl implements CommentService {
 
         Comment comment =
                 Comment.builder()
-                        .userId(userId)
+                        .user(user)
                         .trip(trip)
                         .parentComment(parentComment)
                         .message(request.message())

@@ -36,9 +36,9 @@ public class Comment {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @NotNull
-    @Column(name = "user_id", nullable = false)
-    private UUID userId; // Author of the comment
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_id", nullable = false)
@@ -63,15 +63,6 @@ public class Comment {
     @NotNull
     @Column(nullable = false)
     private Instant timestamp;
-
-    /**
-     * Checks if this comment is a top-level comment (not a reply).
-     *
-     * @return true if this is a top-level comment, false if it's a reply
-     */
-    public boolean isTopLevel() {
-        return parentComment == null;
-    }
 
     /**
      * Checks if this comment is a reply to another comment.

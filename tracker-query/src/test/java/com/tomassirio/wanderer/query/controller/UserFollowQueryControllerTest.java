@@ -1,16 +1,18 @@
 package com.tomassirio.wanderer.query.controller;
 
-import static org.mockito.Mockito.*;
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
-import com.tomassirio.wanderer.commons.security.CurrentUserIdArgumentResolver;
-import com.tomassirio.wanderer.commons.security.JwtUtils;
-import com.tomassirio.wanderer.query.service.UserFollowQueryService;
+import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
+import com.tomassirio.wanderer.query.service.UserFollowService;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,91 +22,209 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class UserFollowQueryControllerTest {
 
+    private static final String FOLLOWING_URL = "/api/1/users/following";
+    private static final String FOLLOWERS_URL = "/api/1/users/followers";
+
     private MockMvc mockMvc;
 
-    @Mock private UserFollowQueryService userFollowQueryService;
-
-    @Mock private JwtUtils jwtUtils;
+    @Mock private UserFollowService userFollowService;
 
     @InjectMocks private UserFollowQueryController userFollowQueryController;
 
-    private UUID userId;
-    private UUID followedId;
-    private String token;
-
     @BeforeEach
     void setUp() {
-        userId = UUID.randomUUID();
-        followedId = UUID.randomUUID();
-        token = "Bearer test-token";
-
         mockMvc =
-                MockMvcBuilders.standaloneSetup(userFollowQueryController)
-                        .setControllerAdvice(new GlobalExceptionHandler())
-                        .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver(jwtUtils))
-                        .build();
+                MockMvcTestUtils.buildMockMvcWithCurrentUserResolver(
+                        userFollowQueryController, new GlobalExceptionHandler());
+    }
 
-        when(jwtUtils.getUserIdFromAuthorizationHeader(token)).thenReturn(userId);
+    // ============ GET FOLLOWING TESTS ============
+
+    @Test
+    void getFollowing_whenUserHasFollowing_shouldReturnFollowingList() throws Exception {
+        // Given
+        UUID followedUserId1 = UUID.randomUUID();
+        UUID followedUserId2 = UUID.randomUUID();
+        UUID followId1 = UUID.randomUUID();
+        UUID followId2 = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        UserFollowResponse follow1 =
+                new UserFollowResponse(followId1, USER_ID, followedUserId1, now);
+        UserFollowResponse follow2 =
+                new UserFollowResponse(followId2, USER_ID, followedUserId2, now);
+
+        when(userFollowService.getFollowing(USER_ID)).thenReturn(List.of(follow1, follow2));
+
+        // When & Then
+        mockMvc.perform(get(FOLLOWING_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(followId1.toString()))
+                .andExpect(jsonPath("$[0].followerId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$[0].followedId").value(followedUserId1.toString()))
+                .andExpect(jsonPath("$[1].id").value(followId2.toString()))
+                .andExpect(jsonPath("$[1].followerId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$[1].followedId").value(followedUserId2.toString()));
+
+        verify(userFollowService).getFollowing(USER_ID);
     }
 
     @Test
-    void getFollowing_Success() throws Exception {
-        UserFollowResponse response =
-                new UserFollowResponse(UUID.randomUUID(), userId, followedId, Instant.now());
+    void getFollowing_whenUserHasNoFollowing_shouldReturnEmptyList() throws Exception {
+        // Given
+        when(userFollowService.getFollowing(USER_ID)).thenReturn(Collections.emptyList());
 
-        when(userFollowQueryService.getFollowing(userId)).thenReturn(List.of(response));
-
-        mockMvc.perform(get("/api/1/users/follows/following").header("Authorization", token))
+        // When & Then
+        mockMvc.perform(get(FOLLOWING_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].followerId").value(userId.toString()))
-                .andExpect(jsonPath("$[0].followedId").value(followedId.toString()));
+                .andExpect(jsonPath("$.length()").value(0));
 
-        verify(userFollowQueryService).getFollowing(userId);
+        verify(userFollowService).getFollowing(USER_ID);
     }
 
     @Test
-    void getFollowing_EmptyList() throws Exception {
-        when(userFollowQueryService.getFollowing(userId)).thenReturn(List.of());
+    void getFollowing_whenUserFollowsOneUser_shouldReturnSingleFollow() throws Exception {
+        // Given
+        UUID followedUserId = UUID.randomUUID();
+        UUID followId = UUID.randomUUID();
+        Instant now = Instant.now();
 
-        mockMvc.perform(get("/api/1/users/follows/following").header("Authorization", token))
+        UserFollowResponse follow = new UserFollowResponse(followId, USER_ID, followedUserId, now);
+
+        when(userFollowService.getFollowing(USER_ID)).thenReturn(List.of(follow));
+
+        // When & Then
+        mockMvc.perform(get(FOLLOWING_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(followId.toString()))
+                .andExpect(jsonPath("$[0].followerId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$[0].followedId").value(followedUserId.toString()))
+                .andExpect(jsonPath("$[0].createdAt").exists());
 
-        verify(userFollowQueryService).getFollowing(userId);
+        verify(userFollowService).getFollowing(USER_ID);
+    }
+
+    // ============ GET FOLLOWERS TESTS ============
+
+    @Test
+    void getFollowers_whenUserHasFollowers_shouldReturnFollowersList() throws Exception {
+        // Given
+        UUID followerUserId1 = UUID.randomUUID();
+        UUID followerUserId2 = UUID.randomUUID();
+        UUID followId1 = UUID.randomUUID();
+        UUID followId2 = UUID.randomUUID();
+        Instant now = Instant.now();
+
+        UserFollowResponse follow1 =
+                new UserFollowResponse(followId1, followerUserId1, USER_ID, now);
+        UserFollowResponse follow2 =
+                new UserFollowResponse(followId2, followerUserId2, USER_ID, now);
+
+        when(userFollowService.getFollowers(USER_ID)).thenReturn(List.of(follow1, follow2));
+
+        // When & Then
+        mockMvc.perform(get(FOLLOWERS_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(followId1.toString()))
+                .andExpect(jsonPath("$[0].followerId").value(followerUserId1.toString()))
+                .andExpect(jsonPath("$[0].followedId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$[1].id").value(followId2.toString()))
+                .andExpect(jsonPath("$[1].followerId").value(followerUserId2.toString()))
+                .andExpect(jsonPath("$[1].followedId").value(USER_ID.toString()));
+
+        verify(userFollowService).getFollowers(USER_ID);
     }
 
     @Test
-    void getFollowers_Success() throws Exception {
-        UserFollowResponse response =
-                new UserFollowResponse(UUID.randomUUID(), followedId, userId, Instant.now());
+    void getFollowers_whenUserHasNoFollowers_shouldReturnEmptyList() throws Exception {
+        // Given
+        when(userFollowService.getFollowers(USER_ID)).thenReturn(Collections.emptyList());
 
-        when(userFollowQueryService.getFollowers(userId)).thenReturn(List.of(response));
-
-        mockMvc.perform(get("/api/1/users/follows/followers").header("Authorization", token))
+        // When & Then
+        mockMvc.perform(get(FOLLOWERS_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$[0].followerId").value(followedId.toString()))
-                .andExpect(jsonPath("$[0].followedId").value(userId.toString()));
+                .andExpect(jsonPath("$.length()").value(0));
 
-        verify(userFollowQueryService).getFollowers(userId);
+        verify(userFollowService).getFollowers(USER_ID);
     }
 
     @Test
-    void getFollowers_EmptyList() throws Exception {
-        when(userFollowQueryService.getFollowers(userId)).thenReturn(List.of());
+    void getFollowers_whenUserHasOneFollower_shouldReturnSingleFollower() throws Exception {
+        // Given
+        UUID followerUserId = UUID.randomUUID();
+        UUID followId = UUID.randomUUID();
+        Instant now = Instant.now();
 
-        mockMvc.perform(get("/api/1/users/follows/followers").header("Authorization", token))
+        UserFollowResponse follow = new UserFollowResponse(followId, followerUserId, USER_ID, now);
+
+        when(userFollowService.getFollowers(USER_ID)).thenReturn(List.of(follow));
+
+        // When & Then
+        mockMvc.perform(get(FOLLOWERS_URL))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(followId.toString()))
+                .andExpect(jsonPath("$[0].followerId").value(followerUserId.toString()))
+                .andExpect(jsonPath("$[0].followedId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$[0].createdAt").exists());
 
-        verify(userFollowQueryService).getFollowers(userId);
+        verify(userFollowService).getFollowers(USER_ID);
+    }
+
+    // ============ ADDITIONAL TESTS ============
+
+    @Test
+    void getFollowing_shouldReturnFollowsWithCreatedAtTimestamp() throws Exception {
+        // Given
+        UUID followedUserId = UUID.randomUUID();
+        UUID followId = UUID.randomUUID();
+        Instant createdAt = Instant.parse("2025-11-12T10:00:00Z");
+
+        UserFollowResponse follow =
+                new UserFollowResponse(followId, USER_ID, followedUserId, createdAt);
+
+        when(userFollowService.getFollowing(USER_ID)).thenReturn(List.of(follow));
+
+        // When & Then
+        mockMvc.perform(get(FOLLOWING_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].createdAt").exists())
+                .andExpect(jsonPath("$[0].createdAt").isNotEmpty());
+
+        verify(userFollowService).getFollowing(USER_ID);
+    }
+
+    @Test
+    void getFollowers_shouldReturnFollowsWithCreatedAtTimestamp() throws Exception {
+        // Given
+        UUID followerUserId = UUID.randomUUID();
+        UUID followId = UUID.randomUUID();
+        Instant createdAt = Instant.parse("2025-11-12T10:00:00Z");
+
+        UserFollowResponse follow =
+                new UserFollowResponse(followId, followerUserId, USER_ID, createdAt);
+
+        when(userFollowService.getFollowers(USER_ID)).thenReturn(List.of(follow));
+
+        // When & Then
+        mockMvc.perform(get(FOLLOWERS_URL))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].createdAt").exists())
+                .andExpect(jsonPath("$[0].createdAt").isNotEmpty());
+
+        verify(userFollowService).getFollowers(USER_ID);
     }
 }

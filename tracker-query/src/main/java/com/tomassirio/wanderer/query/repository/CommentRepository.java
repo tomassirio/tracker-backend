@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.query.repository;
 
 import com.tomassirio.wanderer.commons.domain.Comment;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +17,10 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
      * via the Comment entity's relationships.
      */
     @Query(
-            "SELECT c FROM Comment c WHERE c.trip.id = :tripId AND c.parentComment IS NULL ORDER BY c.timestamp DESC")
+            "SELECT c FROM Comment c LEFT JOIN FETCH c.user WHERE c.trip.id = :tripId AND c.parentComment IS NULL ORDER BY c.timestamp DESC")
     List<Comment> findTopLevelCommentsByTripId(@Param("tripId") UUID tripId);
+
+    /** Find a comment by ID with user data eagerly loaded. */
+    @Query("SELECT c FROM Comment c LEFT JOIN FETCH c.user WHERE c.id = :commentId")
+    Optional<Comment> findByIdWithUser(@Param("commentId") UUID commentId);
 }

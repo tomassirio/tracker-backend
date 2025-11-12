@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.controller;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USERNAME;
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -71,6 +72,7 @@ class CommentControllerTest {
                 new CommentDTO(
                         COMMENT_ID.toString(),
                         USER_ID.toString(),
+                        USERNAME,
                         TRIP_ID.toString(),
                         null,
                         "Great trip!",
@@ -108,6 +110,7 @@ class CommentControllerTest {
                 new CommentDTO(
                         COMMENT_ID.toString(),
                         USER_ID.toString(),
+                        USERNAME,
                         TRIP_ID.toString(),
                         PARENT_COMMENT_ID.toString(),
                         "Thanks!",
@@ -211,6 +214,7 @@ class CommentControllerTest {
                 new CommentDTO(
                         COMMENT_ID.toString(),
                         USER_ID.toString(),
+                        USERNAME,
                         TRIP_ID.toString(),
                         null,
                         "Great trip!",
@@ -258,6 +262,7 @@ class CommentControllerTest {
                 new CommentDTO(
                         COMMENT_ID.toString(),
                         USER_ID.toString(),
+                        USERNAME,
                         TRIP_ID.toString(),
                         null,
                         "Great trip!",
@@ -316,6 +321,7 @@ class CommentControllerTest {
                     new CommentDTO(
                             COMMENT_ID.toString(),
                             USER_ID.toString(),
+                            USERNAME,
                             TRIP_ID.toString(),
                             null,
                             "Great trip!",
@@ -345,6 +351,7 @@ class CommentControllerTest {
                 new CommentDTO(
                         COMMENT_ID.toString(),
                         USER_ID.toString(),
+                        USERNAME,
                         TRIP_ID.toString(),
                         PARENT_COMMENT_ID.toString(),
                         "Thanks!",

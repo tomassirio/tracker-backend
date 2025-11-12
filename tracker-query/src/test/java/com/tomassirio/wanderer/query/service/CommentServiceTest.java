@@ -7,7 +7,9 @@ import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.dto.CommentDTO;
+import com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory;
 import com.tomassirio.wanderer.query.repository.CommentRepository;
 import com.tomassirio.wanderer.query.service.impl.CommentServiceImpl;
 import com.tomassirio.wanderer.query.utils.TestEntityFactory;
@@ -34,11 +36,11 @@ class CommentServiceTest {
         // Given
         UUID commentId = UUID.randomUUID();
         UUID tripId = UUID.randomUUID();
+        User user = TestEntityFactory.createUser();
         Trip trip = TestEntityFactory.createTrip(tripId, "Test Trip");
-        Comment comment =
-                TestEntityFactory.createComment(commentId, TestEntityFactory.USER_ID, trip);
+        Comment comment = TestEntityFactory.createComment(commentId, user, trip);
 
-        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(commentRepository.findByIdWithUser(commentId)).thenReturn(Optional.of(comment));
 
         // When
         CommentDTO result = commentService.getComment(commentId);
@@ -47,27 +49,28 @@ class CommentServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(commentId.toString());
         assertThat(result.userId()).isEqualTo(TestEntityFactory.USER_ID.toString());
+        assertThat(result.username()).isEqualTo(TestEntityFactory.USERNAME);
         assertThat(result.tripId()).isEqualTo(tripId.toString());
         assertThat(result.message()).isEqualTo("Test comment");
         assertThat(result.parentCommentId()).isNull();
         assertThat(result.replies()).isEmpty();
         assertThat(result.timestamp()).isNotNull();
 
-        verify(commentRepository).findById(commentId);
+        verify(commentRepository).findByIdWithUser(commentId);
     }
 
     @Test
     void getComment_whenCommentDoesNotExist_shouldThrowEntityNotFoundException() {
         // Given
         UUID nonExistentCommentId = UUID.randomUUID();
-        when(commentRepository.findById(nonExistentCommentId)).thenReturn(Optional.empty());
+        when(commentRepository.findByIdWithUser(nonExistentCommentId)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(() -> commentService.getComment(nonExistentCommentId))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Comment not found");
 
-        verify(commentRepository).findById(nonExistentCommentId);
+        verify(commentRepository).findByIdWithUser(nonExistentCommentId);
     }
 
     @Test
@@ -77,11 +80,12 @@ class CommentServiceTest {
         UUID tripId = UUID.randomUUID();
         Trip trip = TestEntityFactory.createTrip(tripId, "Test Trip");
         Comment comment =
-                TestEntityFactory.createComment(commentId, TestEntityFactory.USER_ID, trip);
+                TestEntityFactory.createComment(
+                        commentId, BaseTestEntityFactory.createUser(), trip);
         comment.getReactions().setHeart(5);
         comment.getReactions().setSmiley(3);
 
-        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        when(commentRepository.findByIdWithUser(commentId)).thenReturn(Optional.of(comment));
 
         // When
         CommentDTO result = commentService.getComment(commentId);
@@ -92,7 +96,7 @@ class CommentServiceTest {
         assertThat(result.reactions().heart()).isEqualTo(5);
         assertThat(result.reactions().smiley()).isEqualTo(3);
 
-        verify(commentRepository).findById(commentId);
+        verify(commentRepository).findByIdWithUser(commentId);
     }
 
     @Test
@@ -102,9 +106,11 @@ class CommentServiceTest {
         Trip trip = TestEntityFactory.createTrip(tripId, "Test Trip");
 
         Comment comment1 =
-                TestEntityFactory.createComment(UUID.randomUUID(), TestEntityFactory.USER_ID, trip);
+                TestEntityFactory.createComment(
+                        UUID.randomUUID(), BaseTestEntityFactory.createUser(), trip);
         Comment comment2 =
-                TestEntityFactory.createComment(UUID.randomUUID(), TestEntityFactory.USER_ID, trip);
+                TestEntityFactory.createComment(
+                        UUID.randomUUID(), BaseTestEntityFactory.createUser(), trip);
 
         when(commentRepository.findTopLevelCommentsByTripId(tripId))
                 .thenReturn(List.of(comment1, comment2));
@@ -147,7 +153,8 @@ class CommentServiceTest {
         Trip trip = TestEntityFactory.createTrip(tripId, "Test Trip");
 
         Comment topLevelComment =
-                TestEntityFactory.createComment(UUID.randomUUID(), TestEntityFactory.USER_ID, trip);
+                TestEntityFactory.createComment(
+                        UUID.randomUUID(), BaseTestEntityFactory.createUser(), trip);
 
         when(commentRepository.findTopLevelCommentsByTripId(tripId))
                 .thenReturn(List.of(topLevelComment));
@@ -158,7 +165,7 @@ class CommentServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).parentCommentId()).isNull();
+        assertThat(result.getFirst().parentCommentId()).isNull();
 
         verify(commentRepository).findTopLevelCommentsByTripId(tripId);
     }
@@ -170,11 +177,14 @@ class CommentServiceTest {
         Trip trip = TestEntityFactory.createTrip(tripId, "Test Trip");
 
         Comment comment1 =
-                TestEntityFactory.createComment(UUID.randomUUID(), TestEntityFactory.USER_ID, trip);
+                TestEntityFactory.createComment(
+                        UUID.randomUUID(), BaseTestEntityFactory.createUser(), trip);
         Comment comment2 =
-                TestEntityFactory.createComment(UUID.randomUUID(), TestEntityFactory.USER_ID, trip);
+                TestEntityFactory.createComment(
+                        UUID.randomUUID(), BaseTestEntityFactory.createUser(), trip);
         Comment comment3 =
-                TestEntityFactory.createComment(UUID.randomUUID(), TestEntityFactory.USER_ID, trip);
+                TestEntityFactory.createComment(
+                        UUID.randomUUID(), BaseTestEntityFactory.createUser(), trip);
 
         when(commentRepository.findTopLevelCommentsByTripId(tripId))
                 .thenReturn(List.of(comment1, comment2, comment3));
