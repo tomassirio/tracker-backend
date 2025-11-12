@@ -1,0 +1,41 @@
+namespace: wanderer
+
+image:
+  repository: postgres
+  tag: "16-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5432
+  targetPort: 5432
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# PostgreSQL Configuration
+postgres:
+  # Master user credentials
+  user: postgres
+  password: postgres
+  
+  # Database for command and query services (shared)
+  database: wanderer_db
+  username: wanderer
+  userPassword: password
+  
+  # Database for auth service (separate)
+  authDatabase: wanderer_auth_db
+  authUsername: wanderer_auth
+  authPassword: password
+
+# Persistent Storage
+persistence:
+  enabled: true
+  storageClassName: local-path
+  size: 10Gi

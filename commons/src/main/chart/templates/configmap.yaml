@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: postgres
+data:
+  init.sql: |
+    -- Create databases (if not exists)
+    SELECT 'CREATE DATABASE {{ .Values.postgres.database }}'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .Values.postgres.database }}')
+    \gexec
+    
+    SELECT 'CREATE DATABASE {{ .Values.postgres.authDatabase }}'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{{ .Values.postgres.authDatabase }}')
+    \gexec
+    
+    -- Create users (if not exists)
+    DO
+    $$
+    BEGIN
+      IF NOT EXISTS (SELECT FROM pg_user WHERE usename = '{{ .Values.postgres.username }}') THEN
+        CREATE USER {{ .Values.postgres.username }} WITH PASSWORD '{{ .Values.postgres.userPassword }}';
+      END IF;
+      
+      IF NOT EXISTS (SELECT FROM pg_user WHERE usename = '{{ .Values.postgres.authUsername }}') THEN
+        CREATE USER {{ .Values.postgres.authUsername }} WITH PASSWORD '{{ .Values.postgres.authPassword }}';
+      END IF;
+    END
+    $$;
+    
+    -- Grant privileges for wanderer_db (shared by command and query)
+    GRANT ALL PRIVILEGES ON DATABASE {{ .Values.postgres.database }} TO {{ .Values.postgres.username }};
+    
+    \c {{ .Values.postgres.database }}
+    GRANT ALL ON SCHEMA public TO {{ .Values.postgres.username }};
+    ALTER DATABASE {{ .Values.postgres.database }} OWNER TO {{ .Values.postgres.username }};
+    
+    -- Grant privileges for wanderer_auth_db
+    \c postgres
+    GRANT ALL PRIVILEGES ON DATABASE {{ .Values.postgres.authDatabase }} TO {{ .Values.postgres.authUsername }};
+    
+    \c {{ .Values.postgres.authDatabase }}
+    GRANT ALL ON SCHEMA public TO {{ .Values.postgres.authUsername }};
+    ALTER DATABASE {{ .Values.postgres.authDatabase }} OWNER TO {{ .Values.postgres.authUsername }};
