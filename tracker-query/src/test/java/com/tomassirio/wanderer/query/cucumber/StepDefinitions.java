@@ -328,7 +328,7 @@ public class StepDefinitions {
         Comment comment =
                 Comment.builder()
                         .id(UUID.randomUUID())
-                        .userId(owner.getId())
+                        .user(owner)
                         .trip(trip)
                         .message(content)
                         .parentComment(null)
@@ -338,7 +338,7 @@ public class StepDefinitions {
         comments.put(comment.getId(), comment);
         setLastCreatedCommentId(comment.getId());
 
-        when(commentRepository.findById(comment.getId())).thenReturn(Optional.of(comment));
+        when(commentRepository.findByIdWithUser(comment.getId())).thenReturn(Optional.of(comment));
         when(commentRepository.findTopLevelCommentsByTripId(trip.getId()))
                 .thenReturn(new ArrayList<>(comments.values()));
         when(commentRepository.findAll()).thenReturn(new ArrayList<>(comments.values()));
@@ -687,7 +687,7 @@ public class StepDefinitions {
         Comment comment =
                 Comment.builder()
                         .id(UUID.randomUUID())
-                        .userId(owner.getId())
+                        .user(owner)
                         .trip(trip)
                         .message(message)
                         .parentComment(null)
@@ -697,7 +697,7 @@ public class StepDefinitions {
         comments.put(comment.getId(), comment);
         setLastCreatedCommentId(comment.getId());
 
-        when(commentRepository.findById(comment.getId())).thenReturn(Optional.of(comment));
+        when(commentRepository.findByIdWithUser(comment.getId())).thenReturn(Optional.of(comment));
         when(commentRepository.findTopLevelCommentsByTripId(trip.getId()))
                 .thenReturn(new ArrayList<>(comments.values()));
     }
@@ -712,7 +712,7 @@ public class StepDefinitions {
         Comment reply =
                 Comment.builder()
                         .id(UUID.randomUUID())
-                        .userId(owner.getId())
+                        .user(owner)
                         .trip(parentComment.getTrip())
                         .message(message)
                         .parentComment(parentComment)

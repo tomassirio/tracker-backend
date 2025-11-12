@@ -6,6 +6,7 @@ import java.util.List;
 public record CommentDTO(
         String id,
         String userId,
+        String username,
         String tripId,
         String parentCommentId, // null if top-level comment, set if this is a reply
         String message,

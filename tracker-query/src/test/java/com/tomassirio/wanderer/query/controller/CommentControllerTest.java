@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.controller;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USERNAME;
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -91,6 +92,7 @@ class CommentControllerTest {
                 new CommentDTO(
                         commentId.toString(),
                         USER_ID.toString(),
+                        USERNAME,
                         tripId.toString(),
                         null,
                         "Parent comment",
@@ -198,6 +200,7 @@ class CommentControllerTest {
                 new CommentDTO(
                         commentId.toString(),
                         USER_ID.toString(),
+                        USERNAME,
                         tripId.toString(),
                         null,
                         "Parent comment",
@@ -255,6 +258,7 @@ class CommentControllerTest {
                 new CommentDTO(
                         commentId.toString(),
                         USER_ID.toString(),
+                        USERNAME,
                         tripId.toString(),
                         null,
                         "Comment with reactions",
@@ -276,6 +280,7 @@ class CommentControllerTest {
         return new CommentDTO(
                 commentId.toString(),
                 USER_ID.toString(),
+                USERNAME,
                 tripId.toString(),
                 parentCommentId,
                 message,

@@ -21,7 +21,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public CommentDTO getComment(UUID commentId) {
         return commentRepository
-                .findById(commentId)
+                .findByIdWithUser(commentId)
                 .map(commentMapper::toDTO)
                 .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
     }
