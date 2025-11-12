@@ -1,0 +1,61 @@
+namespace: wanderer
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/tomassirio/tracker-auth
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8083
+  targetPort: 8083
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Application configuration
+application:
+  serverPort: 8083
+  projectVersion: "0.3.7"
+  
+  # JWT Configuration
+  jwt:
+    secret: "0123456789ABCDEF0123456789ABCDEF"
+    expirationMs: 900000
+  
+  # Database Configuration
+  database:
+    url: "jdbc:postgresql://postgres:5432/wanderer_auth_db"
+    username: "wanderer_auth"
+    password: "password"
+    driverClassName: "org.postgresql.Driver"
+  
+  # Liquibase
+  liquibase:
+    enabled: true
+    changeLog: "classpath:db/changelog/db.changelog-master.yaml"
+  
+  # JPA/Hibernate
+  jpa:
+    hibernateDdlAuto: "none"
+  
+  # Tracker service URLs
+  trackerCommandUrl: "http://tracker-command:8081"
+  trackerQueryUrl: "http://tracker-query:8082"
+  
+  # Spring Cloud
+  springCloud:
+    compatibilityVerifierEnabled: false
+
+# Pod Storage
+volumeClaimTemplates:
+  enabled: false
+  storage: 1Gi
+  storageClassName: standard

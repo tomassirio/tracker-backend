@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  application.properties: |
+    server.port={{ .Values.application.serverPort }}
+
+    # Application version from Maven
+    project.version={{ .Values.application.projectVersion }}
+
+    # JWT secret - override in production via env var or external config
+    jwt.secret={{ .Values.application.jwt.secret }}
+    jwt.expiration-ms={{ .Values.application.jwt.expirationMs }}
+
+    # PostgreSQL Database Connection
+    db.url={{ .Values.application.database.url }}
+    db.username={{ .Values.application.database.username }}
+    db.password={{ .Values.application.database.password }}
+    db.driver-class-name={{ .Values.application.database.driverClassName }}
+
+    # Let Liquibase run migrations against the auth DB
+    spring.liquibase.enabled={{ .Values.application.liquibase.enabled }}
+    spring.liquibase.change-log={{ .Values.application.liquibase.changeLog }}
+
+    # In development we can allow Hibernate to update; in production prefer validated migrations
+    spring.jpa.hibernate.ddl-auto={{ .Values.application.jpa.hibernateDdlAuto }}
+
+    # Tracker service URLs
+    tracker.command.url={{ .Values.application.trackerCommandUrl }}
+    tracker.query.url={{ .Values.application.trackerQueryUrl }}
+
+    # Disable Spring Cloud compatibility verifier
+    spring.cloud.compatibility-verifier.enabled={{ .Values.application.springCloud.compatibilityVerifierEnabled }}

@@ -1,0 +1,69 @@
+namespace: wanderer
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/tomassirio/tracker-query
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8082
+  targetPort: 8082
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 250m
+    memory: 256Mi
+
+# Application configuration
+application:
+  name: "tracker-query"
+  serverPort: 8082
+  projectVersion: "0.3.7"
+  
+  # JWT Configuration
+  jwt:
+    secret: "0123456789ABCDEF0123456789ABCDEF"
+  
+  # Logging
+  logging:
+    level:
+      command: INFO
+      root: WARN
+  
+  # Management endpoints
+  management:
+    endpoints:
+      web:
+        basePath: "/actuator"
+        exposure:
+          include: "health,info"
+    endpoint:
+      health:
+        showDetails: "always"
+  
+  # Database Configuration
+  database:
+    url: "jdbc:postgresql://postgres:5432/wanderer_db"
+    username: "wanderer"
+    password: "password"
+    driverClassName: "org.postgresql.Driver"
+  
+  # JPA/Hibernate
+  jpa:
+    hibernateDdlAuto: "validate"
+  
+  # Liquibase
+  liquibase:
+    changeLog: "classpath:db/changelog/db.changelog-master.yaml"
+
+# Pod Storage
+volumeClaimTemplates:
+  enabled: false
+  storage: 1Gi
+  storageClassName: standard
