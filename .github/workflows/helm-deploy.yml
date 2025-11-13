@@ -56,6 +56,7 @@ jobs:
         uses: twingate/github-action@v1
         with:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
+          debug: true
 
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
