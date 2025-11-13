@@ -1,0 +1,180 @@
+name: Helm Deploy to Kubernetes (Alternative - No Twingate)
+
+# Alternative workflow without Twingate
+# Use this if you have direct access to cluster or use a different VPN/bastion
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Deployment environment (dev, staging, production)'
+        required: true
+        type: string
+      image-tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        type: string
+      namespace:
+        description: 'Kubernetes namespace'
+        required: false
+        type: string
+        default: 'wanderer'
+    secrets:
+      # Kubernetes - Direct access
+      KUBECONFIG_CONTENT:
+        description: 'Base64 encoded kubeconfig file'
+        required: true
+      
+      # Database Credentials
+      DB_PASSWORD:
+        description: 'Password for wanderer database user'
+        required: true
+      DB_AUTH_PASSWORD:
+        description: 'Password for wanderer_auth database user'
+        required: true
+      POSTGRES_PASSWORD:
+        description: 'PostgreSQL superuser password'
+        required: true
+      
+      # JWT Secret
+      JWT_SECRET:
+        description: 'JWT signing secret'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.13.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Verify cluster connectivity
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl create namespace ${{ inputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy PostgreSQL (if not exists)
+        run: |
+          if ! helm list -n ${{ inputs.namespace }} | grep -q "^postgres"; then
+            echo "Installing PostgreSQL..."
+            helm install postgres ./postgres/src/main/chart \
+              --namespace ${{ inputs.namespace }} \
+              --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
+              --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
+              --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
+              --wait --timeout 5m
+            
+            echo "Waiting for PostgreSQL to be ready..."
+            kubectl wait --for=condition=ready pod -l app=postgres \
+              -n ${{ inputs.namespace }} --timeout=120s
+          else
+            echo "PostgreSQL already installed, upgrading if needed..."
+            helm upgrade postgres ./postgres/src/main/chart \
+              --namespace ${{ inputs.namespace }} \
+              --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
+              --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
+              --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
+              --wait --timeout 5m
+          fi
+
+      - name: Deploy tracker-auth
+        run: |
+          if helm list -n ${{ inputs.namespace }} | grep -q "^tracker-auth"; then
+            ACTION="upgrade"
+          else
+            ACTION="install"
+          fi
+          
+          helm $ACTION tracker-auth ./tracker-auth/src/main/chart \
+            --namespace ${{ inputs.namespace }} \
+            --set image.tag="${{ inputs.image-tag }}" \
+            --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
+            --set application.database.password="${{ secrets.DB_AUTH_PASSWORD }}" \
+            --wait --timeout 5m
+
+      - name: Deploy tracker-command
+        run: |
+          if helm list -n ${{ inputs.namespace }} | grep -q "^tracker-command"; then
+            ACTION="upgrade"
+          else
+            ACTION="install"
+          fi
+          
+          helm $ACTION tracker-command ./tracker-command/src/main/chart \
+            --namespace ${{ inputs.namespace }} \
+            --set image.tag="${{ inputs.image-tag }}" \
+            --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
+            --set application.database.password="${{ secrets.DB_PASSWORD }}" \
+            --wait --timeout 5m
+
+      - name: Deploy tracker-query
+        run: |
+          if helm list -n ${{ inputs.namespace }} | grep -q "^tracker-query"; then
+            ACTION="upgrade"
+          else
+            ACTION="install"
+          fi
+          
+          helm $ACTION tracker-query ./tracker-query/src/main/chart \
+            --namespace ${{ inputs.namespace }} \
+            --set image.tag="${{ inputs.image-tag }}" \
+            --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
+            --set application.database.password="${{ secrets.DB_PASSWORD }}" \
+            --wait --timeout 5m
+
+      - name: Verify deployment
+        run: |
+          echo "=== Deployments ==="
+          kubectl get deployments,statefulsets -n ${{ inputs.namespace }}
+          
+          echo ""
+          echo "=== Pods ==="
+          kubectl get pods -n ${{ inputs.namespace }}
+          
+          echo ""
+          echo "=== Services ==="
+          kubectl get services -n ${{ inputs.namespace }}
+
+      - name: Check pod health
+        run: |
+          echo "Checking pod health..."
+          kubectl wait --for=condition=ready pod -l app=tracker-auth \
+            -n ${{ inputs.namespace }} --timeout=120s || true
+          kubectl wait --for=condition=ready pod -l app=tracker-command \
+            -n ${{ inputs.namespace }} --timeout=120s || true
+          kubectl wait --for=condition=ready pod -l app=tracker-query \
+            -n ${{ inputs.namespace }} --timeout=120s || true
+
+      - name: Display pod logs on failure
+        if: failure()
+        run: |
+          echo "=== tracker-auth logs ==="
+          kubectl logs -l app=tracker-auth -n ${{ inputs.namespace }} --tail=50 || true
+          
+          echo "=== tracker-command logs ==="
+          kubectl logs -l app=tracker-command -n ${{ inputs.namespace }} --tail=50 || true
+          
+          echo "=== tracker-query logs ==="
+          kubectl logs -l app=tracker-query -n ${{ inputs.namespace }} --tail=50 || true
