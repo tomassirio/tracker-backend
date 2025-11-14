@@ -58,17 +58,82 @@ jobs:
           sudo apt update -yq
           sudo apt install -yq twingate
 
+      - name: Validate service key format
+        env:
+          TWINGATE_SERVICE_KEY: ${{ secrets.TWINGATE_SERVICE_KEY }}
+        run: |
+          echo "Validating service key format..."
+          
+          # Write to temp file
+          echo "$TWINGATE_SERVICE_KEY" > /tmp/twingate-key-test.json
+          
+          # Check if it's valid JSON
+          if ! jq empty /tmp/twingate-key-test.json 2>/dev/null; then
+            echo "❌ ERROR: Service key is not valid JSON!"
+            echo "The TWINGATE_SERVICE_KEY secret in GitHub is corrupted."
+            echo ""
+            echo "First 100 characters of what we received (masked):"
+            head -c 100 /tmp/twingate-key-test.json | sed 's/./*/g'
+            echo ""
+            echo ""
+            echo "Please follow these steps to fix:"
+            echo "1. Run locally: bash .github/scripts/prepare-twingate-key.sh twingate-service-key.json"
+            echo "2. Copy the formatted output"
+            echo "3. Update GitHub Secret: https://github.com/${{ github.repository }}/settings/secrets/actions"
+            rm -f /tmp/twingate-key-test.json
+            exit 1
+          fi
+          
+          # Check required fields
+          NETWORK=$(jq -r '.network' /tmp/twingate-key-test.json)
+          EXPIRES=$(jq -r '.expires_at' /tmp/twingate-key-test.json)
+          KEY_ID=$(jq -r '.key_id' /tmp/twingate-key-test.json)
+          
+          echo "✅ Service key is valid JSON"
+          echo "   Network: $NETWORK"
+          echo "   Expires: $EXPIRES"
+          echo "   Key ID: ${KEY_ID:0:20}..."
+          
+          # Check expiration
+          EXPIRES_EPOCH=$(date -d "$EXPIRES" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "${EXPIRES%%+*}" +%s 2>/dev/null || echo "0")
+          CURRENT_EPOCH=$(date +%s)
+          
+          if [ "$EXPIRES_EPOCH" -gt 0 ] && [ "$EXPIRES_EPOCH" -lt "$CURRENT_EPOCH" ]; then
+            echo "❌ ERROR: Service key has EXPIRED!"
+            echo "   Expired on: $EXPIRES"
+            echo "   You need to generate a new service key in Twingate Admin Console"
+            rm -f /tmp/twingate-key-test.json
+            exit 1
+          fi
+          
+          echo "✅ Service key is not expired"
+          rm -f /tmp/twingate-key-test.json
+
       - name: Setup and start Twingate
         env:
           TWINGATE_SERVICE_KEY: ${{ secrets.TWINGATE_SERVICE_KEY }}
         run: |
           # Write service key to temporary file to preserve formatting
           echo "$TWINGATE_SERVICE_KEY" > /tmp/twingate-key.json
+          
+          # Verify the file was written correctly
+          if [ ! -s /tmp/twingate-key.json ]; then
+            echo "❌ ERROR: Failed to write service key to file"
+            exit 1
+          fi
+          
+          echo "Setting up Twingate with service key file..."
           sudo twingate setup --headless=/tmp/twingate-key.json
+          
+          # Securely remove the key file
           rm -f /tmp/twingate-key.json
+          
+          echo "Starting Twingate service..."
           sudo twingate start
+          
           # Wait for Twingate to establish connection
-          sleep 5
+          echo "Waiting for connection to establish..."
+          sleep 10
 
       - name: Verify Twingate connection
         run: |
