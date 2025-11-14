@@ -62,14 +62,43 @@ jobs:
         env:
           TWINGATE_SERVICE_KEY: ${{ secrets.TWINGATE_SERVICE_KEY }}
         run: |
-          echo $TWINGATE_SERVICE_KEY | sudo twingate setup --headless=-
+          # Write service key to temporary file to preserve formatting
+          echo "$TWINGATE_SERVICE_KEY" > /tmp/twingate-key.json
+          sudo twingate setup --headless=/tmp/twingate-key.json
+          rm -f /tmp/twingate-key.json
           sudo twingate start
+          # Wait for Twingate to establish connection
+          sleep 5
 
-      - name: (optional) Twingate status
-        run: twingate status
+      - name: Verify Twingate connection
+        run: |
+          echo "Checking Twingate status..."
+          STATUS=$(twingate status)
+          echo "Status: $STATUS"
+          
+          # Fail if not connected
+          if [[ "$STATUS" != "online" ]]; then
+            echo "ERROR: Twingate is not online!"
+            echo ""
+            echo "Full status output:"
+            twingate status || true
+            echo ""
+            echo "Twingate logs:"
+            sudo journalctl -u twingate --no-pager | tail -n 50
+            exit 1
+          fi
+          
+          echo "✅ Twingate is online and connected"
 
-      - name: (optional) Twingate logs
-        run: journalctl -u twingate --no-pager | tail -n 20
+      - name: Test network connectivity
+        run: |
+          echo "Testing connectivity to Kubernetes cluster..."
+          # Try to reach the cluster IP
+          timeout 10 bash -c "cat < /dev/null > /dev/tcp/192.168.2.105/6443" || {
+            echo "ERROR: Cannot reach Kubernetes cluster through Twingate"
+            exit 1
+          }
+          echo "✅ Can reach Kubernetes cluster"
 
       - name: Setup kubectl
         uses: azure/setup-kubectl@v3
