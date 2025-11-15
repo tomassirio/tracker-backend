@@ -36,3 +36,19 @@ jobs:
     secrets:
       registry-username: ${{ github.actor }}
       registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-to-dev:
+    needs: publish-test-images
+    if: github.ref != 'refs/heads/main'
+    uses: ./.github/workflows/helm-deploy.yml
+    with:
+      environment: dev
+      image-tag: ci-test
+      namespace: wanderer-dev
+    secrets:
+      TWINGATE_SERVICE_KEY: ${{ secrets.TWINGATE_SERVICE_KEY }}
+      KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG_CONTENT }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_AUTH_PASSWORD: ${{ secrets.DB_AUTH_PASSWORD }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}

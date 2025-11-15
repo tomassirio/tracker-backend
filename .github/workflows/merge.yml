@@ -172,3 +172,20 @@ jobs:
     secrets:
       registry-username: ${{ github.actor }}
       registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-to-production:
+    needs: 
+      - version-and-release
+      - build-release-docker-images
+    uses: ./.github/workflows/helm-deploy.yml
+    with:
+      environment: prod
+      image-tag: v${{ needs.version-and-release.outputs.release-version }}
+      namespace: wanderer
+    secrets:
+      TWINGATE_SERVICE_KEY: ${{ secrets.TWINGATE_SERVICE_KEY }}
+      KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG_CONTENT }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_AUTH_PASSWORD: ${{ secrets.DB_AUTH_PASSWORD }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}

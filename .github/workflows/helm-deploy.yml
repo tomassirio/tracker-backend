@@ -1,0 +1,192 @@
+name: Helm Deploy to Kubernetes
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Deployment environment (dev, staging, production)'
+        required: true
+        type: string
+      image-tag:
+        description: 'Docker image tag to deploy'
+        required: true
+        type: string
+      namespace:
+        description: 'Kubernetes namespace'
+        required: false
+        type: string
+        default: 'wanderer'
+    secrets:
+      # Twingate
+      TWINGATE_SERVICE_KEY:
+        description: 'Twingate service key for cluster access'
+        required: true
+      
+      # Kubernetes
+      KUBECONFIG_CONTENT:
+        description: 'Base64 encoded kubeconfig file'
+        required: true
+      
+      # Database Credentials
+      DB_PASSWORD:
+        description: 'Password for wanderer database user'
+        required: true
+      DB_AUTH_PASSWORD:
+        description: 'Password for wanderer_auth database user'
+        required: true
+      POSTGRES_PASSWORD:
+        description: 'PostgreSQL superuser password'
+        required: true
+      
+      # JWT Secret
+      JWT_SECRET:
+        description: 'JWT signing secret'
+        required: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Connect to Twingate
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
+
+      - name: Setup Kubernetes
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+      
+      - name: Extract version from pom.xml
+        id: version
+        run: |
+          # Extract project version using Maven Help plugin
+          PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted project version: $PROJECT_VERSION"
+
+      - name: Update Chart.yaml versions
+        run: |
+          VERSION="${{ steps.version.outputs.project_version }}"
+          echo "Updating Chart.yaml files to version: $VERSION"
+          
+          # Update version in each Chart.yaml
+          for SERVICE in tracker-auth tracker-command tracker-query; do
+            CHART_FILE="./$SERVICE/src/main/chart/Chart.yaml"
+            if [ -f "$CHART_FILE" ]; then
+              sed -i "s/^version: .*/version: $VERSION/" "$CHART_FILE"
+              sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" "$CHART_FILE"
+              echo "Updated $CHART_FILE"
+            fi
+          done
+
+      - name: Deploy PostgreSQL
+        run: |
+          # Set PVC name based on environment
+          if [ "${{ inputs.environment }}" == "dev" ]; then
+            PVC_NAME="postgres-dev-pvc"
+          else
+            PVC_NAME="postgres-pvc"
+          fi
+          
+          # Check if StatefulSet exists and needs volume change
+          if kubectl get statefulset postgres -n ${{ inputs.namespace }} &>/dev/null; then
+            CURRENT_PVC=$(kubectl get statefulset postgres -n ${{ inputs.namespace }} -o jsonpath='{.spec.template.spec.volumes[?(@.name=="postgres-storage")].persistentVolumeClaim.claimName}')
+            if [ "$CURRENT_PVC" != "$PVC_NAME" ]; then
+              echo "PVC changed from $CURRENT_PVC to $PVC_NAME, deleting StatefulSet..."
+              kubectl delete statefulset postgres -n ${{ inputs.namespace }} --cascade=orphan
+              kubectl delete pod postgres-0 -n ${{ inputs.namespace }} --force --grace-period=0 || true
+              ACTION="install"
+            else
+              ACTION="upgrade"
+            fi
+          else
+            ACTION="install"
+          fi
+          
+          helm $ACTION postgres ./commons/src/main/chart \
+            --namespace ${{ inputs.namespace }} \
+            --create-namespace \
+            --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
+            --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
+            --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
+            --set persistence.existingClaim="$PVC_NAME" \
+            --wait --timeout 5m
+
+      - name: Deploy Tracker Services
+        run: |
+          # Deploy services: auth, command, query
+          for SERVICE in tracker-auth tracker-command tracker-query; do
+            echo "================================================"
+            echo "Deploying $SERVICE..."
+            echo "================================================"
+            
+            # Check if release exists
+            if helm list -n ${{ inputs.namespace }} --short | grep -q "^${SERVICE}$"; then
+              echo "$SERVICE exists, upgrading..."
+              ACTION="upgrade"
+            else
+              echo "$SERVICE does not exist, installing..."
+              ACTION="install"
+            fi
+            
+            # Set database password based on service
+            if [ "$SERVICE" == "tracker-auth" ]; then
+              DB_PASSWORD="${{ secrets.DB_AUTH_PASSWORD }}"
+            else
+              DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            fi
+            
+            # Deploy
+            helm $ACTION $SERVICE ./$SERVICE/src/main/chart \
+              --namespace ${{ inputs.namespace }} \
+              --set image.tag="${{ inputs.image-tag }}" \
+              --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
+              --set application.database.password="$DB_PASSWORD" \
+              --wait --timeout 5m
+            
+            echo "✓ $SERVICE deployed successfully"
+            echo ""
+          done
+
+      - name: Verify deployment
+        run: |
+          echo "=== Deployments ==="
+          kubectl get deployments,statefulsets -n ${{ inputs.namespace }}
+          
+          echo ""
+          echo "=== Pods ==="
+          kubectl get pods -n ${{ inputs.namespace }}
+          
+          echo ""
+          echo "=== Services ==="
+          kubectl get services -n ${{ inputs.namespace }}
+
+      - name: Check pod health
+        run: |
+          echo "Checking pod health..."
+          kubectl wait --for=condition=ready pod -l app=tracker-auth \
+            -n ${{ inputs.namespace }} --timeout=120s || true
+          kubectl wait --for=condition=ready pod -l app=tracker-command \
+            -n ${{ inputs.namespace }} --timeout=120s || true
+          kubectl wait --for=condition=ready pod -l app=tracker-query \
+            -n ${{ inputs.namespace }} --timeout=120s || true
+
+      - name: Display pod logs on failure
+        if: failure()
+        run: |
+          echo "=== tracker-auth logs ==="
+          kubectl logs -l app=tracker-auth -n ${{ inputs.namespace }} --tail=50 || true
+          
+          echo "=== tracker-command logs ==="
+          kubectl logs -l app=tracker-command -n ${{ inputs.namespace }} --tail=50 || true
+          
+          echo "=== tracker-query logs ==="
+          kubectl logs -l app=tracker-query -n ${{ inputs.namespace }} --tail=50 || true
+

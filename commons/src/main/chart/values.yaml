@@ -1,0 +1,53 @@
+image:
+  repository: postgres
+  tag: "16-alpine"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5432
+  targetPort: 5432
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+# PostgreSQL Configuration
+postgres:
+  # Master user credentials
+  user: postgres
+  password: postgres
+  
+  # Database for command and query services (shared)
+  database: wanderer_db
+  username: wanderer
+  userPassword: password
+  
+  # Database for auth service (separate)
+  authDatabase: wanderer_auth_db
+  authUsername: wanderer_auth
+  authPassword: password
+
+# Persistent Storage
+# Uses existing PVC created by infra repo
+persistence:
+  enabled: true
+  existingClaim: "postgres-dev-pvc"  # PVC name from infra repo (postgres-pvc for prod, postgres-dev-pvc for dev)
+
+# Security context for NFS compatibility
+securityContext:
+  enabled: true
+  runAsUser: 911    # NFS server user ID
+  runAsGroup: 911   # NFS server group ID
+  fsGroup: 911      # File system group
+
+# Node selection (target node without disk pressure)
+nodeSelector:
+  kubernetes.io/hostname: master-pi
+
+# Tolerations (to allow scheduling on nodes with taints)
+tolerations: []

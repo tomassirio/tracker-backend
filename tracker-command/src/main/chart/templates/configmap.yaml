@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-config
+  labels:
+    app: {{ .Chart.Name }}
+data:
+  application.properties: |
+    # Tracker Command Application Configuration
+    spring.application.name={{ .Values.application.name }}
+    server.port={{ .Values.application.serverPort }}
+
+    # Application version from Maven
+    project.version={{ .Values.application.projectVersion }}
+
+    jwt.secret={{ .Values.application.jwt.secret }}
+
+    # Logging
+    logging.level.com.tomassirio.wanderer.command={{ .Values.application.logging.level.command }}
+    logging.level.root={{ .Values.application.logging.level.root }}
+
+    # Management endpoints
+    management.endpoints.web.base-path={{ .Values.application.management.endpoints.web.basePath }}
+    management.endpoints.web.exposure.include={{ .Values.application.management.endpoints.web.exposure.include }}
+    management.endpoint.health.show-details={{ .Values.application.management.endpoint.health.showDetails }}
+
+    # PostgreSQL Database Connection
+    db.url={{ .Values.application.database.url }}
+    db.username={{ .Values.application.database.username }}
+    db.password={{ .Values.application.database.password }}
+    db.driver-class-name={{ .Values.application.database.driverClassName }}
+
+    # JPA and Hibernate
+    spring.jpa.hibernate.ddl-auto={{ .Values.application.jpa.hibernateDdlAuto }}
+
+    # Liquibase
+    spring.liquibase.change-log={{ .Values.application.liquibase.changeLog }}

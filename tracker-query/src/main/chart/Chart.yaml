@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tracker-query
+description: Helm chart for Tracker Query Service
+type: application
+version: 0.1.0
+appVersion: "0.3.7"
