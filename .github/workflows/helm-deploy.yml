@@ -70,7 +70,7 @@ jobs:
           PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
           echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
           echo "Extracted project version: $PROJECT_VERSION"
-      
+
       - name: Update Chart.yaml versions
         run: |
           VERSION="${{ steps.version.outputs.project_version }}"
