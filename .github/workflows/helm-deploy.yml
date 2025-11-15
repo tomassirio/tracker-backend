@@ -77,8 +77,6 @@ jobs:
             --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
             --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
             --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
-            --set persistence.storageClassName="nfs-client" \
-            --set nodeSelector."kubernetes\.io/hostname"="master-pi" \
             --wait --timeout 5m
 
       - name: Deploy tracker-auth
