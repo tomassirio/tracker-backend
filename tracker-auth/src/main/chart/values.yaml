@@ -1,17 +1,12 @@
-namespace: wanderer
-
 replicaCount: 2
-
 image:
   repository: ghcr.io/tomassirio/tracker-auth
   pullPolicy: IfNotPresent
   tag: "latest"
-
 service:
   type: ClusterIP
   port: 8083
   targetPort: 8083
-
 resources:
   limits:
     cpu: 500m
@@ -19,7 +14,6 @@ resources:
   requests:
     cpu: 250m
     memory: 256Mi
-
 # Application configuration
 application:
   serverPort: 8083
@@ -53,7 +47,6 @@ application:
   # Spring Cloud
   springCloud:
     compatibilityVerifierEnabled: false
-
 # Pod Storage
 volumeClaimTemplates:
   enabled: false
