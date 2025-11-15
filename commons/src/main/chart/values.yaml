@@ -38,6 +38,13 @@ persistence:
   enabled: true
   existingClaim: "postgres-dev-pvc"  # PVC name from infra repo (postgres-pvc for prod, postgres-dev-pvc for dev)
 
+# Security context for NFS compatibility
+securityContext:
+  enabled: true
+  runAsUser: 911    # NFS server user ID
+  runAsGroup: 911   # NFS server group ID
+  fsGroup: 911      # File system group
+
 # Node selection (target node without disk pressure)
 nodeSelector:
   kubernetes.io/hostname: master-pi

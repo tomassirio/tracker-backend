@@ -15,6 +15,12 @@ spec:
       labels:
         app: postgres
     spec:
+      {{- if .Values.securityContext.enabled }}
+      securityContext:
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        runAsGroup: {{ .Values.securityContext.runAsGroup }}
+      {{- end }}
       containers:
       - name: postgres
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
