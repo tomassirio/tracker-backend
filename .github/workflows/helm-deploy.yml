@@ -65,17 +65,26 @@ jobs:
 
       - name: Deploy PostgreSQL
         run: |
-          if helm list -n ${{ inputs.namespace }} | grep -q "^postgres"; then
-            ACTION="upgrade"
-          else
-            ACTION="install"
-          fi
-          
           # Set PVC name based on environment
           if [ "${{ inputs.environment }}" == "dev" ]; then
             PVC_NAME="postgres-dev-pvc"
           else
             PVC_NAME="postgres-pvc"
+          fi
+          
+          # Check if StatefulSet exists and needs volume change
+          if kubectl get statefulset postgres -n ${{ inputs.namespace }} &>/dev/null; then
+            CURRENT_PVC=$(kubectl get statefulset postgres -n ${{ inputs.namespace }} -o jsonpath='{.spec.template.spec.volumes[?(@.name=="postgres-storage")].persistentVolumeClaim.claimName}')
+            if [ "$CURRENT_PVC" != "$PVC_NAME" ]; then
+              echo "PVC changed from $CURRENT_PVC to $PVC_NAME, deleting StatefulSet..."
+              kubectl delete statefulset postgres -n ${{ inputs.namespace }} --cascade=orphan
+              kubectl delete pod postgres-0 -n ${{ inputs.namespace }} --force --grace-period=0 || true
+              ACTION="install"
+            else
+              ACTION="upgrade"
+            fi
+          else
+            ACTION="install"
           fi
           
           helm $ACTION postgres ./commons/src/main/chart \
