@@ -71,12 +71,20 @@ jobs:
             ACTION="install"
           fi
           
+          # Set PVC name based on environment
+          if [ "${{ inputs.environment }}" == "dev" ]; then
+            PVC_NAME="postgres-dev-pvc"
+          else
+            PVC_NAME="postgres-pvc"
+          fi
+          
           helm $ACTION postgres ./commons/src/main/chart \
             --namespace ${{ inputs.namespace }} \
             --create-namespace \
             --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
             --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
             --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
+            --set persistence.existingClaim="$PVC_NAME" \
             --wait --timeout 5m
 
       - name: Deploy tracker-auth
