@@ -69,6 +69,21 @@ jobs:
           PROJECT_VERSION=$(grep -m 1 "<version>" pom.xml | sed 's/<version>//g' | sed 's/<\/version>//g' | xargs)
           echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $PROJECT_VERSION"
+      
+      - name: Update Chart.yaml versions
+        run: |
+          VERSION="${{ steps.version.outputs.project_version }}"
+          echo "Updating Chart.yaml files to version: $VERSION"
+          
+          # Update version in each Chart.yaml
+          for SERVICE in tracker-auth tracker-command tracker-query; do
+            CHART_FILE="./$SERVICE/src/main/chart/Chart.yaml"
+            if [ -f "$CHART_FILE" ]; then
+              sed -i "s/^version: .*/version: $VERSION/" "$CHART_FILE"
+              sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" "$CHART_FILE"
+              echo "Updated $CHART_FILE"
+            fi
+          done
 
       - name: Deploy PostgreSQL
         run: |
@@ -133,7 +148,6 @@ jobs:
               --set image.tag="${{ inputs.image-tag }}" \
               --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
               --set application.database.password="$DB_PASSWORD" \
-              --version "${{ steps.version.outputs.project_version }}" \
               --wait --timeout 5m
             
             echo "✓ $SERVICE deployed successfully"
