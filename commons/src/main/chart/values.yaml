@@ -35,5 +35,16 @@ postgres:
 # Persistent Storage
 persistence:
   enabled: true
-  storageClassName: local-path
+  storageClassName: nfs-client
   size: 10Gi
+
+# Node selection (avoid nodes with disk pressure)
+nodeSelector: {}
+  # Uncomment to target specific nodes, e.g.:
+  # kubernetes.io/hostname: master-pi
+
+# Tolerations (to allow scheduling on nodes with taints)
+tolerations: []
+  # - key: node.kubernetes.io/disk-pressure
+  #   operator: Exists
+  #   effect: NoSchedule
