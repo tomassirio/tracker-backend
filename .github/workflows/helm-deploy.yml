@@ -62,19 +62,20 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
-      
-      - name: Extract version from pom.xml
-        id: version
-        run: |
-          # Extract project version using Maven Help plugin
-          PROJECT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "project_version=$PROJECT_VERSION" >> $GITHUB_OUTPUT
-          echo "Extracted project version: $PROJECT_VERSION"
 
       - name: Update Chart.yaml versions
         run: |
-          VERSION="${{ steps.version.outputs.project_version }}"
-          echo "Updating Chart.yaml files to version: $VERSION"
+          # For dev: use pom.xml version (SNAPSHOT)
+          # For prod: use image-tag (released version)
+          if [ "${{ inputs.environment }}" == "dev" ]; then
+            # Extract SNAPSHOT version from pom.xml for dev
+            VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+            echo "Dev environment: Using SNAPSHOT version from pom.xml: $VERSION"
+          else
+            # Use image-tag for production (released version)
+            VERSION="${{ inputs.image-tag }}"
+            echo "Production environment: Using released version: $VERSION"
+          fi
           
           # Update version in each Chart.yaml
           for SERVICE in tracker-auth tracker-command tracker-query; do
@@ -82,7 +83,7 @@ jobs:
             if [ -f "$CHART_FILE" ]; then
               sed -i "s/^version: .*/version: $VERSION/" "$CHART_FILE"
               sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" "$CHART_FILE"
-              echo "Updated $CHART_FILE"
+              echo "Updated $CHART_FILE to version $VERSION"
             fi
           done
 
