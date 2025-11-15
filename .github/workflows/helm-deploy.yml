@@ -65,6 +65,12 @@ jobs:
 
       - name: Deploy PostgreSQL
         run: |
+          # Check for conflicting secrets in other namespaces
+          if kubectl get secret postgres-secret -n wanderer 2>/dev/null; then
+            echo "Found conflicting secret in 'wanderer' namespace. Cleaning up..."
+            kubectl delete secret postgres-secret -n wanderer || true
+          fi
+          
           if helm list -n ${{ inputs.namespace }} | grep -q "^postgres"; then
             ACTION="upgrade"
           else
@@ -73,6 +79,7 @@ jobs:
           
           helm $ACTION postgres ./commons/src/main/chart \
             --namespace ${{ inputs.namespace }} \
+            --create-namespace \
             --set postgresql.auth.password="${{ secrets.POSTGRES_PASSWORD }}" \
             --set postgresql.auth.database="wanderer" \
             --wait --timeout 5m
