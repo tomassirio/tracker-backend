@@ -35,8 +35,11 @@ postgres:
 # Persistent Storage
 persistence:
   enabled: true
-  storageClassName: local-path
-  size: 5Gi  # Reduced size for Raspberry Pi
+  # Use existing PVC instead of creating via volumeClaimTemplate
+  existingClaim: ""  # Set to existing PVC name to use it
+  storageClassName: ""  # Empty for manual binding to PV
+  volumeName: "nfs-pv"  # Bind to the NFS persistent volume
+  size: 10Gi
 
 # Node selection (target node without disk pressure)
 nodeSelector:
