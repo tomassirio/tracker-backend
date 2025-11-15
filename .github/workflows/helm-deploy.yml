@@ -140,7 +140,7 @@ jobs:
           echo "Checking Twingate status..."
           STATUS=$(twingate status)
           echo "Status: $STATUS"
-          
+            helm upgrade postgres ./commons/src/main/chart \
           # Fail if not connected
           if [[ "$STATUS" != "online" ]]; then
             echo "ERROR: Twingate is not online!"
@@ -152,71 +152,8 @@ jobs:
             sudo journalctl -u twingate --no-pager | tail -n 50
             exit 1
           fi
-          
+
           echo "✅ Twingate is online and connected"
-
-      - name: Test network connectivity
-        run: |
-          echo "Testing connectivity to Kubernetes cluster..."
-          # Try to reach the cluster IP
-          timeout 10 bash -c "cat < /dev/null > /dev/tcp/192.168.2.105/6443" || {
-            echo "ERROR: Cannot reach Kubernetes cluster through Twingate"
-            exit 1
-          }
-          echo "✅ Can reach Kubernetes cluster"
-
-      - name: Setup kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.28.0'
-
-      - name: Setup Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: 'v3.13.0'
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > $HOME/.kube/config
-          chmod 600 $HOME/.kube/config
-
-      - name: Verify cluster connectivity
-        run: |
-          kubectl cluster-info
-          kubectl get nodes
-
-      - name: Create namespace if not exists
-        run: |
-          kubectl create namespace ${{ inputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
-
-      - name: Deploy PostgreSQL (if not exists)
-        run: |
-          if ! helm list -n ${{ inputs.namespace }} | grep -q "^postgres"; then
-            echo "Installing PostgreSQL..."
-            helm install postgres ./postgres/src/main/chart \
-              --namespace ${{ inputs.namespace }} \
-              --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
-              --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
-              --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
-              --wait --timeout 5m
-            
-            echo "Waiting for PostgreSQL to be ready..."
-            kubectl wait --for=condition=ready pod -l app=postgres \
-              -n ${{ inputs.namespace }} --timeout=120s
-          else
-            echo "PostgreSQL already installed, upgrading if needed..."
-            helm upgrade postgres ./postgres/src/main/chart \
-              --namespace ${{ inputs.namespace }} \
-              --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
-              --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
-              --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
-              --wait --timeout 5m
-          fi
-
-      - name: Deploy tracker-auth
-        run: |
-          if helm list -n ${{ inputs.namespace }} | grep -q "^tracker-auth"; then
             ACTION="upgrade"
           else
             ACTION="install"
