@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: postgres
+  name: postgres{{ .Values.environment.suffix }}
   labels:
-    app: postgres
+    app: postgres{{ .Values.environment.suffix }}
 spec:
-  serviceName: postgres
+  serviceName: postgres{{ .Values.environment.suffix }}
   replicas: 1
   selector:
     matchLabels:
-      app: postgres
+      app: postgres{{ .Values.environment.suffix }}
   template:
     metadata:
       labels:
-        app: postgres
+        app: postgres{{ .Values.environment.suffix }}
     spec:
       {{- if .Values.securityContext.enabled }}
       securityContext:
@@ -33,17 +33,17 @@ spec:
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
-              name: postgres-secret
+              name: postgres{{ .Values.environment.suffix }}-secret
               key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
-              name: postgres-secret
+              name: postgres{{ .Values.environment.suffix }}-secret
               key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
           valueFrom:
             secretKeyRef:
-              name: postgres-secret
+              name: postgres{{ .Values.environment.suffix }}-secret
               key: POSTGRES_DB
         - name: PGDATA
           value: /var/lib/postgresql/data/pgdata
@@ -66,7 +66,7 @@ spec:
       volumes:
       - name: init-script
         configMap:
-          name: postgres-init
+          name: postgres{{ .Values.environment.suffix }}-init
 {{- if not .Values.persistence.enabled }}
       - name: postgres-storage
         emptyDir: {}

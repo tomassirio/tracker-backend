@@ -45,6 +45,11 @@ securityContext:
   runAsGroup: 911   # NFS server group ID
   fsGroup: 911      # File system group
 
+# Environment configuration
+environment:
+  name: "prod"  # dev or prod
+  suffix: ""    # "-dev" for dev environment, "" for prod
+
 # Node selection (target node without disk pressure)
 # Removed nodeSelector to allow scheduling on any available node
 nodeSelector: {}

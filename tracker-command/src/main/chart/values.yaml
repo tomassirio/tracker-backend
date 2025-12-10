@@ -1,5 +1,10 @@
 replicaCount: 1
 
+# Environment configuration
+environment:
+  name: "prod"  # dev or prod
+  suffix: ""    # "-dev" for dev environment, "" for prod
+
 image:
   repository: ghcr.io/tomassirio/tracker-command
   pullPolicy: IfNotPresent
@@ -7,7 +12,7 @@ image:
 
 service:
   type: ClusterIP
-  port: 8081
+  port: 42001     # Production port (42001), Dev port (32001)
   targetPort: 8081
 
 resources:

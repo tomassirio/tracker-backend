@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Chart.Name }}
+  name: {{ .Chart.Name }}{{ .Values.environment.suffix }}
   labels:
-    app: {{ .Chart.Name }}
+    app: {{ .Chart.Name }}{{ .Values.environment.suffix }}
 spec:
-  serviceName: {{ .Chart.Name }}
+  serviceName: {{ .Chart.Name }}{{ .Values.environment.suffix }}
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Chart.Name }}
+      app: {{ .Chart.Name }}{{ .Values.environment.suffix }}
   template:
     metadata:
       labels:
-        app: {{ .Chart.Name }}
+        app: {{ .Chart.Name }}{{ .Values.environment.suffix }}
     spec:
       containers:
       - name: {{ .Chart.Name }}
@@ -35,7 +35,7 @@ spec:
       volumes:
       - name: config
         configMap:
-          name: {{ .Chart.Name }}-config
+          name: {{ .Chart.Name }}{{ .Values.environment.suffix }}-config
   {{- if .Values.volumeClaimTemplates.enabled }}
   volumeClaimTemplates:
   - metadata:
