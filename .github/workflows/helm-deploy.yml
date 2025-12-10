@@ -76,20 +76,37 @@ jobs:
             STATEFULSET_NAME="postgres"
           fi
           
-          # Check if StatefulSet exists and needs volume change
-          if kubectl get statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} &>/dev/null; then
-            CURRENT_PVC=$(kubectl get statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} -o jsonpath='{.spec.template.spec.volumes[?(@.name=="postgres-storage")].persistentVolumeClaim.claimName}')
-            if [ "$CURRENT_PVC" != "$PVC_NAME" ]; then
-              echo "PVC changed from $CURRENT_PVC to $PVC_NAME, deleting StatefulSet..."
-              kubectl delete statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} --cascade=orphan
-              kubectl delete pod ${STATEFULSET_NAME}-0 -n ${{ inputs.namespace }} --force --grace-period=0 || true
+          # Check if Helm release exists
+          if helm list -n ${{ inputs.namespace }} --short | grep -q "^postgres$"; then
+            echo "Helm release 'postgres' exists"
+            
+            # Check if we're migrating from old naming (no suffix) to new naming (with -dev suffix)
+            # This happens when upgrading dev environment to use -dev suffix
+            CURRENT_STATEFULSET=$(kubectl get statefulset -n ${{ inputs.namespace }} -l app=postgres -o name 2>/dev/null | head -1 | cut -d'/' -f2)
+            
+            if [ "$CURRENT_STATEFULSET" == "postgres" ] && [ "$STATEFULSET_NAME" == "postgres-dev" ]; then
+              echo "Migrating from old naming (postgres) to new naming (postgres-dev)..."
+              echo "Deleting old resources with helm uninstall..."
+              helm uninstall postgres -n ${{ inputs.namespace }} --wait
               ACTION="install"
             else
+              # Check if PVC changed
+              if kubectl get statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} &>/dev/null; then
+                CURRENT_PVC=$(kubectl get statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} -o jsonpath='{.spec.template.spec.volumes[?(@.name=="postgres-storage")].persistentVolumeClaim.claimName}')
+                if [ "$CURRENT_PVC" != "$PVC_NAME" ]; then
+                  echo "PVC changed from $CURRENT_PVC to $PVC_NAME, deleting StatefulSet..."
+                  kubectl delete statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} --cascade=orphan
+                  kubectl delete pod ${STATEFULSET_NAME}-0 -n ${{ inputs.namespace }} --force --grace-period=0 || true
+                fi
+              fi
               ACTION="upgrade"
             fi
           else
+            echo "Helm release 'postgres' does not exist"
             ACTION="install"
           fi
+          
+          echo "Action to perform: $ACTION"
           
           helm $ACTION postgres ./commons/src/main/chart \
             --namespace ${{ inputs.namespace }} \
@@ -181,12 +198,29 @@ jobs:
           
           # Check if release exists
           if helm list -n ${{ inputs.namespace }} --short | grep -q "^${{ matrix.service }}$"; then
-            echo "${{ matrix.service }} exists, upgrading..."
-            ACTION="upgrade"
+            echo "Helm release '${{ matrix.service }}' exists"
+            
+            # Check if we're migrating from old naming to new naming with -dev suffix
+            if [ "${{ inputs.environment }}" == "dev" ] && [ "$ENV_SUFFIX" == "-dev" ]; then
+              CURRENT_STATEFULSET=$(kubectl get statefulset -n ${{ inputs.namespace }} -l app=${{ matrix.service }} -o name 2>/dev/null | head -1 | cut -d'/' -f2)
+              
+              if [ "$CURRENT_STATEFULSET" == "${{ matrix.service }}" ]; then
+                echo "Migrating from old naming (${{ matrix.service }}) to new naming (${{ matrix.service }}-dev)..."
+                echo "Deleting old resources with helm uninstall..."
+                helm uninstall ${{ matrix.service }} -n ${{ inputs.namespace }} --wait
+                ACTION="install"
+              else
+                ACTION="upgrade"
+              fi
+            else
+              ACTION="upgrade"
+            fi
           else
-            echo "${{ matrix.service }} does not exist, installing..."
+            echo "Helm release '${{ matrix.service }}' does not exist"
             ACTION="install"
           fi
+          
+          echo "Action to perform: $ACTION"
           
           # Set database password and URL based on service
           if [ "${{ matrix.service }}" == "tracker-auth" ]; then
