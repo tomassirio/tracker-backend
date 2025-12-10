@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: postgres-init
+  name: postgres{{ .Values.environment.suffix }}-init
   labels:
-    app: postgres
+    app: postgres{{ .Values.environment.suffix }}
 data:
   init.sql: |
     -- Create databases (if not exists)
