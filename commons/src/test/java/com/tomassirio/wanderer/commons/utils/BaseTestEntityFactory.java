@@ -10,7 +10,6 @@ import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
