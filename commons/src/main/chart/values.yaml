@@ -46,8 +46,8 @@ securityContext:
   fsGroup: 911      # File system group
 
 # Node selection (target node without disk pressure)
-nodeSelector:
-  kubernetes.io/hostname: master-pi
+# Removed nodeSelector to allow scheduling on any available node
+nodeSelector: {}
 
 # Tolerations (to allow scheduling on nodes with taints)
 tolerations: []
