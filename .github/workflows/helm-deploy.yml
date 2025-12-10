@@ -44,7 +44,7 @@ on:
         required: true
 
 jobs:
-  deploy:
+  deploy-postgres:
     runs-on: ubuntu-latest
     environment: ${{ inputs.environment }}
     
@@ -62,30 +62,6 @@ jobs:
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
-
-      - name: Update Chart.yaml versions
-        run: |
-          # For dev: use pom.xml version (SNAPSHOT)
-          # For prod: use image-tag (released version)
-          if [ "${{ inputs.environment }}" == "dev" ]; then
-            # Extract SNAPSHOT version from pom.xml for dev
-            VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-            echo "Dev environment: Using SNAPSHOT version from pom.xml: $VERSION"
-          else
-            # Use image-tag for production (released version)
-            VERSION="${{ inputs.image-tag }}"
-            echo "Production environment: Using released version: $VERSION"
-          fi
-          
-          # Update version in each Chart.yaml
-          for SERVICE in tracker-auth tracker-command tracker-query; do
-            CHART_FILE="./$SERVICE/src/main/chart/Chart.yaml"
-            if [ -f "$CHART_FILE" ]; then
-              sed -i "s/^version: .*/version: $VERSION/" "$CHART_FILE"
-              sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" "$CHART_FILE"
-              echo "Updated $CHART_FILE to version $VERSION"
-            fi
-          done
 
       - name: Deploy PostgreSQL
         run: |
@@ -119,42 +95,118 @@ jobs:
             --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
             --set persistence.existingClaim="$PVC_NAME" \
             --wait --timeout 5m
+          
+          echo "✓ PostgreSQL deployed successfully"
 
-      - name: Deploy Tracker Services
+  deploy-services:
+    needs: deploy-postgres
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    strategy:
+      matrix:
+        service: [tracker-auth, tracker-command, tracker-query]
+      fail-fast: false
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Connect to Twingate
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
+
+      - name: Setup Kubernetes
         run: |
-          # Deploy services: auth, command, query
-          for SERVICE in tracker-auth tracker-command tracker-query; do
-            echo "================================================"
-            echo "Deploying $SERVICE..."
-            echo "================================================"
-            
-            # Check if release exists
-            if helm list -n ${{ inputs.namespace }} --short | grep -q "^${SERVICE}$"; then
-              echo "$SERVICE exists, upgrading..."
-              ACTION="upgrade"
-            else
-              echo "$SERVICE does not exist, installing..."
-              ACTION="install"
-            fi
-            
-            # Set database password based on service
-            if [ "$SERVICE" == "tracker-auth" ]; then
-              DB_PASSWORD="${{ secrets.DB_AUTH_PASSWORD }}"
-            else
-              DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            fi
-            
-            # Deploy
-            helm $ACTION $SERVICE ./$SERVICE/src/main/chart \
-              --namespace ${{ inputs.namespace }} \
-              --set image.tag="${{ inputs.image-tag }}" \
-              --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
-              --set application.database.password="$DB_PASSWORD" \
-              --wait --timeout 5m
-            
-            echo "✓ $SERVICE deployed successfully"
-            echo ""
-          done
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
+
+      - name: Update Chart.yaml version
+        run: |
+          # For dev: use pom.xml version (SNAPSHOT)
+          # For prod: use image-tag (released version)
+          if [ "${{ inputs.environment }}" == "dev" ]; then
+            # Extract SNAPSHOT version from pom.xml for dev
+            VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+            echo "Dev environment: Using SNAPSHOT version from pom.xml: $VERSION"
+          else
+            # Use image-tag for production (released version)
+            VERSION="${{ inputs.image-tag }}"
+            echo "Production environment: Using released version: $VERSION"
+          fi
+          
+          # Update version in Chart.yaml
+          CHART_FILE="./${{ matrix.service }}/src/main/chart/Chart.yaml"
+          if [ -f "$CHART_FILE" ]; then
+            sed -i "s/^version: .*/version: $VERSION/" "$CHART_FILE"
+            sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" "$CHART_FILE"
+            echo "Updated $CHART_FILE to version $VERSION"
+          fi
+
+      - name: Deploy ${{ matrix.service }}
+        run: |
+          echo "================================================"
+          echo "Deploying ${{ matrix.service }}..."
+          echo "================================================"
+          
+          # Check if release exists
+          if helm list -n ${{ inputs.namespace }} --short | grep -q "^${{ matrix.service }}$"; then
+            echo "${{ matrix.service }} exists, upgrading..."
+            ACTION="upgrade"
+          else
+            echo "${{ matrix.service }} does not exist, installing..."
+            ACTION="install"
+          fi
+          
+          # Set database password based on service
+          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
+            DB_PASSWORD="${{ secrets.DB_AUTH_PASSWORD }}"
+          else
+            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+          fi
+          
+          # Deploy
+          helm $ACTION ${{ matrix.service }} ./${{ matrix.service }}/src/main/chart \
+            --namespace ${{ inputs.namespace }} \
+            --set image.tag="${{ inputs.image-tag }}" \
+            --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
+            --set application.database.password="$DB_PASSWORD" \
+            --wait --timeout 5m
+          
+          echo "✓ ${{ matrix.service }} deployed successfully"
+
+      - name: Check pod health
+        run: |
+          echo "Checking ${{ matrix.service }} pod health..."
+          kubectl wait --for=condition=ready pod -l app=${{ matrix.service }} \
+            -n ${{ inputs.namespace }} --timeout=120s || true
+
+      - name: Display pod logs on failure
+        if: failure()
+        run: |
+          echo "=== ${{ matrix.service }} logs ==="
+          kubectl logs -l app=${{ matrix.service }} -n ${{ inputs.namespace }} --tail=50 || true
+
+  verify-deployment:
+    needs: deploy-services
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Connect to Twingate
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
+
+      - name: Setup Kubernetes
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > ~/.kube/config
+          chmod 600 ~/.kube/config
 
       - name: Verify deployment
         run: |
@@ -169,25 +221,4 @@ jobs:
           echo "=== Services ==="
           kubectl get services -n ${{ inputs.namespace }}
 
-      - name: Check pod health
-        run: |
-          echo "Checking pod health..."
-          kubectl wait --for=condition=ready pod -l app=tracker-auth \
-            -n ${{ inputs.namespace }} --timeout=120s || true
-          kubectl wait --for=condition=ready pod -l app=tracker-command \
-            -n ${{ inputs.namespace }} --timeout=120s || true
-          kubectl wait --for=condition=ready pod -l app=tracker-query \
-            -n ${{ inputs.namespace }} --timeout=120s || true
-
-      - name: Display pod logs on failure
-        if: failure()
-        run: |
-          echo "=== tracker-auth logs ==="
-          kubectl logs -l app=tracker-auth -n ${{ inputs.namespace }} --tail=50 || true
-          
-          echo "=== tracker-command logs ==="
-          kubectl logs -l app=tracker-command -n ${{ inputs.namespace }} --tail=50 || true
-          
-          echo "=== tracker-query logs ==="
-          kubectl logs -l app=tracker-query -n ${{ inputs.namespace }} --tail=50 || true
 
