@@ -12,8 +12,28 @@ image:
 
 service:
   type: ClusterIP
-  port: 42003     # Production port (42003), Dev port (32003)
-  targetPort: 8083
+  port: 42003      # Service port (prod: 42003, dev: 32003)
+  targetPort: 8083 # Container port
+
+# Ingress configuration for external access
+ingress:
+  enabled: true    # Enabled for both dev and prod
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+  hosts:
+    - host: auth.localwanderer.com  # Will be overridden by workflow
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: tracker-auth-tls
+    #   hosts:
+    #     - auth.localwanderer.com
+
 resources:
   limits:
     cpu: 500m
@@ -33,7 +53,7 @@ application:
   
   # Database Configuration
   database:
-    url: "jdbc:postgresql://postgres:5432/wanderer_auth_db"
+    url: "jdbc:postgresql://postgres:45432/wanderer_auth_db"
     username: "wanderer_auth"
     password: "password"
     driverClassName: "org.postgresql.Driver"
@@ -47,10 +67,10 @@ application:
   jpa:
     hibernateDdlAuto: "none"
   
-  # Tracker service URLs (will be set by helm deploy with environment suffix)
-  trackerCommandUrl: "http://tracker-command:8081"
-  trackerQueryUrl: "http://tracker-query:8082"
-  
+  # Tracker service URLs (will be set by helm deploy with environment suffix and ports)
+  trackerCommandUrl: "http://tracker-command:42001"
+  trackerQueryUrl: "http://tracker-query:42002"
+
   # Spring Cloud
   springCloud:
     compatibilityVerifierEnabled: false

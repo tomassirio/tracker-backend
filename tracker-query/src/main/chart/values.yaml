@@ -12,8 +12,27 @@ image:
 
 service:
   type: ClusterIP
-  port: 42002     # Production port (42002), Dev port (32002)
-  targetPort: 8082
+  port: 42002      # Service port (prod: 42002, dev: 32002)
+  targetPort: 8082 # Container port
+
+# Ingress configuration for external access
+ingress:
+  enabled: true    # Enabled for both dev and prod
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+  hosts:
+    - host: query.localwanderer.com  # Will be overridden by workflow
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+    # - secretName: tracker-query-tls
+    #   hosts:
+    #     - query.localwanderer.com
 
 resources:
   limits:
@@ -52,7 +71,7 @@ application:
   
   # Database Configuration
   database:
-    url: "jdbc:postgresql://postgres:5432/wanderer_db"
+    url: "jdbc:postgresql://postgres:45432/wanderer_db"
     username: "wanderer"
     password: "password"
     driverClassName: "org.postgresql.Driver"
