@@ -36,6 +36,8 @@ public class SecurityConfig {
                         authz ->
                                 authz.requestMatchers(ApiConstants.PublicEndpoints.getAll())
                                         .permitAll()
+                                        .requestMatchers("/actuator/health/**")
+                                        .permitAll()
                                         .anyRequest()
                                         .authenticated())
                 .oauth2ResourceServer(
