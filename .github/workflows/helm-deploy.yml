@@ -230,17 +230,24 @@ jobs:
           echo "Action to perform: $ACTION"
           
           # Set database password and URL based on service
-          # PostgreSQL service ports: Dev uses 35432, Prod uses 45432
-          if [ "${{ inputs.environment }}" == "dev" ]; then
-            POSTGRES_PORT=35432
+          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
+            DB_PASSWORD="${{ secrets.DB_AUTH_PASSWORD }}"
+            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:5432/wanderer_auth_db"
           else
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:5432/wanderer_db"
+          fi
+          
+          # Build helm command with common parameters
+          HELM_ARGS=(
+            "$ACTION"
+            "${{ matrix.service }}"
             "./${{ matrix.service }}/src/main/chart"
             "--namespace" "${{ inputs.namespace }}"
-            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:5432/wanderer_auth_db"
+            "--set" "environment.name=${{ inputs.environment }}"
             "--set" "environment.suffix=$ENV_SUFFIX"
             "--set" "service.port=$SERVICE_PORT"
-            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:5432/wanderer_db"
+            "--set" "image.tag=${{ inputs.image-tag }}"
             "--set" "application.jwt.secret=${{ secrets.JWT_SECRET }}"
             "--set" "application.database.password=$DB_PASSWORD"
             "--set" "application.database.url=$DB_URL"
@@ -250,20 +257,19 @@ jobs:
             "--set" "ingress.hosts[0].paths[0].pathType=Prefix"
           )
           
-
-          # Add tracker service URLs for auth service with correct ports
-          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-            if [ "${{ inputs.environment }}" == "dev" ]; then
-              COMMAND_PORT=32001
-              QUERY_PORT=32002
-            else
-              COMMAND_PORT=42001
-              QUERY_PORT=42002
           # Add tracker service URLs for auth service
+          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
             HELM_ARGS+=(
-          
               "--set" "application.trackerCommandUrl=http://tracker-command${ENV_SUFFIX}:8081"
               "--set" "application.trackerQueryUrl=http://tracker-query${ENV_SUFFIX}:8082"
+            )
+          fi
+          
+          # Execute helm command
+          helm "${HELM_ARGS[@]}" --wait --timeout 5m
+          
+          echo "✓ ${{ matrix.service }} deployed successfully"
+
       - name: Check pod health
         run: |
           # Set environment suffix for label selector
