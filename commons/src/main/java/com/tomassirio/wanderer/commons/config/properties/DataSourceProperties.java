@@ -1,24 +1,11 @@
 package com.tomassirio.wanderer.commons.config.properties;
 
-import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.validation.annotation.Validated;
-
 /**
- * Type-safe configuration properties for the database connection. Binds to properties with the
- * prefix "db".
+ * DEPRECATED: This configuration is no longer needed. Spring Boot auto-configures DataSource from
+ * spring.datasource.* properties. This file is kept as a placeholder to prevent breaking imports.
+ * It will be removed in a future cleanup.
  */
-@ConfigurationProperties(prefix = "db")
-@Data
-@Validated
+@Deprecated
 public class DataSourceProperties {
-
-    @NotBlank private String url;
-
-    @NotBlank private String username;
-
-    @NotBlank private String password;
-
-    @NotBlank private String driverClassName;
+    // No longer needed - Spring Boot auto-configuration handles DataSource
 }
