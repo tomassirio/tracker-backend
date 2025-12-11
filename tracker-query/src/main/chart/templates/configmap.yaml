@@ -24,10 +24,11 @@ data:
     management.endpoint.health.show-details={{ .Values.application.management.endpoint.health.showDetails }}
 
     # PostgreSQL Database Connection
-    spring.datasource.url={{ .Values.application.database.url }}
-    spring.datasource.username={{ .Values.application.database.username }}
-    spring.datasource.password={{ .Values.application.database.password }}
-    spring.datasource.driver-class-name={{ .Values.application.database.driverClassName }}
+    # TODO: Change back to spring.datasource.* after rebuilding Docker images with updated code
+    db.url={{ .Values.application.database.url }}
+    db.username={{ .Values.application.database.username }}
+    db.password={{ .Values.application.database.password }}
+    db.driver-class-name={{ .Values.application.database.driverClassName }}
 
     # JPA and Hibernate
     spring.jpa.hibernate.ddl-auto={{ .Values.application.jpa.hibernateDdlAuto }}
