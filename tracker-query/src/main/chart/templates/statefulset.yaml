@@ -23,26 +23,6 @@ spec:
         - containerPort: {{ .Values.service.targetPort }}
           name: http
           protocol: TCP
-        readinessProbe:
-          httpGet:
-            path: /actuator/health/readiness
-            port: {{ .Values.service.targetPort }}
-            scheme: HTTP
-          initialDelaySeconds: 90
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 6
-        livenessProbe:
-          httpGet:
-            path: /actuator/health/liveness
-            port: {{ .Values.service.targetPort }}
-            scheme: HTTP
-          initialDelaySeconds: 120
-          periodSeconds: 15
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 10
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
         volumeMounts:
