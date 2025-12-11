@@ -113,9 +113,9 @@ jobs:
             --create-namespace \
             --set environment.name="${{ inputs.environment }}" \
             --set environment.suffix="$ENV_SUFFIX" \
-            --set service.port="$POSTGRES_SERVICE_PORT" \
             --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
             --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
+            --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
             --set persistence.existingClaim="$PVC_NAME" \
             --wait --timeout 5m
           
