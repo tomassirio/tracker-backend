@@ -71,7 +71,7 @@ application:
   
   # Database Configuration
   database:
-    url: "jdbc:postgresql://postgres:5432/wanderer_db"
+    url: "jdbc:postgresql://postgres-dev:5432/wanderer_db"
     username: "wanderer"
     password: "password"
     driverClassName: "org.postgresql.Driver"
