@@ -16,10 +16,10 @@ data:
     jwt.expiration-ms={{ .Values.application.jwt.expirationMs }}
 
     # PostgreSQL Database Connection
-    db.url={{ .Values.application.database.url }}
-    db.username={{ .Values.application.database.username }}
-    db.password={{ .Values.application.database.password }}
-    db.driver-class-name={{ .Values.application.database.driverClassName }}
+    spring.datasource.url={{ .Values.application.database.url }}
+    spring.datasource.username={{ .Values.application.database.username }}
+    spring.datasource.password={{ .Values.application.database.password }}
+    spring.datasource.driver-class-name={{ .Values.application.database.driverClassName }}
 
     # Let Liquibase run migrations against the auth DB
     spring.liquibase.enabled={{ .Values.application.liquibase.enabled }}
