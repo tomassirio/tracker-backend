@@ -66,17 +66,14 @@ jobs:
       - name: Deploy PostgreSQL
         run: |
           # Set environment-specific configuration
-          # PostgreSQL service ports: Dev uses 35432, Prod uses 45432
           if [ "${{ inputs.environment }}" == "dev" ]; then
             PVC_NAME="postgres-dev-pvc"
             ENV_SUFFIX="-dev"
             STATEFULSET_NAME="postgres-dev"
-            POSTGRES_SERVICE_PORT=35432
           else
             PVC_NAME="postgres-pvc"
             ENV_SUFFIX=""
             STATEFULSET_NAME="postgres"
-            POSTGRES_SERVICE_PORT=45432
           fi
           
           # Check if Helm release exists
@@ -119,7 +116,6 @@ jobs:
             --set service.port="$POSTGRES_SERVICE_PORT" \
             --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
             --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
-            --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
             --set persistence.existingClaim="$PVC_NAME" \
             --wait --timeout 5m
           
@@ -179,31 +175,30 @@ jobs:
           
           # Set environment-specific configuration
           # Both dev and prod use Ingress with different hostnames
-          # Service ports: Dev uses 32001-3, Prod uses 42001-3
           if [ "${{ inputs.environment }}" == "dev" ]; then
             ENV_SUFFIX="-dev"
-            # Dev: subdomain.localwanderer-dev.com with ports 32001-3
+            # Dev: subdomain.localwanderer-dev.com
             if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-              SERVICE_PORT=32003
+              SERVICE_PORT=8083
               INGRESS_HOST="auth.localwanderer-dev.com"
             elif [ "${{ matrix.service }}" == "tracker-command" ]; then
-              SERVICE_PORT=32001
+              SERVICE_PORT=8081
               INGRESS_HOST="command.localwanderer-dev.com"
             else
-              SERVICE_PORT=32002
+              SERVICE_PORT=8082
               INGRESS_HOST="query.localwanderer-dev.com"
             fi
           else
             ENV_SUFFIX=""
-            # Prod: subdomain.localwanderer.com with ports 42001-3
+            # Prod: subdomain.localwanderer.com
             if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-              SERVICE_PORT=42003
+              SERVICE_PORT=8083
               INGRESS_HOST="auth.localwanderer.com"
             elif [ "${{ matrix.service }}" == "tracker-command" ]; then
-              SERVICE_PORT=42001
+              SERVICE_PORT=8081
               INGRESS_HOST="command.localwanderer.com"
             else
-              SERVICE_PORT=42002
+              SERVICE_PORT=8082
               INGRESS_HOST="query.localwanderer.com"
             fi
           fi
@@ -239,27 +234,13 @@ jobs:
           if [ "${{ inputs.environment }}" == "dev" ]; then
             POSTGRES_PORT=35432
           else
-            POSTGRES_PORT=45432
-          fi
-          
-          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-            DB_PASSWORD="${{ secrets.DB_AUTH_PASSWORD }}"
-            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:${POSTGRES_PORT}/wanderer_auth_db"
-          else
             DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:${POSTGRES_PORT}/wanderer_db"
-          fi
-          
-          # Build helm command with common parameters
-          HELM_ARGS=(
-            "$ACTION"
-            "${{ matrix.service }}"
             "./${{ matrix.service }}/src/main/chart"
             "--namespace" "${{ inputs.namespace }}"
-            "--set" "environment.name=${{ inputs.environment }}"
+            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:5432/wanderer_auth_db"
             "--set" "environment.suffix=$ENV_SUFFIX"
             "--set" "service.port=$SERVICE_PORT"
-            "--set" "image.tag=${{ inputs.image-tag }}"
+            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:5432/wanderer_db"
             "--set" "application.jwt.secret=${{ secrets.JWT_SECRET }}"
             "--set" "application.database.password=$DB_PASSWORD"
             "--set" "application.database.url=$DB_URL"
@@ -278,18 +259,11 @@ jobs:
             else
               COMMAND_PORT=42001
               QUERY_PORT=42002
-            fi
+          # Add tracker service URLs for auth service
             HELM_ARGS+=(
-              "--set" "application.trackerCommandUrl=http://tracker-command${ENV_SUFFIX}:${COMMAND_PORT}"
-              "--set" "application.trackerQueryUrl=http://tracker-query${ENV_SUFFIX}:${QUERY_PORT}"
-            )
-          fi
           
-          # Execute helm command
-          helm "${HELM_ARGS[@]}" --wait --timeout 5m
-          
-          echo "✓ ${{ matrix.service }} deployed successfully"
-
+              "--set" "application.trackerCommandUrl=http://tracker-command${ENV_SUFFIX}:8081"
+              "--set" "application.trackerQueryUrl=http://tracker-query${ENV_SUFFIX}:8082"
       - name: Check pod health
         run: |
           # Set environment suffix for label selector

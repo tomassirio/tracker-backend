@@ -12,7 +12,7 @@ image:
 
 service:
   type: ClusterIP
-  port: 42003      # Service port (prod: 42003, dev: 32003)
+  port: 8083       # Service port (same for dev and prod)
   targetPort: 8083 # Container port
 
 # Ingress configuration for external access
@@ -53,7 +53,7 @@ application:
   
   # Database Configuration
   database:
-    url: "jdbc:postgresql://postgres:45432/wanderer_auth_db"
+    url: "jdbc:postgresql://postgres:5432/wanderer_auth_db"
     username: "wanderer_auth"
     password: "password"
     driverClassName: "org.postgresql.Driver"
@@ -67,9 +67,9 @@ application:
   jpa:
     hibernateDdlAuto: "none"
   
-  # Tracker service URLs (will be set by helm deploy with environment suffix and ports)
-  trackerCommandUrl: "http://tracker-command:42001"
-  trackerQueryUrl: "http://tracker-query:42002"
+  # Tracker service URLs (will be set by helm deploy with environment suffix)
+  trackerCommandUrl: "http://tracker-command:8081"
+  trackerQueryUrl: "http://tracker-query:8082"
 
   # Spring Cloud
   springCloud:
