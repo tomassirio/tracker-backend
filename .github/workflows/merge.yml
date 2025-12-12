@@ -11,13 +11,12 @@ jobs:
     outputs:
       release-version: ${{ steps.set-release-version.outputs.version }}
     permissions:
-      contents: write # To push commits and tags, and create releases
-      packages: write # To push Docker images to GHCR
+      contents: write
+      packages: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          # We need to fetch all history and tags for versioning
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -37,118 +36,54 @@ jobs:
         id: set-release-version
         run: |
           mvn versions:set -DremoveSnapshot -DprocessAllModules=true -DgenerateBackupPoms=false
-          RELEASE_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "RELEASE_VERSION=${RELEASE_VERSION}" >> $GITHUB_ENV
-          echo "version=${RELEASE_VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Commit release version
-        run: |
-          git add .
-          git commit -m "ci: Release version ${RELEASE_VERSION}"
-
-      - name: Create Git tag
-        run: |
-          git tag -a "v${RELEASE_VERSION}" -m "Release version ${RELEASE_VERSION}"
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "RELEASE_VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          git add . && git commit -m "ci: Release version ${VERSION}"
+          git tag -a "v${VERSION}" -m "Release version ${VERSION}"
 
       - name: Build project
         run: mvn clean verify
 
-      - name: Extract coverage and update README badges
+      - name: Update README badges
         run: |
-          # Calculate aggregate coverage from all modules
-          echo "Calculating aggregate coverage from all modules..."
-          
-          TOTAL_COVERED=0
-          TOTAL_MISSED=0
-          
-          # Find all jacoco.csv files from individual modules
+          # Calculate aggregate coverage
+          TOTAL_COVERED=0 TOTAL_MISSED=0
           for csv in */target/site/jacoco/jacoco.csv; do
-            if [ -f "$csv" ]; then
-              echo "Processing: $csv"
-              # Extract instruction coverage (columns 4=INSTRUCTION_MISSED, 5=INSTRUCTION_COVERED)
-              # Skip header line and sum up the totals
-              MISSED=$(awk -F',' 'NR>1 {sum+=$4} END {print sum}' "$csv")
-              COVERED=$(awk -F',' 'NR>1 {sum+=$5} END {print sum}' "$csv")
-              
-              TOTAL_MISSED=$((TOTAL_MISSED + MISSED))
-              TOTAL_COVERED=$((TOTAL_COVERED + COVERED))
-              
-              echo "  Missed: $MISSED, Covered: $COVERED"
-            fi
+            [ -f "$csv" ] || continue
+            TOTAL_MISSED=$((TOTAL_MISSED + $(awk -F',' 'NR>1 {s+=$4} END {print s+0}' "$csv")))
+            TOTAL_COVERED=$((TOTAL_COVERED + $(awk -F',' 'NR>1 {s+=$5} END {print s+0}' "$csv")))
           done
           
-          # Calculate coverage percentage
-          TOTAL_INSTRUCTIONS=$((TOTAL_MISSED + TOTAL_COVERED))
-          
-          if [ "$TOTAL_INSTRUCTIONS" -gt 0 ]; then
-            COVERAGE=$((TOTAL_COVERED * 100 / TOTAL_INSTRUCTIONS))
-            echo "Total coverage: ${COVERAGE}% (${TOTAL_COVERED}/${TOTAL_INSTRUCTIONS} instructions)"
-            
-            if [ "$COVERAGE" -ge 80 ]; then
-              COVERAGE_COLOR="brightgreen"
-            elif [ "$COVERAGE" -ge 60 ]; then
-              COVERAGE_COLOR="yellow"
-            elif [ "$COVERAGE" -ge 40 ]; then
-              COVERAGE_COLOR="orange"
-            else
-              COVERAGE_COLOR="red"
-            fi
+          TOTAL=$((TOTAL_MISSED + TOTAL_COVERED))
+          if [ "$TOTAL" -gt 0 ]; then
+            COVERAGE=$((TOTAL_COVERED * 100 / TOTAL))
+            [ "$COVERAGE" -ge 80 ] && COLOR="brightgreen" || { [ "$COVERAGE" -ge 60 ] && COLOR="yellow" || { [ "$COVERAGE" -ge 40 ] && COLOR="orange" || COLOR="red"; }; }
           else
-            echo "No coverage data found"
-            COVERAGE="N/A"
-            COVERAGE_COLOR="lightgrey"
+            COVERAGE="N/A" COLOR="lightgrey"
           fi
           
-          echo "Setting coverage badge to: ${COVERAGE}% with color ${COVERAGE_COLOR}"
-          
-          # Update version badge
           sed -i "s/version-[0-9.]*-blue/version-${RELEASE_VERSION}-blue/" README.md
-          
-          # Update coverage badge - use | as delimiter to avoid issues with %
-          sed -i "s|coverage-[^)]*|coverage-${COVERAGE}%25-${COVERAGE_COLOR}|" README.md
-          
-          # Commit badge updates
-          git add README.md
-          git commit --amend --no-edit
+          sed -i "s|coverage-[^)]*|coverage-${COVERAGE}%25-${COLOR}|" README.md
+          git add README.md && git commit --amend --no-edit
 
-      - name: Create release notes
+      - name: Prepare next version and push
         run: |
+          # Create release notes
           echo "Release ${RELEASE_VERSION}" > release-notes.md
-          echo "" >> release-notes.md
-          git log --pretty=format:"* %s" $(git describe --tags --abbrev=0)..HEAD >> release-notes.md
-
-      - name: Collect release artifacts
-        run: |
-          # Extract module names from parent pom.xml
-          MODULES=$(mvn help:evaluate -Dexpression=project.modules -q -DforceStdout | grep -oP '(?<=<string>)[^<]+' || true)
+          git log --pretty=format:"* %s" $(git describe --tags --abbrev=0 HEAD~1 2>/dev/null || echo HEAD~10)..HEAD~1 >> release-notes.md || true
           
-          # Build artifact paths for all modules
-          ARTIFACTS=""
-          for module in $MODULES; do
-            if [ -d "$module/target" ]; then
-              # Add all JARs from each module's target directory
-              ARTIFACTS="${ARTIFACTS} ${module}/target/*.jar"
-            fi
-          done
-          
+          # Collect artifacts
+          ARTIFACTS=$(find */target -maxdepth 1 -name "*.jar" -type f 2>/dev/null | tr '\n' ' ')
           echo "RELEASE_ARTIFACTS=${ARTIFACTS}" >> $GITHUB_ENV
-          echo "Artifacts to release: ${ARTIFACTS}"
-
-      - name: Set next development version
-        run: |
+          
+          # Set next dev version
           mvn versions:set -DnextSnapshot=true -DprocessAllModules=true -DgenerateBackupPoms=false
           NEXT_VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "NEXT_VERSION=${NEXT_VERSION}" >> $GITHUB_ENV
+          git add . && git commit -m "ci: Prepare for next development iteration (${NEXT_VERSION})"
+          
+          git push && git push --tags
 
-      - name: Commit next development version
-        run: |
-          git add .
-          git commit -m "ci: Prepare for next development iteration (${NEXT_VERSION})"
-
-      - name: Push changes and tags
-        run: |
-          git push
-          git push --tags
 
       - name: Create GitHub Release
         env:

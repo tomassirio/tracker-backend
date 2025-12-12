@@ -26,6 +26,9 @@ on:
         description: 'Docker registry password'
         required: false
 
+env:
+  REPO_OWNER: ${{ github.repository_owner }}
+
 jobs:
   build-images:
     runs-on: ubuntu-latest
@@ -58,40 +61,23 @@ jobs:
           username: ${{ secrets.registry-username }}
           password: ${{ secrets.registry-password }}
 
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Building version: ${VERSION}"
-
-      - name: Install parent POM
+      - name: Build commons and module
+        id: build
         run: |
           mvn install -N -DskipTests
-
-      - name: Build commons module
-        run: |
           mvn clean install -pl commons -DskipTests
-
-      - name: Build Docker image with Jib
-        run: |
           mvn package jib:dockerBuild -pl ${{ matrix.module }} -DskipTests
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
-      - name: Push version tag to GHCR
+      - name: Push to GHCR
         if: ${{ inputs.push-to-registry }}
+        env:
+          IMAGE_BASE: ghcr.io/${{ env.REPO_OWNER }}/${{ matrix.module }}
         run: |
-          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          SOURCE_IMAGE="ghcr.io/${REPO_OWNER}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
-          docker push ${SOURCE_IMAGE}
-
-      - name: Tag and push additional tag
-        if: ${{ inputs.push-to-registry && inputs.image-tag != '' }}
-        run: |
-          REPO_OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          SOURCE_IMAGE="ghcr.io/${REPO_OWNER}/${{ matrix.module }}:${{ steps.version.outputs.version }}"
-          TARGET_IMAGE="ghcr.io/${REPO_OWNER}/${{ matrix.module }}:${{ inputs.image-tag }}"
-          docker tag ${SOURCE_IMAGE} ${TARGET_IMAGE}
-          docker push ${TARGET_IMAGE}
-
-      - name: List built images
-        run: docker images | grep ${{ matrix.module }} || echo "No images found for ${{ matrix.module }}"
+          IMAGE_BASE=$(echo "$IMAGE_BASE" | tr '[:upper:]' '[:lower:]')
+          docker push ${IMAGE_BASE}:${{ steps.build.outputs.version }}
+          if [ -n "${{ inputs.image-tag }}" ]; then
+            docker tag ${IMAGE_BASE}:${{ steps.build.outputs.version }} ${IMAGE_BASE}:${{ inputs.image-tag }}
+            docker push ${IMAGE_BASE}:${{ inputs.image-tag }}
+          fi
