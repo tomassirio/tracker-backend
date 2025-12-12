@@ -15,7 +15,11 @@ on:
         description: 'Kubernetes namespace'
         required: false
         type: string
-        default: 'wanderer'
+      service:
+        description: 'Service to deploy (empty for all)'
+        required: false
+        type: string
+        default: ''
     secrets:
       TWINGATE_SERVICE_KEY:
         description: 'Twingate service key for cluster access'
@@ -108,26 +112,43 @@ jobs:
       fail-fast: false
 
     steps:
+      - name: Check if service should be deployed
+        id: should-deploy
+        run: |
+          if [ -z "${{ inputs.service }}" ] || [ "${{ inputs.service }}" == "${{ matrix.service }}" ]; then
+            echo "deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Checkout code
+        if: steps.should-deploy.outputs.deploy == 'true'
         uses: actions/checkout@v4
 
       - name: Connect to Twingate
+        if: steps.should-deploy.outputs.deploy == 'true'
         uses: twingate/github-action@v1
         with:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
 
       - name: Setup Kubernetes
+        if: steps.should-deploy.outputs.deploy == 'true'
         run: |
           mkdir -p ~/.kube
           echo "${{ secrets.KUBECONFIG_CONTENT }}" | base64 -d > ~/.kube/config
           chmod 600 ~/.kube/config
 
       - name: Update Chart.yaml version
+        if: steps.should-deploy.outputs.deploy == 'true'
         run: |
-          if [ "${{ inputs.environment }}" == "dev" ]; then
+          if [ "${{ inputs.environment }}" == "dev" ] || [ "${{ inputs.image-tag }}" == "latest" ]; then
             VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
+            # Remove -SNAPSHOT suffix if present
+            VERSION="${VERSION%-SNAPSHOT}"
           else
+            # Strip 'v' prefix if present
             VERSION="${{ inputs.image-tag }}"
+            VERSION="${VERSION#v}"
           fi
           
           CHART_FILE="./${{ matrix.service }}/src/main/chart/Chart.yaml"
@@ -137,6 +158,7 @@ jobs:
           fi
 
       - name: Deploy ${{ matrix.service }}
+        if: steps.should-deploy.outputs.deploy == 'true'
         env:
           DB_PASSWORD: ${{ matrix.service == 'tracker-auth' && secrets.DB_AUTH_PASSWORD || secrets.DB_PASSWORD }}
           DB_URL: jdbc:postgresql://postgres${{ env.ENV_SUFFIX }}:5432/${{ matrix.db }}
@@ -173,18 +195,18 @@ jobs:
           echo "✓ ${{ matrix.service }} deployed successfully"
 
       - name: Check pod health
+        if: steps.should-deploy.outputs.deploy == 'true'
         run: |
           kubectl wait --for=condition=ready pod -l app=${{ matrix.service }}${{ env.ENV_SUFFIX }} \
             -n ${{ inputs.namespace }} --timeout=120s || true
 
       - name: Display pod logs on failure
-        if: failure()
+        if: failure() && steps.should-deploy.outputs.deploy == 'true'
         run: kubectl logs -l app=${{ matrix.service }}${{ env.ENV_SUFFIX }} -n ${{ inputs.namespace }} --tail=50 || true
 
   verify-deployment:
     needs: deploy-services
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment }}
 
     steps:
       - name: Connect to Twingate
