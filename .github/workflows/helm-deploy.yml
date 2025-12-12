@@ -145,6 +145,8 @@ jobs:
           if [ -n "${{ vars.PUBLIC_URL }}" ]; then
             CORS_ORIGINS="${{ vars.PUBLIC_URL }},$CORS_ORIGINS"
           fi
+          # Escape commas for Helm --set
+          CORS_ORIGINS_ESCAPED="${CORS_ORIGINS//,/\\,}"
           
           HELM_ARGS=(
             "upgrade" "--install" "${{ matrix.service }}" "./${{ matrix.service }}/src/main/chart"
@@ -156,7 +158,7 @@ jobs:
             "--set" "application.jwt.secret=${{ secrets.JWT_SECRET }}"
             "--set" "application.database.password=$DB_PASSWORD"
             "--set" "application.database.url=$DB_URL"
-            "--set" "application.cors.allowedOrigins=$CORS_ORIGINS"
+            "--set" "application.cors.allowedOrigins=$CORS_ORIGINS_ESCAPED"
             "--set" "ingress.enabled=false"
           )
           
