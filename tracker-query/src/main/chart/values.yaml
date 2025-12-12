@@ -48,6 +48,10 @@ application:
   serverPort: 8082
   projectVersion: "0.3.7"
   
+  # CORS Configuration
+  cors:
+    allowedOrigins: "http://localhost:51538,http://localhost:3000"
+
   # JWT Configuration
   jwt:
     secret: "0123456789ABCDEF0123456789ABCDEF"

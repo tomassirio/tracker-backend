@@ -38,6 +38,7 @@ on:
 
 env:
   ENV_SUFFIX: ${{ inputs.environment == 'dev' && '-dev' || '' }}
+  CORS_ORIGINS: http://localhost:51538,http://localhost:3000
 
 jobs:
   deploy-postgres:
@@ -140,6 +141,11 @@ jobs:
           DB_PASSWORD: ${{ matrix.service == 'tracker-auth' && secrets.DB_AUTH_PASSWORD || secrets.DB_PASSWORD }}
           DB_URL: jdbc:postgresql://postgres${{ env.ENV_SUFFIX }}:5432/${{ matrix.db }}
         run: |
+          CORS_ORIGINS="${{ env.CORS_ORIGINS }}"
+          if [ -n "${{ vars.PUBLIC_URL }}" ]; then
+            CORS_ORIGINS="${{ vars.PUBLIC_URL }},$CORS_ORIGINS"
+          fi
+          
           HELM_ARGS=(
             "upgrade" "--install" "${{ matrix.service }}" "./${{ matrix.service }}/src/main/chart"
             "--namespace" "${{ inputs.namespace }}"
@@ -150,6 +156,7 @@ jobs:
             "--set" "application.jwt.secret=${{ secrets.JWT_SECRET }}"
             "--set" "application.database.password=$DB_PASSWORD"
             "--set" "application.database.url=$DB_URL"
+            "--set" "application.cors.allowedOrigins=$CORS_ORIGINS"
             "--set" "ingress.enabled=false"
           )
           

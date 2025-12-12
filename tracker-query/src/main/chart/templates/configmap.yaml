@@ -12,6 +12,9 @@ data:
 
     project.version={{ .Values.application.projectVersion }}
 
+    # CORS Configuration
+    app.cors.allowed-origins={{ .Values.application.cors.allowedOrigins }}
+
     jwt.secret={{ .Values.application.jwt.secret }}
 
     # Logging

@@ -11,6 +11,9 @@ data:
     # Application version from Maven
     project.version={{ .Values.application.projectVersion }}
 
+    # CORS Configuration
+    app.cors.allowed-origins={{ .Values.application.cors.allowedOrigins }}
+
     # JWT secret - override in production via env var or external config
     jwt.secret={{ .Values.application.jwt.secret }}
     jwt.expiration-ms={{ .Values.application.jwt.expirationMs }}
