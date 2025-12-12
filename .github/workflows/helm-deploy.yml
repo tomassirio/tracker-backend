@@ -174,33 +174,19 @@ jobs:
           echo "================================================"
           
           # Set environment-specific configuration
-          # Both dev and prod use Ingress with different hostnames
           if [ "${{ inputs.environment }}" == "dev" ]; then
             ENV_SUFFIX="-dev"
-            # Dev: subdomain.localwanderer-dev.com
-            if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-              SERVICE_PORT=8083
-              INGRESS_HOST="auth.localwanderer-dev.com"
-            elif [ "${{ matrix.service }}" == "tracker-command" ]; then
-              SERVICE_PORT=8081
-              INGRESS_HOST="command.localwanderer-dev.com"
-            else
-              SERVICE_PORT=8082
-              INGRESS_HOST="query.localwanderer-dev.com"
-            fi
           else
             ENV_SUFFIX=""
-            # Prod: subdomain.localwanderer.com
-            if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-              SERVICE_PORT=8083
-              INGRESS_HOST="auth.localwanderer.com"
-            elif [ "${{ matrix.service }}" == "tracker-command" ]; then
-              SERVICE_PORT=8081
-              INGRESS_HOST="command.localwanderer.com"
-            else
-              SERVICE_PORT=8082
-              INGRESS_HOST="query.localwanderer.com"
-            fi
+          fi
+          
+          # Set service ports (same for all environments)
+          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
+            SERVICE_PORT=8083
+          elif [ "${{ matrix.service }}" == "tracker-command" ]; then
+            SERVICE_PORT=8081
+          else
+            SERVICE_PORT=8082
           fi
           
           # Check if release exists
@@ -251,10 +237,7 @@ jobs:
             "--set" "application.jwt.secret=${{ secrets.JWT_SECRET }}"
             "--set" "application.database.password=$DB_PASSWORD"
             "--set" "application.database.url=$DB_URL"
-            "--set" "ingress.enabled=true"
-            "--set" "ingress.hosts[0].host=$INGRESS_HOST"
-            "--set" "ingress.hosts[0].paths[0].path=/"
-            "--set" "ingress.hosts[0].paths[0].pathType=Prefix"
+            "--set" "ingress.enabled=false"
           )
           
           # Add tracker service URLs for auth service

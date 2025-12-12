@@ -17,7 +17,7 @@ service:
 
 # Ingress configuration for external access
 ingress:
-  enabled: true    # Enabled for both dev and prod
+  enabled: false   # Disabled by default - controlled by deployment workflow
   className: "nginx"
   annotations:
     nginx.ingress.kubernetes.io/cors-allow-origin: "*"
