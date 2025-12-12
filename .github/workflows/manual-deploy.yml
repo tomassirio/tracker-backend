@@ -17,6 +17,16 @@ on:
         description: 'Docker image tag to deploy'
         required: true
         type: string
+      service:
+        description: 'Service to deploy (leave empty for all)'
+        required: false
+        type: choice
+        options:
+          - ''
+          - tracker-auth
+          - tracker-command
+          - tracker-query
+        default: ''
 
 jobs:
   deploy:
@@ -25,6 +35,7 @@ jobs:
       environment: ${{ inputs.environment || 'dev' }}
       image-tag: ${{ github.event.release.tag_name || inputs.image-tag }}
       namespace: ${{ inputs.environment == 'dev' && 'wanderer-dev' || 'wanderer' }}
+      service: ${{ inputs.service }}
     secrets:
       TWINGATE_SERVICE_KEY: ${{ secrets.TWINGATE_SERVICE_KEY }}
       KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG_CONTENT }}
