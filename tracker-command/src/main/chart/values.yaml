@@ -15,25 +15,6 @@ service:
   port: 8081       # Service port (same for dev and prod)
   targetPort: 8081 # Container port
 
-# Ingress configuration for external access
-ingress:
-  enabled: false   # Disabled by default - controlled by deployment workflow
-  className: "nginx"
-  annotations:
-    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
-    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, DELETE, OPTIONS"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "Authorization, Content-Type"
-    nginx.ingress.kubernetes.io/enable-cors: "true"
-  hosts:
-    - host: command.localwanderer.com  # Will be overridden by workflow
-      paths:
-        - path: /
-          pathType: Prefix
-  tls: []
-    # - secretName: tracker-command-tls
-    #   hosts:
-    #     - command.localwanderer.com
-
 resources:
   limits:
     cpu: 500m
