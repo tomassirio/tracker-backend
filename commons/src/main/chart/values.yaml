@@ -5,8 +5,8 @@ image:
 
 service:
   type: ClusterIP
-  port: 5432
-  targetPort: 5432
+  port: 5432       # Service port (same for dev and prod)
+  targetPort: 5432 # Container port
 
 resources:
   limits:

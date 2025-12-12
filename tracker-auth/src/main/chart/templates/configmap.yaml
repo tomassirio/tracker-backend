@@ -16,6 +16,7 @@ data:
     jwt.expiration-ms={{ .Values.application.jwt.expirationMs }}
 
     # PostgreSQL Database Connection
+    # TODO: Change back to spring.datasource.* after rebuilding Docker images with updated code
     db.url={{ .Values.application.database.url }}
     db.username={{ .Values.application.database.username }}
     db.password={{ .Values.application.database.password }}

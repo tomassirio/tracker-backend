@@ -12,8 +12,9 @@ image:
 
 service:
   type: ClusterIP
-  port: 42003     # Production port (42003), Dev port (32003)
-  targetPort: 8083
+  port: 8083       # Service port (same for dev and prod)
+  targetPort: 8083 # Container port
+
 resources:
   limits:
     cpu: 500m
@@ -50,7 +51,7 @@ application:
   # Tracker service URLs (will be set by helm deploy with environment suffix)
   trackerCommandUrl: "http://tracker-command:8081"
   trackerQueryUrl: "http://tracker-query:8082"
-  
+
   # Spring Cloud
   springCloud:
     compatibilityVerifierEnabled: false

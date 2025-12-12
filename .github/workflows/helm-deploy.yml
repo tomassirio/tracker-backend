@@ -17,17 +17,12 @@ on:
         type: string
         default: 'wanderer'
     secrets:
-      # Twingate
       TWINGATE_SERVICE_KEY:
         description: 'Twingate service key for cluster access'
         required: true
-      
-      # Kubernetes
       KUBECONFIG_CONTENT:
         description: 'Base64 encoded kubeconfig file'
         required: true
-      
-      # Database Credentials
       DB_PASSWORD:
         description: 'Password for wanderer database user'
         required: true
@@ -37,11 +32,12 @@ on:
       POSTGRES_PASSWORD:
         description: 'PostgreSQL superuser password'
         required: true
-      
-      # JWT Secret
       JWT_SECRET:
         description: 'JWT signing secret'
         required: true
+
+env:
+  ENV_SUFFIX: ${{ inputs.environment == 'dev' && '-dev' || '' }}
 
 jobs:
   deploy-postgres:
@@ -64,55 +60,25 @@ jobs:
           chmod 600 ~/.kube/config
 
       - name: Deploy PostgreSQL
+        env:
+          PVC_NAME: postgres${{ env.ENV_SUFFIX }}-pvc
+          STATEFULSET_NAME: postgres${{ env.ENV_SUFFIX }}
         run: |
-          # Set environment-specific configuration
-          if [ "${{ inputs.environment }}" == "dev" ]; then
-            PVC_NAME="postgres-dev-pvc"
-            ENV_SUFFIX="-dev"
-            STATEFULSET_NAME="postgres-dev"
-          else
-            PVC_NAME="postgres-pvc"
-            ENV_SUFFIX=""
-            STATEFULSET_NAME="postgres"
-          fi
-          
-          # Check if Helm release exists
-          if helm list -n ${{ inputs.namespace }} --short | grep -q "^postgres$"; then
-            echo "Helm release 'postgres' exists"
-            
-            # Check if we're migrating from old naming (no suffix) to new naming (with -dev suffix)
-            # This happens when upgrading dev environment to use -dev suffix
-            CURRENT_STATEFULSET=$(kubectl get statefulset -n ${{ inputs.namespace }} -l app=postgres -o name 2>/dev/null | head -1 | cut -d'/' -f2)
-            
-            if [ "$CURRENT_STATEFULSET" == "postgres" ] && [ "$STATEFULSET_NAME" == "postgres-dev" ]; then
-              echo "Migrating from old naming (postgres) to new naming (postgres-dev)..."
-              echo "Deleting old resources with helm uninstall..."
-              helm uninstall postgres -n ${{ inputs.namespace }} --wait
-              ACTION="install"
-            else
-              # Check if PVC changed
-              if kubectl get statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} &>/dev/null; then
-                CURRENT_PVC=$(kubectl get statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} -o jsonpath='{.spec.template.spec.volumes[?(@.name=="postgres-storage")].persistentVolumeClaim.claimName}')
-                if [ "$CURRENT_PVC" != "$PVC_NAME" ]; then
-                  echo "PVC changed from $CURRENT_PVC to $PVC_NAME, deleting StatefulSet..."
-                  kubectl delete statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} --cascade=orphan
-                  kubectl delete pod ${STATEFULSET_NAME}-0 -n ${{ inputs.namespace }} --force --grace-period=0 || true
-                fi
-              fi
-              ACTION="upgrade"
+          # Handle PVC change if StatefulSet exists
+          if kubectl get statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} &>/dev/null; then
+            CURRENT_PVC=$(kubectl get statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} -o jsonpath='{.spec.template.spec.volumes[?(@.name=="postgres-storage")].persistentVolumeClaim.claimName}')
+            if [ "$CURRENT_PVC" != "$PVC_NAME" ]; then
+              echo "PVC changed, recreating StatefulSet..."
+              kubectl delete statefulset $STATEFULSET_NAME -n ${{ inputs.namespace }} --cascade=orphan
+              kubectl delete pod ${STATEFULSET_NAME}-0 -n ${{ inputs.namespace }} --force --grace-period=0 || true
             fi
-          else
-            echo "Helm release 'postgres' does not exist"
-            ACTION="install"
           fi
           
-          echo "Action to perform: $ACTION"
-          
-          helm $ACTION postgres ./commons/src/main/chart \
+          helm upgrade --install postgres ./commons/src/main/chart \
             --namespace ${{ inputs.namespace }} \
             --create-namespace \
             --set environment.name="${{ inputs.environment }}" \
-            --set environment.suffix="$ENV_SUFFIX" \
+            --set environment.suffix="${{ env.ENV_SUFFIX }}" \
             --set postgres.password="${{ secrets.POSTGRES_PASSWORD }}" \
             --set postgres.userPassword="${{ secrets.DB_PASSWORD }}" \
             --set postgres.authPassword="${{ secrets.DB_AUTH_PASSWORD }}" \
@@ -128,6 +94,16 @@ jobs:
     strategy:
       matrix:
         service: [tracker-auth, tracker-command, tracker-query]
+        include:
+          - service: tracker-auth
+            port: 8083
+            db: wanderer_auth_db
+          - service: tracker-command
+            port: 8081
+            db: wanderer_db
+          - service: tracker-query
+            port: 8082
+            db: wanderer_db
       fail-fast: false
 
     steps:
@@ -147,144 +123,54 @@ jobs:
 
       - name: Update Chart.yaml version
         run: |
-          # For dev: use pom.xml version (SNAPSHOT)
-          # For prod: use image-tag (released version)
           if [ "${{ inputs.environment }}" == "dev" ]; then
-            # Extract SNAPSHOT version from pom.xml for dev
             VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout)
-            echo "Dev environment: Using SNAPSHOT version from pom.xml: $VERSION"
           else
-            # Use image-tag for production (released version)
             VERSION="${{ inputs.image-tag }}"
-            echo "Production environment: Using released version: $VERSION"
           fi
           
-          # Update version in Chart.yaml
           CHART_FILE="./${{ matrix.service }}/src/main/chart/Chart.yaml"
           if [ -f "$CHART_FILE" ]; then
             sed -i "s/^version: .*/version: $VERSION/" "$CHART_FILE"
             sed -i "s/^appVersion: .*/appVersion: \"$VERSION\"/" "$CHART_FILE"
-            echo "Updated $CHART_FILE to version $VERSION"
           fi
 
       - name: Deploy ${{ matrix.service }}
+        env:
+          DB_PASSWORD: ${{ matrix.service == 'tracker-auth' && secrets.DB_AUTH_PASSWORD || secrets.DB_PASSWORD }}
+          DB_URL: jdbc:postgresql://postgres${{ env.ENV_SUFFIX }}:5432/${{ matrix.db }}
         run: |
-          echo "================================================"
-          echo "Deploying ${{ matrix.service }}..."
-          echo "================================================"
+          HELM_ARGS=(
+            "upgrade" "--install" "${{ matrix.service }}" "./${{ matrix.service }}/src/main/chart"
+            "--namespace" "${{ inputs.namespace }}"
+            "--set" "environment.name=${{ inputs.environment }}"
+            "--set" "environment.suffix=${{ env.ENV_SUFFIX }}"
+            "--set" "service.port=${{ matrix.port }}"
+            "--set" "image.tag=${{ inputs.image-tag }}"
+            "--set" "application.jwt.secret=${{ secrets.JWT_SECRET }}"
+            "--set" "application.database.password=$DB_PASSWORD"
+            "--set" "application.database.url=$DB_URL"
+            "--set" "ingress.enabled=false"
+          )
           
-          # Set environment-specific configuration
-          if [ "${{ inputs.environment }}" == "dev" ]; then
-            ENV_SUFFIX="-dev"
-            # Dev ports: 32001 (command), 32002 (query), 32003 (auth)
-            if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-              SERVICE_PORT=32003
-            elif [ "${{ matrix.service }}" == "tracker-command" ]; then
-              SERVICE_PORT=32001
-            else
-              SERVICE_PORT=32002
-            fi
-          else
-            ENV_SUFFIX=""
-            # Prod ports: 42001 (command), 42002 (query), 42003 (auth)
-            if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-              SERVICE_PORT=42003
-            elif [ "${{ matrix.service }}" == "tracker-command" ]; then
-              SERVICE_PORT=42001
-            else
-              SERVICE_PORT=42002
-            fi
-          fi
-          
-          # Check if release exists
-          if helm list -n ${{ inputs.namespace }} --short | grep -q "^${{ matrix.service }}$"; then
-            echo "Helm release '${{ matrix.service }}' exists"
-            
-            # Check if we're migrating from old naming to new naming with -dev suffix
-            if [ "${{ inputs.environment }}" == "dev" ] && [ "$ENV_SUFFIX" == "-dev" ]; then
-              CURRENT_STATEFULSET=$(kubectl get statefulset -n ${{ inputs.namespace }} -l app=${{ matrix.service }} -o name 2>/dev/null | head -1 | cut -d'/' -f2)
-              
-              if [ "$CURRENT_STATEFULSET" == "${{ matrix.service }}" ]; then
-                echo "Migrating from old naming (${{ matrix.service }}) to new naming (${{ matrix.service }}-dev)..."
-                echo "Deleting old resources with helm uninstall..."
-                helm uninstall ${{ matrix.service }} -n ${{ inputs.namespace }} --wait
-                ACTION="install"
-              else
-                ACTION="upgrade"
-              fi
-            else
-              ACTION="upgrade"
-            fi
-          else
-            echo "Helm release '${{ matrix.service }}' does not exist"
-            ACTION="install"
-          fi
-          
-          echo "Action to perform: $ACTION"
-          
-          # Set database password and URL based on service
           if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-            DB_PASSWORD="${{ secrets.DB_AUTH_PASSWORD }}"
-            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:5432/wanderer_auth_db"
-          else
-            DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
-            DB_URL="jdbc:postgresql://postgres${ENV_SUFFIX}:5432/wanderer_db"
+            HELM_ARGS+=(
+              "--set" "application.trackerCommandUrl=http://tracker-command${{ env.ENV_SUFFIX }}:8081"
+              "--set" "application.trackerQueryUrl=http://tracker-query${{ env.ENV_SUFFIX }}:8082"
+            )
           fi
           
-          # Deploy with additional configuration for tracker-auth
-          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
-            helm $ACTION ${{ matrix.service }} ./${{ matrix.service }}/src/main/chart \
-              --namespace ${{ inputs.namespace }} \
-              --set environment.name="${{ inputs.environment }}" \
-              --set environment.suffix="$ENV_SUFFIX" \
-              --set service.port="$SERVICE_PORT" \
-              --set image.tag="${{ inputs.image-tag }}" \
-              --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
-              --set application.database.password="$DB_PASSWORD" \
-              --set application.database.url="$DB_URL" \
-              --set application.trackerCommandUrl="http://tracker-command${ENV_SUFFIX}:8081" \
-              --set application.trackerQueryUrl="http://tracker-query${ENV_SUFFIX}:8082" \
-              --wait --timeout 5m
-          else
-            helm $ACTION ${{ matrix.service }} ./${{ matrix.service }}/src/main/chart \
-              --namespace ${{ inputs.namespace }} \
-              --set environment.name="${{ inputs.environment }}" \
-              --set environment.suffix="$ENV_SUFFIX" \
-              --set service.port="$SERVICE_PORT" \
-              --set image.tag="${{ inputs.image-tag }}" \
-              --set application.jwt.secret="${{ secrets.JWT_SECRET }}" \
-              --set application.database.password="$DB_PASSWORD" \
-              --set application.database.url="$DB_URL" \
-              --wait --timeout 5m
-          fi
-          
+          helm "${HELM_ARGS[@]}" --wait --timeout 5m
           echo "✓ ${{ matrix.service }} deployed successfully"
 
       - name: Check pod health
         run: |
-          # Set environment suffix for label selector
-          if [ "${{ inputs.environment }}" == "dev" ]; then
-            ENV_SUFFIX="-dev"
-          else
-            ENV_SUFFIX=""
-          fi
-          
-          echo "Checking ${{ matrix.service }}${ENV_SUFFIX} pod health..."
-          kubectl wait --for=condition=ready pod -l app=${{ matrix.service }}${ENV_SUFFIX} \
+          kubectl wait --for=condition=ready pod -l app=${{ matrix.service }}${{ env.ENV_SUFFIX }} \
             -n ${{ inputs.namespace }} --timeout=120s || true
 
       - name: Display pod logs on failure
         if: failure()
-        run: |
-          # Set environment suffix for label selector
-          if [ "${{ inputs.environment }}" == "dev" ]; then
-            ENV_SUFFIX="-dev"
-          else
-            ENV_SUFFIX=""
-          fi
-          
-          echo "=== ${{ matrix.service }}${ENV_SUFFIX} logs ==="
-          kubectl logs -l app=${{ matrix.service }}${ENV_SUFFIX} -n ${{ inputs.namespace }} --tail=50 || true
+        run: kubectl logs -l app=${{ matrix.service }}${{ env.ENV_SUFFIX }} -n ${{ inputs.namespace }} --tail=50 || true
 
   verify-deployment:
     needs: deploy-services
@@ -292,9 +178,6 @@ jobs:
     environment: ${{ inputs.environment }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Connect to Twingate
         uses: twingate/github-action@v1
         with:
@@ -310,13 +193,9 @@ jobs:
         run: |
           echo "=== Deployments ==="
           kubectl get deployments,statefulsets -n ${{ inputs.namespace }}
-          
-          echo ""
-          echo "=== Pods ==="
+          echo -e "\n=== Pods ==="
           kubectl get pods -n ${{ inputs.namespace }}
-          
-          echo ""
-          echo "=== Services ==="
+          echo -e "\n=== Services ==="
           kubectl get services -n ${{ inputs.namespace }}
 
 

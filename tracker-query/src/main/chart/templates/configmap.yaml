@@ -24,6 +24,7 @@ data:
     management.endpoint.health.show-details={{ .Values.application.management.endpoint.health.showDetails }}
 
     # PostgreSQL Database Connection
+    # TODO: Change back to spring.datasource.* after rebuilding Docker images with updated code
     db.url={{ .Values.application.database.url }}
     db.username={{ .Values.application.database.username }}
     db.password={{ .Values.application.database.password }}

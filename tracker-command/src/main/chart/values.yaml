@@ -12,8 +12,8 @@ image:
 
 service:
   type: ClusterIP
-  port: 42001     # Production port (42001), Dev port (32001)
-  targetPort: 8081
+  port: 8081       # Service port (same for dev and prod)
+  targetPort: 8081 # Container port
 
 resources:
   limits:
@@ -52,7 +52,7 @@ application:
   
   # Database Configuration
   database:
-    url: "jdbc:postgresql://postgres:5432/wanderer_db"
+    url: "jdbc:postgresql://postgres-dev:5432/wanderer_db"
     username: "wanderer"
     password: "password"
     driverClassName: "org.postgresql.Driver"
