@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.query.config;
 
 import com.tomassirio.wanderer.commons.config.JwtConfig;
 import com.tomassirio.wanderer.commons.config.JwtConverterConfig;
+import com.tomassirio.wanderer.commons.config.SecurityCorsConfig;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -16,19 +17,21 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
-@Import({JwtConfig.class, JwtConverterConfig.class})
+@Import({JwtConfig.class, JwtConverterConfig.class, SecurityCorsConfig.class})
 public class SecurityConfig {
 
     private final Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter;
+    private final CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http.cors(cors -> cors.configure(http))
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(
                         session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
