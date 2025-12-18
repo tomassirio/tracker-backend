@@ -842,6 +842,7 @@ class TripServiceImplTest {
         assertThat(createdTrip.tripDetails().startLocation())
                 .isEqualTo(tripPlan.getStartLocation());
         assertThat(createdTrip.tripDetails().endLocation()).isEqualTo(tripPlan.getEndLocation());
+        assertThat(createdTrip.tripDetails().waypoints()).isEmpty();
         assertThat(createdTrip.tripDetails().startTimestamp()).isNotNull();
         assertThat(createdTrip.tripDetails().endTimestamp()).isNotNull();
         assertThat(createdTrip.enabled()).isTrue();
@@ -954,5 +955,71 @@ class TripServiceImplTest {
 
         verify(userRepository).findById(nonExistentUserId);
         verify(tripRepository, never()).save(any(Trip.class));
+    }
+
+    @Test
+    void createTripFromPlan_whenPlanHasWaypoints_shouldCopyWaypoints() {
+        // Given
+        UUID tripPlanId = UUID.randomUUID();
+        java.util.List<com.tomassirio.wanderer.commons.domain.GeoLocation> waypoints =
+                java.util.List.of(
+                        com.tomassirio.wanderer.commons.domain.GeoLocation.builder()
+                                .lat(41.8781)
+                                .lon(-87.6298)
+                                .build(), // Chicago
+                        com.tomassirio.wanderer.commons.domain.GeoLocation.builder()
+                                .lat(39.7392)
+                                .lon(-104.9903)
+                                .build() // Denver
+                        );
+
+        var tripPlan =
+                com.tomassirio.wanderer.commons.domain.TripPlan.builder()
+                        .id(tripPlanId)
+                        .userId(USER_ID)
+                        .name("Road Trip with Stops")
+                        .planType(com.tomassirio.wanderer.commons.domain.TripPlanType.MULTI_DAY)
+                        .startDate(java.time.LocalDate.now().plusDays(1))
+                        .endDate(java.time.LocalDate.now().plusDays(7))
+                        .startLocation(
+                                com.tomassirio.wanderer.commons.domain.GeoLocation.builder()
+                                        .lat(40.7128)
+                                        .lon(-74.0060)
+                                        .build())
+                        .endLocation(
+                                com.tomassirio.wanderer.commons.domain.GeoLocation.builder()
+                                        .lat(34.0522)
+                                        .lon(-118.2437)
+                                        .build())
+                        .waypoints(waypoints)
+                        .metadata(new java.util.HashMap<>())
+                        .createdTimestamp(java.time.Instant.now())
+                        .build();
+
+        var request = TestEntityFactory.createTripFromPlanCreationRequest(tripPlanId);
+
+        when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
+        when(tripRepository.save(any(Trip.class)))
+                .thenAnswer(
+                        invocation -> {
+                            Trip trip = invocation.getArgument(0);
+                            trip.setId(UUID.randomUUID());
+                            return trip;
+                        });
+
+        // When
+        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, request);
+
+        // Then
+        assertThat(createdTrip).isNotNull();
+        assertThat(createdTrip.tripDetails().waypoints()).isNotNull();
+        assertThat(createdTrip.tripDetails().waypoints()).hasSize(2);
+        assertThat(createdTrip.tripDetails().waypoints().get(0).getLat()).isEqualTo(41.8781);
+        assertThat(createdTrip.tripDetails().waypoints().get(0).getLon()).isEqualTo(-87.6298);
+        assertThat(createdTrip.tripDetails().waypoints().get(1).getLat()).isEqualTo(39.7392);
+        assertThat(createdTrip.tripDetails().waypoints().get(1).getLon()).isEqualTo(-104.9903);
+
+        verify(tripRepository).save(any(Trip.class));
+        verify(tripPlanRepository).findById(tripPlanId);
     }
 }

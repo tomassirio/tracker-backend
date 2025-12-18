@@ -150,6 +150,10 @@ public class TripServiceImpl implements TripService {
                 TripDetails.builder()
                         .startLocation(tripPlan.getStartLocation())
                         .endLocation(tripPlan.getEndLocation())
+                        .waypoints(
+                                tripPlan.getWaypoints() != null
+                                        ? new java.util.ArrayList<>(tripPlan.getWaypoints())
+                                        : new java.util.ArrayList<>())
                         .startTimestamp(
                                 tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC))
                         .endTimestamp(

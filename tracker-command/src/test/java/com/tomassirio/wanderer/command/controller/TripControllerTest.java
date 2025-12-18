@@ -78,7 +78,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         TripSettingsDTO tripSettings =
                 new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PUBLIC, null);
-        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null, null);
 
         TripDTO expectedResponse =
                 new TripDTO(
@@ -123,7 +123,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         TripSettingsDTO tripSettings =
                 new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PRIVATE, null);
-        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null, null);
 
         TripDTO expectedResponse =
                 new TripDTO(
@@ -217,7 +217,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         TripSettingsDTO tripSettings =
                 new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PROTECTED, null);
-        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null, null);
 
         TripDTO expectedResponse =
                 new TripDTO(
@@ -258,7 +258,7 @@ class TripControllerTest {
 
         TripSettingsDTO tripSettings =
                 new TripSettingsDTO(TripStatus.IN_PROGRESS, TripVisibility.PUBLIC, null);
-        TripDetailsDTO tripDetails = new TripDetailsDTO(Instant.now(), null, null, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(Instant.now(), null, null, null, null);
 
         TripDTO expectedResponse =
                 new TripDTO(
@@ -298,7 +298,7 @@ class TripControllerTest {
 
         TripSettingsDTO tripSettings =
                 new TripSettingsDTO(TripStatus.CREATED, TripVisibility.PRIVATE, null);
-        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null);
+        TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null, null);
 
         TripDTO expectedResponse =
                 new TripDTO(
@@ -427,7 +427,12 @@ class TripControllerTest {
         GeoLocation endLocation =
                 GeoLocation.builder().lat(34.0522).lon(-118.2437).build(); // Los Angeles
         TripDetailsDTO tripDetails =
-                new TripDetailsDTO(Instant.now(), Instant.now(), startLocation, endLocation);
+                new TripDetailsDTO(
+                        Instant.now(),
+                        Instant.now(),
+                        startLocation,
+                        endLocation,
+                        java.util.List.of());
 
         TripDTO expectedResponse =
                 new TripDTO(
@@ -462,6 +467,7 @@ class TripControllerTest {
                         jsonPath("$.tripSettings.visibility").value(TripVisibility.PUBLIC.name()))
                 .andExpect(jsonPath("$.tripDetails.startLocation").exists())
                 .andExpect(jsonPath("$.tripDetails.endLocation").exists())
+                .andExpect(jsonPath("$.tripDetails.waypoints").isArray())
                 .andExpect(jsonPath("$.enabled").value(true));
     }
 
@@ -481,7 +487,8 @@ class TripControllerTest {
                         Instant.now(),
                         Instant.now(),
                         GeoLocation.builder().lat(40.7128).lon(-74.0060).build(),
-                        GeoLocation.builder().lat(34.0522).lon(-118.2437).build());
+                        GeoLocation.builder().lat(34.0522).lon(-118.2437).build(),
+                        java.util.List.of());
 
         TripDTO expectedResponse =
                 new TripDTO(

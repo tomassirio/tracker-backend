@@ -4,6 +4,8 @@ import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -30,4 +32,9 @@ public class TripDetails {
     @Type(JsonBinaryType.class)
     @Column(name = "end_location", columnDefinition = "jsonb")
     private GeoLocation endLocation;
+
+    @Type(JsonBinaryType.class)
+    @Column(name = "waypoints", columnDefinition = "jsonb")
+    @Builder.Default
+    private List<GeoLocation> waypoints = new ArrayList<>();
 }

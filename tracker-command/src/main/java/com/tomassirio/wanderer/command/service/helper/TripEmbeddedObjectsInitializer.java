@@ -86,6 +86,7 @@ public class TripEmbeddedObjectsInitializer {
                 .endTimestamp(null)
                 .startLocation(null)
                 .endLocation(null)
+                .waypoints(new java.util.ArrayList<>())
                 .build();
     }
 }

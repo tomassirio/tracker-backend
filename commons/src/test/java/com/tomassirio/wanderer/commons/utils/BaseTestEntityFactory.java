@@ -72,6 +72,7 @@ public class BaseTestEntityFactory {
                         .endTimestamp(null)
                         .startLocation(null)
                         .endLocation(null)
+                        .waypoints(new ArrayList<>())
                         .build();
 
         return Trip.builder()
@@ -105,6 +106,7 @@ public class BaseTestEntityFactory {
                         .endTimestamp(null)
                         .startLocation(null)
                         .endLocation(null)
+                        .waypoints(new ArrayList<>())
                         .build();
 
         return Trip.builder()
