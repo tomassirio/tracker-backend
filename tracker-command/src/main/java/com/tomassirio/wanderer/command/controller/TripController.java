@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.controller;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
+import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripStatusRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
@@ -60,6 +61,29 @@ public class TripController {
         TripDTO createdTrip = tripService.createTrip(userId, request);
 
         log.info("Successfully created trip with ID: {}", createdTrip.id());
+        return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);
+    }
+
+    @PostMapping(ApiConstants.TRIP_FROM_PLAN_ENDPOINT)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Create a trip from a trip plan",
+            description =
+                    "Creates a new trip based on an existing trip plan. The trip will inherit the"
+                            + " plan's name, start/end locations, and dates. The trip can be modified"
+                            + " after creation.")
+    public ResponseEntity<TripDTO> createTripFromPlan(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody TripFromPlanCreationRequest request) {
+
+        log.info(
+                "Received request to create trip from plan {} by user {}",
+                request.tripPlanId(),
+                userId);
+
+        TripDTO createdTrip = tripService.createTripFromPlan(userId, request);
+
+        log.info("Successfully created trip with ID: {} from plan", createdTrip.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);
     }
 

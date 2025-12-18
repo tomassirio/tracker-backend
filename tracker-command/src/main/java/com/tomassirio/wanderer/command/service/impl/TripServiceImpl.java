@@ -1,7 +1,9 @@
 package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
+import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
+import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.TripService;
@@ -9,12 +11,15 @@ import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitial
 import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +31,7 @@ public class TripServiceImpl implements TripService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final TripPlanRepository tripPlanRepository;
     private final TripMapper tripMapper = TripMapper.INSTANCE;
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
     private final TripStatusTransitionHandler statusTransitionHandler;
@@ -118,6 +124,50 @@ public class TripServiceImpl implements TripService {
 
         embeddedObjectsInitializer.ensureTripDetails(trip);
         statusTransitionHandler.handleStatusTransition(trip, previousStatus, status);
+
+        return tripMapper.toDTO(tripRepository.save(trip));
+    }
+
+    @Override
+    @Transactional
+    public TripDTO createTripFromPlan(UUID userId, TripFromPlanCreationRequest request) {
+        // Validate user exists
+        userRepository
+                .findById(userId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        // Fetch and validate trip plan ownership
+        TripPlan tripPlan =
+                tripPlanRepository
+                        .findById(request.tripPlanId())
+                        .orElseThrow(() -> new EntityNotFoundException("Trip plan not found"));
+
+        ownershipValidator.validateOwnership(
+                tripPlan, userId, TripPlan::getUserId, TripPlan::getId, "trip plan");
+
+        // Create trip details from trip plan data
+        TripDetails tripDetails =
+                TripDetails.builder()
+                        .startLocation(tripPlan.getStartLocation())
+                        .endLocation(tripPlan.getEndLocation())
+                        .startTimestamp(
+                                tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC))
+                        .endTimestamp(
+                                tripPlan.getEndDate().atStartOfDay().toInstant(ZoneOffset.UTC))
+                        .build();
+
+        // Create trip from plan
+        Trip trip =
+                Trip.builder()
+                        .name(tripPlan.getName())
+                        .userId(userId)
+                        .tripSettings(
+                                embeddedObjectsInitializer.createTripSettings(request.visibility()))
+                        .tripDetails(tripDetails)
+                        .tripPlanId(tripPlan.getId())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
 
         return tripMapper.toDTO(tripRepository.save(trip));
     }
