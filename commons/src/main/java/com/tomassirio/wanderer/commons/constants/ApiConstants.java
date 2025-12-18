@@ -146,6 +146,10 @@ public final class ApiConstants {
         public static final String TRIP_COMMENTS =
                 TRIPS_PATH + "/{tripId:" + UUID_REGEX + "}/comments";
 
+        // Trip updates endpoints
+        public static final String TRIP_UPDATES =
+                TRIPS_PATH + "/{tripId:" + UUID_REGEX + "}/updates";
+
         // API documentation endpoints
         public static final String SWAGGER_UI = "/swagger-ui/**";
         public static final String API_DOCS = "/v3/api-docs/**";
@@ -162,6 +166,7 @@ public final class ApiConstants {
                 TRIP_BY_ID,
                 TRIPS_PUBLIC,
                 TRIP_COMMENTS,
+                TRIP_UPDATES,
                 SWAGGER_UI,
                 API_DOCS
             };
