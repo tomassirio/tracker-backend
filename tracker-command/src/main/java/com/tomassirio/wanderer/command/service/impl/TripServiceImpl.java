@@ -20,6 +20,7 @@ import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -152,8 +153,8 @@ public class TripServiceImpl implements TripService {
                         .endLocation(tripPlan.getEndLocation())
                         .waypoints(
                                 tripPlan.getWaypoints() != null
-                                        ? new java.util.ArrayList<>(tripPlan.getWaypoints())
-                                        : new java.util.ArrayList<>())
+                                        ? tripPlan.getWaypoints()
+                                        : List.of())
                         .startTimestamp(
                                 tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC))
                         .endTimestamp(

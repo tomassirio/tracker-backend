@@ -71,8 +71,7 @@ public class TripPlanServiceImpl implements TripPlanService {
         tripPlan.setEndDate(request.endDate());
         tripPlan.setStartLocation(request.startLocation());
         tripPlan.setEndLocation(request.endLocation());
-        tripPlan.setWaypoints(
-                request.waypoints() != null ? request.waypoints() : new java.util.ArrayList<>());
+        tripPlan.setWaypoints(request.waypoints() != null ? request.waypoints() : List.of());
 
         // Re-validate metadata for the plan type
         metadataProcessor.applyMetadata(tripPlan, tripPlan.getMetadata());
