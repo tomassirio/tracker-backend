@@ -74,14 +74,13 @@ public class TripController {
                             + " after creation.")
     public ResponseEntity<TripDTO> createTripFromPlan(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Parameter(description = "ID of the trip plan to create a trip from") @PathVariable
+                    UUID tripPlanId,
             @Valid @RequestBody TripFromPlanCreationRequest request) {
 
-        log.info(
-                "Received request to create trip from plan {} by user {}",
-                request.tripPlanId(),
-                userId);
+        log.info("Received request to create trip from plan {} by user {}", tripPlanId, userId);
 
-        TripDTO createdTrip = tripService.createTripFromPlan(userId, request);
+        TripDTO createdTrip = tripService.createTripFromPlan(userId, tripPlanId, request);
 
         log.info("Successfully created trip with ID: {} from plan", createdTrip.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);

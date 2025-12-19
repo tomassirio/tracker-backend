@@ -817,7 +817,7 @@ class TripServiceImplTest {
                         java.time.LocalDate.now().plusDays(1),
                         java.time.LocalDate.now().plusDays(7));
 
-        var request = TestEntityFactory.createTripFromPlanCreationRequest(tripPlanId);
+        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
         when(tripRepository.save(any(Trip.class)))
@@ -829,7 +829,7 @@ class TripServiceImplTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, request);
+        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, tripPlanId, request);
 
         // Then
         assertThat(createdTrip).isNotNull();
@@ -872,9 +872,7 @@ class TripServiceImplTest {
                         java.time.LocalDate.now().plusDays(1),
                         java.time.LocalDate.now().plusDays(7));
 
-        var request =
-                TestEntityFactory.createTripFromPlanCreationRequest(
-                        tripPlanId, TripVisibility.PRIVATE);
+        var request = TestEntityFactory.createTripFromPlanCreationRequest(TripVisibility.PRIVATE);
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
         when(tripRepository.save(any(Trip.class)))
@@ -886,7 +884,7 @@ class TripServiceImplTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, request);
+        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, tripPlanId, request);
 
         // Then
         assertThat(createdTrip).isNotNull();
@@ -901,12 +899,13 @@ class TripServiceImplTest {
     void createTripFromPlan_whenTripPlanNotFound_shouldThrowException() {
         // Given
         UUID nonExistentPlanId = UUID.randomUUID();
-        var request = TestEntityFactory.createTripFromPlanCreationRequest(nonExistentPlanId);
+        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(tripPlanRepository.findById(nonExistentPlanId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> tripService.createTripFromPlan(USER_ID, request))
+        assertThatThrownBy(
+                        () -> tripService.createTripFromPlan(USER_ID, nonExistentPlanId, request))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Trip plan not found");
 
@@ -927,12 +926,12 @@ class TripServiceImplTest {
                         java.time.LocalDate.now().plusDays(1),
                         java.time.LocalDate.now().plusDays(7));
 
-        var request = TestEntityFactory.createTripFromPlanCreationRequest(tripPlanId);
+        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
 
         // When & Then
-        assertThatThrownBy(() -> tripService.createTripFromPlan(USER_ID, request))
+        assertThatThrownBy(() -> tripService.createTripFromPlan(USER_ID, tripPlanId, request))
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(tripPlanRepository).findById(tripPlanId);
@@ -944,12 +943,15 @@ class TripServiceImplTest {
         // Given
         UUID nonExistentUserId = UUID.randomUUID();
         UUID tripPlanId = UUID.randomUUID();
-        var request = TestEntityFactory.createTripFromPlanCreationRequest(tripPlanId);
+        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(userRepository.findById(nonExistentUserId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> tripService.createTripFromPlan(nonExistentUserId, request))
+        assertThatThrownBy(
+                        () ->
+                                tripService.createTripFromPlan(
+                                        nonExistentUserId, tripPlanId, request))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("User not found");
 
@@ -996,7 +998,7 @@ class TripServiceImplTest {
                         .createdTimestamp(java.time.Instant.now())
                         .build();
 
-        var request = TestEntityFactory.createTripFromPlanCreationRequest(tripPlanId);
+        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
         when(tripRepository.save(any(Trip.class)))
@@ -1008,7 +1010,7 @@ class TripServiceImplTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, request);
+        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, tripPlanId, request);
 
         // Then
         assertThat(createdTrip).isNotNull();

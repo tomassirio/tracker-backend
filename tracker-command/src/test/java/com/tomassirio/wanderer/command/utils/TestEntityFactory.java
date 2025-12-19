@@ -11,7 +11,6 @@ import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Test entity factory for tracker-command module. Extends the commons TestEntityFactory with
@@ -83,12 +82,12 @@ public class TestEntityFactory extends BaseTestEntityFactory {
 
     // TripFromPlanCreationRequest factory methods
     public static TripFromPlanCreationRequest createTripFromPlanCreationRequest(
-            UUID tripPlanId, TripVisibility visibility) {
-        return new TripFromPlanCreationRequest(tripPlanId, visibility);
+            TripVisibility visibility) {
+        return new TripFromPlanCreationRequest(visibility);
     }
 
-    public static TripFromPlanCreationRequest createTripFromPlanCreationRequest(UUID tripPlanId) {
-        return createTripFromPlanCreationRequest(tripPlanId, TripVisibility.PUBLIC);
+    public static TripFromPlanCreationRequest createTripFromPlanCreationRequest() {
+        return createTripFromPlanCreationRequest(TripVisibility.PUBLIC);
     }
 
     // GeoLocation factory method

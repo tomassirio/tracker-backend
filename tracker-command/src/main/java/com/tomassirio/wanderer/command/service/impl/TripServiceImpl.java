@@ -131,7 +131,8 @@ public class TripServiceImpl implements TripService {
 
     @Override
     @Transactional
-    public TripDTO createTripFromPlan(UUID userId, TripFromPlanCreationRequest request) {
+    public TripDTO createTripFromPlan(
+            UUID userId, UUID tripPlanId, TripFromPlanCreationRequest request) {
         // Validate user exists
         userRepository
                 .findById(userId)
@@ -140,7 +141,7 @@ public class TripServiceImpl implements TripService {
         // Fetch and validate trip plan ownership
         TripPlan tripPlan =
                 tripPlanRepository
-                        .findById(request.tripPlanId())
+                        .findById(tripPlanId)
                         .orElseThrow(() -> new EntityNotFoundException("Trip plan not found"));
 
         ownershipValidator.validateOwnership(
