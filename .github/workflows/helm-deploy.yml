@@ -42,6 +42,7 @@ on:
 
 env:
   ENV_SUFFIX: ${{ inputs.environment == 'dev' && '-dev' || '' }}
+  LOCAL_DOMAIN: ${{ inputs.environment == 'dev' && 'http://wanderer.localwanderer-dev.com' || 'https://wanderer.localwanderer.com' }}
   CORS_ORIGINS: http://localhost:51538,http://localhost:3000
 
 jobs:
@@ -163,7 +164,7 @@ jobs:
           DB_PASSWORD: ${{ matrix.service == 'tracker-auth' && secrets.DB_AUTH_PASSWORD || secrets.DB_PASSWORD }}
           DB_URL: jdbc:postgresql://postgres${{ env.ENV_SUFFIX }}:5432/${{ matrix.db }}
         run: |
-          CORS_ORIGINS="${{ env.CORS_ORIGINS }}"
+          CORS_ORIGINS="${{ env.LOCAL_DOMAIN }},${{ env.CORS_ORIGINS }}"
           if [ -n "${{ vars.PUBLIC_URL }}" ]; then
             CORS_ORIGINS="${{ vars.PUBLIC_URL }},$CORS_ORIGINS"
           fi

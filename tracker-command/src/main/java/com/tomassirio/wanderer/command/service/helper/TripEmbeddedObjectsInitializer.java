@@ -5,6 +5,7 @@ import com.tomassirio.wanderer.commons.domain.TripDetails;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
 /**
@@ -86,6 +87,7 @@ public class TripEmbeddedObjectsInitializer {
                 .endTimestamp(null)
                 .startLocation(null)
                 .endLocation(null)
+                .waypoints(List.of())
                 .build();
     }
 }

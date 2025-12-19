@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.utils;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
+import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripPlanUpdateRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
@@ -77,6 +78,16 @@ public class TestEntityFactory extends BaseTestEntityFactory {
                 LocalDate.now().plusDays(8),
                 createGeoLocation(51.5074, -0.1278), // London
                 createGeoLocation(48.8566, 2.3522)); // Paris
+    }
+
+    // TripFromPlanCreationRequest factory methods
+    public static TripFromPlanCreationRequest createTripFromPlanCreationRequest(
+            TripVisibility visibility) {
+        return new TripFromPlanCreationRequest(visibility);
+    }
+
+    public static TripFromPlanCreationRequest createTripFromPlanCreationRequest() {
+        return createTripFromPlanCreationRequest(TripVisibility.PUBLIC);
     }
 
     // GeoLocation factory method

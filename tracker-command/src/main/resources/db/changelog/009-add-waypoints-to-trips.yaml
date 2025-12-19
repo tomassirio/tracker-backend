@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-add-waypoints-to-trips
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: trips
+                columnName: waypoints
+      changes:
+        - addColumn:
+            tableName: trips
+            columns:
+              - column:
+                  name: waypoints
+                  type: jsonb
+      rollback:
+        - dropColumn:
+            tableName: trips
+            columnName: waypoints

@@ -5,12 +5,17 @@ import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripPlan;
+import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -67,6 +72,7 @@ public class BaseTestEntityFactory {
                         .endTimestamp(null)
                         .startLocation(null)
                         .endLocation(null)
+                        .waypoints(new ArrayList<>())
                         .build();
 
         return Trip.builder()
@@ -100,6 +106,7 @@ public class BaseTestEntityFactory {
                         .endTimestamp(null)
                         .startLocation(null)
                         .endLocation(null)
+                        .waypoints(new ArrayList<>())
                         .build();
 
         return Trip.builder()
@@ -123,6 +130,23 @@ public class BaseTestEntityFactory {
                 .reactions(new Reactions())
                 .replies(List.of())
                 .timestamp(Instant.now())
+                .build();
+    }
+
+    public static TripPlan createTripPlan(
+            UUID tripPlanId, UUID userId, String name, LocalDate startDate, LocalDate endDate) {
+        return TripPlan.builder()
+                .id(tripPlanId)
+                .userId(userId)
+                .name(name)
+                .planType(TripPlanType.SIMPLE)
+                .startDate(startDate)
+                .endDate(endDate)
+                .startLocation(GeoLocation.builder().lat(40.7128).lon(-74.0060).build())
+                .endLocation(GeoLocation.builder().lat(34.0522).lon(-118.2437).build())
+                .waypoints(new ArrayList<>())
+                .metadata(new HashMap<>())
+                .createdTimestamp(Instant.now())
                 .build();
     }
 }
