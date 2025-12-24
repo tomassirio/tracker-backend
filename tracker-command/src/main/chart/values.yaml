@@ -31,7 +31,7 @@ application:
   
   # CORS Configuration
   cors:
-    allowedOrigins: "http://localhost:51538,http://localhost:3000"
+    allowedOrigins: "http://localhost:51538,http://localhost:3000,https://wanderer.localwanderer-dev.com"
 
   # JWT Configuration
   jwt:
