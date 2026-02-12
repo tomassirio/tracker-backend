@@ -29,7 +29,9 @@ jobs:
       - name: Build and test with Maven
         env:
           DOCKER_HOST: unix:///var/run/docker.sock
-        run: mvn clean install
+          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
+          TESTCONTAINERS_RYUK_DISABLED: true
+        run: mvn clean install -Dorg.testcontainers.docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
 
   publish-test-images:
     needs: build-and-test
