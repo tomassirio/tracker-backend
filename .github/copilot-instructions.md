@@ -135,7 +135,7 @@ com.tomassirio.wanderer.{module}
 
 ### Database Conventions
 - Use UUID for all entity IDs
-- Use Liquibase for database migrations (XML format)
+- Use Liquibase for database migrations (YAML format)
 - Store complex data structures as JSONB (e.g., `GeoLocation`, `Reactions`)
 - Use `@CreationTimestamp` and `@UpdateTimestamp` for audit fields
 - Always use JPA relationships appropriately (`@OneToMany`, `@ManyToOne`, etc.)
@@ -321,7 +321,7 @@ Full API documentation is available in the [GitHub Wiki](https://github.com/toma
 - **Always use constructor-based dependency injection** with `@RequiredArgsConstructor`
 - **Always use MapStruct** for entity-to-DTO conversions
 - **Always use UUID** for all entity IDs
-- **Always use Liquibase** for database migrations (XML format)
+- **Always use Liquibase** for database migrations (YAML format)
 - **Always document endpoints** with OpenAPI annotations
 - **Always write unit tests** for service layer methods
 - **Always write integration tests** for repository and controller layers
