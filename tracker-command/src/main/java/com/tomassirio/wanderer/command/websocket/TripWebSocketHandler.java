@@ -3,9 +3,9 @@ package com.tomassirio.wanderer.command.websocket;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tomassirio.wanderer.commons.security.JwtUtils;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -134,7 +134,7 @@ public class TripWebSocketHandler extends TextWebSocketHandler {
     }
 
     private Map<String, String> parseQueryParams(String query) {
-        Map<String, String> params = new ConcurrentHashMap<>();
+        Map<String, String> params = new HashMap<>();
         for (String param : query.split("&")) {
             String[] keyValue = param.split("=", 2);
             if (keyValue.length == 2) {

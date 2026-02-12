@@ -20,4 +20,33 @@ public class CommentAddedPayload {
     private String username;
     private String message;
     private UUID parentCommentId;
+
+    /**
+     * Creates a payload with the comment ID automatically set in both fields.
+     *
+     * @param tripId the trip ID
+     * @param commentId the comment ID (will be set in both commentId and id fields)
+     * @param userId the user ID
+     * @param username the username
+     * @param message the comment message
+     * @param parentCommentId the parent comment ID (null for top-level comments)
+     * @return a new CommentAddedPayload with consistent ID fields
+     */
+    public static CommentAddedPayload create(
+            UUID tripId,
+            UUID commentId,
+            UUID userId,
+            String username,
+            String message,
+            UUID parentCommentId) {
+        return CommentAddedPayload.builder()
+                .tripId(tripId)
+                .commentId(commentId)
+                .id(commentId) // Both fields get the same value
+                .userId(userId)
+                .username(username)
+                .message(message)
+                .parentCommentId(parentCommentId)
+                .build();
+    }
 }

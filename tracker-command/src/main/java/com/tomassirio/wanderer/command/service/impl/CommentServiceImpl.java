@@ -84,15 +84,13 @@ public class CommentServiceImpl implements CommentService {
 
         // Broadcast comment added via WebSocket
         CommentAddedPayload payload =
-                CommentAddedPayload.builder()
-                        .tripId(tripId)
-                        .commentId(savedComment.getId())
-                        .id(savedComment.getId()) // Frontend expects both fields
-                        .userId(userId)
-                        .username(user.getUsername())
-                        .message(request.message())
-                        .parentCommentId(request.parentCommentId())
-                        .build();
+                CommentAddedPayload.create(
+                        tripId,
+                        savedComment.getId(),
+                        userId,
+                        user.getUsername(),
+                        request.message(),
+                        request.parentCommentId());
 
         webSocketEventService.broadcastCommentAdded(payload);
 
