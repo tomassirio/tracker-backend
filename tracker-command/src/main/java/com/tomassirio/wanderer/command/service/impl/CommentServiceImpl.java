@@ -1,13 +1,12 @@
 package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
+import com.tomassirio.wanderer.command.event.CommentAddedEvent;
+import com.tomassirio.wanderer.command.event.CommentReactionEvent;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.CommentService;
-import com.tomassirio.wanderer.command.websocket.CommentAddedPayload;
-import com.tomassirio.wanderer.command.websocket.CommentReactionPayload;
-import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
@@ -20,6 +19,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,7 +32,7 @@ public class CommentServiceImpl implements CommentService {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final CommentMapper commentMapper = CommentMapper.INSTANCE;
-    private final WebSocketEventService webSocketEventService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -82,17 +82,16 @@ public class CommentServiceImpl implements CommentService {
 
         CommentDTO result = commentMapper.toDTO(savedComment);
 
-        // Broadcast comment added via WebSocket
-        CommentAddedPayload payload =
-                CommentAddedPayload.create(
-                        tripId,
-                        savedComment.getId(),
-                        userId,
-                        user.getUsername(),
-                        request.message(),
-                        request.parentCommentId());
-
-        webSocketEventService.broadcastCommentAdded(payload);
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                CommentAddedEvent.builder()
+                        .tripId(tripId)
+                        .commentId(savedComment.getId())
+                        .userId(userId)
+                        .username(user.getUsername())
+                        .message(request.message())
+                        .parentCommentId(request.parentCommentId())
+                        .build());
 
         return result;
     }
@@ -118,16 +117,15 @@ public class CommentServiceImpl implements CommentService {
 
         CommentDTO result = commentMapper.toDTO(savedComment);
 
-        // Broadcast reaction added via WebSocket
-        CommentReactionPayload payload =
-                CommentReactionPayload.builder()
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                CommentReactionEvent.builder()
                         .tripId(savedComment.getTrip().getId())
                         .commentId(commentId)
                         .reactionType(reactionType.name())
                         .userId(userId)
-                        .build();
-
-        webSocketEventService.broadcastCommentReactionAdded(payload);
+                        .added(true)
+                        .build());
 
         return result;
     }
@@ -149,16 +147,15 @@ public class CommentServiceImpl implements CommentService {
             Comment savedComment = commentRepository.save(comment);
             log.info("Successfully removed reaction {} from comment {}", reactionType, commentId);
 
-            // Broadcast reaction removed via WebSocket
-            CommentReactionPayload payload =
-                    CommentReactionPayload.builder()
+            // Publish domain event - decoupled from WebSocket
+            eventPublisher.publishEvent(
+                    CommentReactionEvent.builder()
                             .tripId(savedComment.getTrip().getId())
                             .commentId(commentId)
                             .reactionType(reactionType.name())
                             .userId(userId)
-                            .build();
-
-            webSocketEventService.broadcastCommentReactionRemoved(payload);
+                            .added(false)
+                            .build());
 
             return commentMapper.toDTO(savedComment);
         }

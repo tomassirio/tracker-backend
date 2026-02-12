@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.service.impl;
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
+import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
@@ -10,7 +11,6 @@ import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
-import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
@@ -24,6 +24,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,7 +39,7 @@ public class TripServiceImpl implements TripService {
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
     private final TripStatusTransitionHandler statusTransitionHandler;
     private final OwnershipValidator ownershipValidator;
-    private final WebSocketEventService webSocketEventService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -130,9 +131,13 @@ public class TripServiceImpl implements TripService {
 
         TripDTO result = tripMapper.toDTO(tripRepository.save(trip));
 
-        // Broadcast status change via WebSocket
-        webSocketEventService.broadcastTripStatusChanged(
-                id, status.name(), previousStatus != null ? previousStatus.name() : null);
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                TripStatusChangedEvent.builder()
+                        .tripId(id)
+                        .newStatus(status.name())
+                        .previousStatus(previousStatus != null ? previousStatus.name() : null)
+                        .build());
 
         return result;
     }

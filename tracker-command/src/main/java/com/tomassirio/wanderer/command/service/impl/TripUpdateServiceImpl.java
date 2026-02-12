@@ -1,12 +1,11 @@
 package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.dto.TripUpdateCreationRequest;
+import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
-import com.tomassirio.wanderer.command.websocket.TripUpdatedPayload;
-import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import com.tomassirio.wanderer.commons.dto.TripUpdateDTO;
@@ -15,6 +14,7 @@ import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,7 +26,7 @@ public class TripUpdateServiceImpl implements TripUpdateService {
     private final TripRepository tripRepository;
     private final OwnershipValidator ownershipValidator;
     private final TripUpdateMapper tripUpdateMapper = TripUpdateMapper.INSTANCE;
-    private final WebSocketEventService webSocketEventService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -50,17 +50,15 @@ public class TripUpdateServiceImpl implements TripUpdateService {
 
         TripUpdateDTO result = tripUpdateMapper.toDTO(tripUpdateRepository.save(tripUpdate));
 
-        // Broadcast trip update via WebSocket
-        TripUpdatedPayload payload =
-                TripUpdatedPayload.builder()
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                TripUpdatedEvent.builder()
                         .tripId(tripId)
                         .latitude(request.location() != null ? request.location().getLat() : null)
                         .longitude(request.location() != null ? request.location().getLon() : null)
                         .batteryLevel(request.battery())
                         .message(request.message())
-                        .build();
-
-        webSocketEventService.broadcastTripUpdated(payload);
+                        .build());
 
         return result;
     }
