@@ -7,7 +7,7 @@ on:
 
 jobs:
   version-and-release:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       release-version: ${{ steps.set-release-version.outputs.version }}
     permissions:
@@ -31,6 +31,9 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
+
+      - name: Start Docker service
+        run: sudo service docker start
 
       - name: Verify Docker availability
         run: |
