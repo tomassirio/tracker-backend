@@ -21,7 +21,14 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Verify Docker availability
+        run: |
+          docker version
+          docker info
+
       - name: Build and test with Maven
+        env:
+          DOCKER_HOST: unix:///var/run/docker.sock
         run: mvn clean install
 
   publish-test-images:

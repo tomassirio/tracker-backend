@@ -32,6 +32,11 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
 
+      - name: Verify Docker availability
+        run: |
+          docker version
+          docker info
+
       - name: Set release version
         id: set-release-version
         run: |
@@ -43,6 +48,8 @@ jobs:
           git tag -a "v${VERSION}" -m "Release version ${VERSION}"
 
       - name: Build project
+        env:
+          DOCKER_HOST: unix:///var/run/docker.sock
         run: mvn clean verify
 
       - name: Update README badges
