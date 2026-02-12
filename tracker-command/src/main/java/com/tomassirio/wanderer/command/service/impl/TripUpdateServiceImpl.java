@@ -5,6 +5,8 @@ import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
+import com.tomassirio.wanderer.command.websocket.TripUpdatedPayload;
+import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import com.tomassirio.wanderer.commons.dto.TripUpdateDTO;
@@ -24,6 +26,7 @@ public class TripUpdateServiceImpl implements TripUpdateService {
     private final TripRepository tripRepository;
     private final OwnershipValidator ownershipValidator;
     private final TripUpdateMapper tripUpdateMapper = TripUpdateMapper.INSTANCE;
+    private final WebSocketEventService webSocketEventService;
 
     @Override
     @Transactional
@@ -45,6 +48,20 @@ public class TripUpdateServiceImpl implements TripUpdateService {
                         .timestamp(Instant.now())
                         .build();
 
-        return tripUpdateMapper.toDTO(tripUpdateRepository.save(tripUpdate));
+        TripUpdateDTO result = tripUpdateMapper.toDTO(tripUpdateRepository.save(tripUpdate));
+
+        // Broadcast trip update via WebSocket
+        TripUpdatedPayload payload =
+                TripUpdatedPayload.builder()
+                        .tripId(tripId)
+                        .latitude(request.location() != null ? request.location().getLat() : null)
+                        .longitude(request.location() != null ? request.location().getLon() : null)
+                        .batteryLevel(request.battery())
+                        .message(request.message())
+                        .build();
+
+        webSocketEventService.broadcastTripUpdated(payload);
+
+        return result;
     }
 }

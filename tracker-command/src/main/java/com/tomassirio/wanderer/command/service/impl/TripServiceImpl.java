@@ -10,6 +10,7 @@ import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
+import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
@@ -37,6 +38,7 @@ public class TripServiceImpl implements TripService {
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
     private final TripStatusTransitionHandler statusTransitionHandler;
     private final OwnershipValidator ownershipValidator;
+    private final WebSocketEventService webSocketEventService;
 
     @Override
     @Transactional
@@ -126,7 +128,13 @@ public class TripServiceImpl implements TripService {
         embeddedObjectsInitializer.ensureTripDetails(trip);
         statusTransitionHandler.handleStatusTransition(trip, previousStatus, status);
 
-        return tripMapper.toDTO(tripRepository.save(trip));
+        TripDTO result = tripMapper.toDTO(tripRepository.save(trip));
+
+        // Broadcast status change via WebSocket
+        webSocketEventService.broadcastTripStatusChanged(
+                id, status.name(), previousStatus != null ? previousStatus.name() : null);
+
+        return result;
     }
 
     @Override
