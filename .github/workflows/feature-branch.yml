@@ -24,6 +24,9 @@ jobs:
       - name: Start Docker service
         run: sudo service docker start
 
+      - name: Configure Docker API version for Testcontainers
+        run: echo "api.version=1.44" >> ~/.docker-java.properties
+
       - name: Verify Docker availability
         run: |
           docker version
