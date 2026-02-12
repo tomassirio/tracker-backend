@@ -7,6 +7,55 @@ This is a Trip Tracker application for tracking a pilgrimage to Santiago de Comp
 ### Purpose
 The system receives location updates from mobile devices (via OwnTracks or custom Android app) and provides real-time tracking, messaging, achievements, and weather information for friends, family, and guests following the journey.
 
+## Code Standards
+
+### Required Before Each Commit
+- Run `mvn spotless:apply` before committing any changes to ensure proper code formatting
+- This will run Google Java Format (AOSP style) on all Java files to maintain consistent style
+- Run `mvn clean verify` to ensure all tests pass and code coverage meets requirements (80%+)
+
+### Development Flow
+- **Build**: `mvn clean install` (builds all modules)
+- **Build specific module**: `mvn clean install -pl <module-name>` (e.g., `mvn clean install -pl tracker-command`)
+- **Test**: `mvn test` (runs unit tests)
+- **Integration Test**: `mvn verify` (runs unit and integration tests)
+- **Format Code**: `mvn spotless:apply` (formats all Java code)
+- **Check Formatting**: `mvn spotless:check` (validates code formatting without changing files)
+- **Skip Tests**: `mvn clean install -DskipTests` (only when necessary for faster builds)
+- **Coverage Report**: `mvn clean verify` (generates JaCoCo coverage reports at `{module}/target/site/jacoco/index.html`)
+
+## Repository Structure
+
+### Multi-Module Maven Project
+```
+tracker-backend/
+├── commons/                  # Shared domain entities, DTOs, and CQRS infrastructure
+├── tracker-auth/            # Authentication service (JWT tokens) - Port 8083
+├── tracker-command/         # Write operations (location updates, messages, trip management) - Port 8081
+├── tracker-query/           # Read operations (location history, achievements, weather) - Port 8082
+├── docs/                    # Documentation (DOCKER.md, CI-CD.md)
+├── .github/                 # GitHub Actions workflows and this instructions file
+│   ├── workflows/          # CI/CD pipeline definitions
+│   └── copilot-instructions.md
+├── pom.xml                  # Parent POM with dependency management
+└── docker-compose.yml       # Docker Compose configuration
+```
+
+### Module-Specific Package Structure
+Each module follows this standardized structure:
+```
+com.tomassirio.wanderer.{module}/
+├── controller/      # REST API controllers
+├── service/         # Business logic services  
+├── repository/      # JPA repositories
+├── entity/          # JPA entities
+├── dto/             # Data Transfer Objects
+├── mapper/          # MapStruct mappers
+├── config/          # Configuration classes
+├── exception/       # Custom exceptions
+└── constants/       # Constants and enums
+```
+
 ## Architecture
 
 ### CQRS Multi-Module Structure
@@ -27,6 +76,19 @@ The system receives location updates from mobile devices (via OwnTracks or custo
 - **Testing**: JUnit 5, Cucumber for BDD, JaCoCo for coverage
 - **Containerization**: Docker with Jib Maven Plugin
 - **Orchestration**: Kubernetes + Helm charts
+
+## Key Guidelines
+
+1. **Java 21 Required**: This project uses Java 21. Ensure your local environment has JDK 21 installed.
+2. **Before making changes**: Run `mvn clean install` to ensure the project builds successfully
+3. **After making changes**: Run `mvn clean verify` to ensure tests pass and coverage requirements are met
+4. **Code Formatting**: Always run `mvn spotless:apply` before committing to maintain code style consistency
+5. **Write Tests**: Maintain minimum 80% code coverage (enforced by JaCoCo). Write unit tests for service layer methods and integration tests for controllers and repositories.
+6. **Document APIs**: Use OpenAPI annotations (`@Operation`, `@ApiResponse`, etc.) for all REST endpoints
+7. **Follow CQRS**: Keep write operations in tracker-command module, read operations in tracker-query module
+8. **Use DTOs**: Never expose JPA entities directly in API responses. Use MapStruct for entity-to-DTO conversions.
+9. **Security First**: Always consider authentication and authorization requirements. Use `@PreAuthorize` annotations for method-level security.
+10. **Review Logs**: Use appropriate logging levels (DEBUG, INFO, WARN, ERROR). Never log sensitive data (passwords, tokens).
 
 ## Coding Guidelines
 
@@ -99,58 +161,29 @@ com.tomassirio.wanderer.{module}
 - Use custom exception classes in the `exception` package
 - Log errors with appropriate severity levels
 
-## Build and Development
+## Running Applications Locally
 
-### Building the Project
+### Prerequisites
+- Java 21 (required)
+- Maven 3.6+ (required)
+- Docker (optional, for containerized deployment)
+- PostgreSQL 16 (required for local database, or use Docker Compose)
+
+### Start Individual Services
+
 ```bash
-# Build all modules
-mvn clean install
-
-# Build specific module
-mvn clean install -pl commons
-mvn clean install -pl tracker-command
-mvn clean install -pl tracker-query
-mvn clean install -pl tracker-auth
-
-# Format code
-mvn spotless:apply
-
-# Skip tests
-mvn clean install -DskipTests
-```
-
-### Running Tests
-```bash
-# Run all tests
-mvn test
-
-# Run tests for specific module
-mvn test -pl tracker-command
-
-# Run integration tests
-mvn verify
-
-# Generate coverage report
-mvn clean verify
-# Reports available at: {module}/target/site/jacoco/index.html
-```
-
-### Running Applications Locally
-```bash
-# Set Java 21 as active JDK
-export JAVA_HOME=/path/to/java-21
+# Auth Service (Port 8083)
+mvn spring-boot:run -pl tracker-auth
 
 # Command Service (Port 8081)
 mvn spring-boot:run -pl tracker-command
 
 # Query Service (Port 8082)
 mvn spring-boot:run -pl tracker-query
-
-# Auth Service (Port 8083)
-mvn spring-boot:run -pl tracker-auth
 ```
 
-### Docker
+### Docker Deployment
+
 ```bash
 # Build Docker images with Jib
 mvn clean compile jib:dockerBuild -pl tracker-command
@@ -160,6 +193,8 @@ mvn clean compile jib:dockerBuild -pl tracker-auth
 # Run with Docker Compose
 docker-compose up
 ```
+
+See [docs/DOCKER.md](../docs/DOCKER.md) for detailed Docker deployment guide.
 
 ## API Documentation
 
@@ -256,7 +291,7 @@ Full API documentation is available in the [GitHub Wiki](https://github.com/toma
 - JaCoCo (code coverage)
 - Cucumber (BDD testing)
 
-## Best Practices for Contributors
+### Best Practices for Contributors
 
 1. **Before making changes**: Run `mvn clean install` to ensure the project builds
 2. **After making changes**: Run `mvn clean verify` to ensure tests pass
@@ -268,6 +303,30 @@ Full API documentation is available in the [GitHub Wiki](https://github.com/toma
 8. **Security**: Always consider authentication and authorization requirements
 9. **Review logs**: Use appropriate logging levels (DEBUG, INFO, WARN, ERROR)
 10. **Check wiki**: Refer to GitHub Wiki for detailed API documentation
+
+## Important Constraints and Boundaries
+
+### What You Should Never Do
+- **Never modify or expose sensitive data**: Do not log passwords, JWT tokens, or other sensitive information
+- **Never expose JPA entities directly**: Always use DTOs for API requests and responses
+- **Never skip code formatting**: Always run `mvn spotless:apply` before committing
+- **Never commit without tests**: Ensure adequate test coverage for new functionality
+- **Never modify database schema directly**: Use Liquibase migrations (XML format)
+- **Never bypass security**: Always use proper authentication and authorization
+- **Never commit to main directly**: All changes must go through pull requests
+- **Never remove or modify existing tests**: Unless fixing a broken test related to your changes
+- **Never store secrets in code**: Use environment variables or configuration management
+
+### What You Should Always Do
+- **Always use constructor-based dependency injection** with `@RequiredArgsConstructor`
+- **Always use MapStruct** for entity-to-DTO conversions
+- **Always use UUID** for all entity IDs
+- **Always use Liquibase** for database migrations (XML format)
+- **Always document endpoints** with OpenAPI annotations
+- **Always write unit tests** for service layer methods
+- **Always write integration tests** for repository and controller layers
+- **Always follow Google Java Format (AOSP style)** enforced by Spotless
+- **Always use appropriate HTTP status codes** (200, 201, 204, 400, 401, 403, 404, 500)
 
 ## Additional Resources
 
