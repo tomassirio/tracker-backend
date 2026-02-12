@@ -7,7 +7,7 @@ on:
 
 jobs:
   version-and-release:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     outputs:
       release-version: ${{ steps.set-release-version.outputs.version }}
     permissions:
@@ -32,16 +32,8 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
 
-      - name: Start Docker service
-        run: sudo service docker start
-
       - name: Configure Docker API version for Testcontainers
         run: echo "api.version=1.44" >> ~/.docker-java.properties
-
-      - name: Verify Docker availability
-        run: |
-          docker version
-          docker info
 
       - name: Set release version
         id: set-release-version
@@ -54,11 +46,7 @@ jobs:
           git tag -a "v${VERSION}" -m "Release version ${VERSION}"
 
       - name: Build project
-        env:
-          DOCKER_HOST: unix:///var/run/docker.sock
-          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
-          TESTCONTAINERS_RYUK_DISABLED: true
-        run: mvn clean verify -Dorg.testcontainers.docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+        run: mvn clean verify
 
       - name: Update README badges
         run: |

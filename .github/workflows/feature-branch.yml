@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -21,23 +21,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Start Docker service
-        run: sudo service docker start
-
       - name: Configure Docker API version for Testcontainers
         run: echo "api.version=1.44" >> ~/.docker-java.properties
 
-      - name: Verify Docker availability
-        run: |
-          docker version
-          docker info
-
       - name: Build and test with Maven
-        env:
-          DOCKER_HOST: unix:///var/run/docker.sock
-          TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE: /var/run/docker.sock
-          TESTCONTAINERS_RYUK_DISABLED: true
-        run: mvn clean install -Dorg.testcontainers.docker.client.strategy=org.testcontainers.dockerclient.UnixSocketClientProviderStrategy
+        run: mvn clean install
 
   publish-test-images:
     needs: build-and-test
