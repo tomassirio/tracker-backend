@@ -32,6 +32,9 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "github-actions@github.com"
 
+      - name: Configure Docker API version for Testcontainers
+        run: echo "api.version=1.44" >> ~/.docker-java.properties
+
       - name: Set release version
         id: set-release-version
         run: |
