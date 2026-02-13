@@ -21,6 +21,9 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Configure Docker API version for Testcontainers
+        run: echo "api.version=1.44" >> ~/.docker-java.properties
+
       - name: Build and test with Maven
         run: mvn clean install
 
