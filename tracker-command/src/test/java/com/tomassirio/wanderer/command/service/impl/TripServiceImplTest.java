@@ -18,15 +18,21 @@ import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitial
 import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
+import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripPlan;
+import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
@@ -36,6 +42,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 
 @ExtendWith(MockitoExtension.class)
@@ -52,6 +59,8 @@ class TripServiceImplTest {
     @Mock private TripStatusTransitionHandler statusTransitionHandler;
 
     @Mock private OwnershipValidator ownershipValidator;
+
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private TripServiceImpl tripService;
 
@@ -810,14 +819,12 @@ class TripServiceImplTest {
         // Given
         UUID tripPlanId = UUID.randomUUID();
         var tripPlan =
-                com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.createTripPlan(
+                BaseTestEntityFactory.createTripPlan(
                         tripPlanId,
                         USER_ID,
                         "Summer Road Trip Plan",
                         java.time.LocalDate.now().plusDays(1),
                         java.time.LocalDate.now().plusDays(7));
-
-        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
         when(tripRepository.save(any(Trip.class)))
@@ -829,7 +836,8 @@ class TripServiceImplTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, tripPlanId, request);
+        TripDTO createdTrip =
+                tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PUBLIC);
 
         // Then
         assertThat(createdTrip).isNotNull();
@@ -865,14 +873,12 @@ class TripServiceImplTest {
         // Given
         UUID tripPlanId = UUID.randomUUID();
         var tripPlan =
-                com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.createTripPlan(
+                BaseTestEntityFactory.createTripPlan(
                         tripPlanId,
                         USER_ID,
                         "Private Trip Plan",
                         java.time.LocalDate.now().plusDays(1),
                         java.time.LocalDate.now().plusDays(7));
-
-        var request = TestEntityFactory.createTripFromPlanCreationRequest(TripVisibility.PRIVATE);
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
         when(tripRepository.save(any(Trip.class)))
@@ -884,7 +890,8 @@ class TripServiceImplTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, tripPlanId, request);
+        TripDTO createdTrip =
+                tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PRIVATE);
 
         // Then
         assertThat(createdTrip).isNotNull();
@@ -899,13 +906,14 @@ class TripServiceImplTest {
     void createTripFromPlan_whenTripPlanNotFound_shouldThrowException() {
         // Given
         UUID nonExistentPlanId = UUID.randomUUID();
-        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(tripPlanRepository.findById(nonExistentPlanId)).thenReturn(Optional.empty());
 
         // When & Then
         assertThatThrownBy(
-                        () -> tripService.createTripFromPlan(USER_ID, nonExistentPlanId, request))
+                        () ->
+                                tripService.createTripFromPlan(
+                                        USER_ID, nonExistentPlanId, TripVisibility.PUBLIC))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Trip plan not found");
 
@@ -919,19 +927,20 @@ class TripServiceImplTest {
         UUID tripPlanId = UUID.randomUUID();
         UUID otherUserId = UUID.randomUUID();
         var tripPlan =
-                com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.createTripPlan(
+                BaseTestEntityFactory.createTripPlan(
                         tripPlanId,
                         otherUserId,
                         "Someone Else's Plan",
                         java.time.LocalDate.now().plusDays(1),
                         java.time.LocalDate.now().plusDays(7));
 
-        var request = TestEntityFactory.createTripFromPlanCreationRequest();
-
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
 
         // When & Then
-        assertThatThrownBy(() -> tripService.createTripFromPlan(USER_ID, tripPlanId, request))
+        assertThatThrownBy(
+                        () ->
+                                tripService.createTripFromPlan(
+                                        USER_ID, tripPlanId, TripVisibility.PUBLIC))
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(tripPlanRepository).findById(tripPlanId);
@@ -943,7 +952,6 @@ class TripServiceImplTest {
         // Given
         UUID nonExistentUserId = UUID.randomUUID();
         UUID tripPlanId = UUID.randomUUID();
-        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(userRepository.findById(nonExistentUserId)).thenReturn(Optional.empty());
 
@@ -951,7 +959,7 @@ class TripServiceImplTest {
         assertThatThrownBy(
                         () ->
                                 tripService.createTripFromPlan(
-                                        nonExistentUserId, tripPlanId, request))
+                                        nonExistentUserId, tripPlanId, TripVisibility.PUBLIC))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("User not found");
 
@@ -963,7 +971,7 @@ class TripServiceImplTest {
     void createTripFromPlan_whenPlanHasWaypoints_shouldCopyWaypoints() {
         // Given
         UUID tripPlanId = UUID.randomUUID();
-        java.util.List<com.tomassirio.wanderer.commons.domain.GeoLocation> waypoints =
+        java.util.List<GeoLocation> waypoints =
                 java.util.List.of(
                         com.tomassirio.wanderer.commons.domain.GeoLocation.builder()
                                 .lat(41.8781)
@@ -976,29 +984,19 @@ class TripServiceImplTest {
                         );
 
         var tripPlan =
-                com.tomassirio.wanderer.commons.domain.TripPlan.builder()
+                TripPlan.builder()
                         .id(tripPlanId)
                         .userId(USER_ID)
                         .name("Road Trip with Stops")
-                        .planType(com.tomassirio.wanderer.commons.domain.TripPlanType.MULTI_DAY)
-                        .startDate(java.time.LocalDate.now().plusDays(1))
-                        .endDate(java.time.LocalDate.now().plusDays(7))
-                        .startLocation(
-                                com.tomassirio.wanderer.commons.domain.GeoLocation.builder()
-                                        .lat(40.7128)
-                                        .lon(-74.0060)
-                                        .build())
-                        .endLocation(
-                                com.tomassirio.wanderer.commons.domain.GeoLocation.builder()
-                                        .lat(34.0522)
-                                        .lon(-118.2437)
-                                        .build())
+                        .planType(TripPlanType.MULTI_DAY)
+                        .startDate(LocalDate.now().plusDays(1))
+                        .endDate(LocalDate.now().plusDays(7))
+                        .startLocation(GeoLocation.builder().lat(40.7128).lon(-74.0060).build())
+                        .endLocation(GeoLocation.builder().lat(34.0522).lon(-118.2437).build())
                         .waypoints(waypoints)
-                        .metadata(new java.util.HashMap<>())
-                        .createdTimestamp(java.time.Instant.now())
+                        .metadata(new HashMap<>())
+                        .createdTimestamp(Instant.now())
                         .build();
-
-        var request = TestEntityFactory.createTripFromPlanCreationRequest();
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
         when(tripRepository.save(any(Trip.class)))
@@ -1010,7 +1008,8 @@ class TripServiceImplTest {
                         });
 
         // When
-        TripDTO createdTrip = tripService.createTripFromPlan(USER_ID, tripPlanId, request);
+        TripDTO createdTrip =
+                tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PUBLIC);
 
         // Then
         assertThat(createdTrip).isNotNull();

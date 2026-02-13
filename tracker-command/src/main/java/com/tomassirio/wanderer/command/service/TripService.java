@@ -1,7 +1,6 @@
 package com.tomassirio.wanderer.command.service;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
@@ -35,13 +34,13 @@ public interface TripService {
      *
      * @param userId the UUID of the user creating the trip
      * @param tripPlanId the UUID of the trip plan to create a trip from
-     * @param request the trip from plan creation request containing visibility
-     * @return a {@link TripDTO} containing the created trip with data inherited from the trip plan
+     * @param visibility the visibility setting for the new trip
+     * @return a {@link TripDTO} containing the created trip
      * @throws jakarta.persistence.EntityNotFoundException if no trip plan exists with the given ID
      * @throws org.springframework.security.access.AccessDeniedException if user doesn't own the
      *     trip plan
      */
-    TripDTO createTripFromPlan(UUID userId, UUID tripPlanId, TripFromPlanCreationRequest request);
+    TripDTO createTripFromPlan(UUID userId, UUID tripPlanId, TripVisibility visibility);
 
     /**
      * Updates an existing trip with new details.

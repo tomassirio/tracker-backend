@@ -17,7 +17,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
@@ -415,8 +414,7 @@ class TripControllerTest {
     void createTripFromPlan_whenValidRequest_shouldReturnCreatedTrip() throws Exception {
         // Given
         UUID tripPlanId = UUID.randomUUID();
-        TripFromPlanCreationRequest request =
-                TestEntityFactory.createTripFromPlanCreationRequest(TripVisibility.PUBLIC);
+        TripVisibility visibility = TripVisibility.PUBLIC;
 
         UUID tripId = UUID.randomUUID();
         TripSettingsDTO tripSettings =
@@ -449,14 +447,13 @@ class TripControllerTest {
 
         doReturn(expectedResponse)
                 .when(tripService)
-                .createTripFromPlan(
-                        any(UUID.class), any(UUID.class), any(TripFromPlanCreationRequest.class));
+                .createTripFromPlan(any(UUID.class), any(UUID.class), any(TripVisibility.class));
 
         // When & Then
         mockMvc.perform(
                         post(TRIP_FROM_PLAN_URL, tripPlanId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
+                                .content(objectMapper.writeValueAsString(visibility)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Summer Road Trip Plan"))
@@ -475,8 +472,7 @@ class TripControllerTest {
     void createTripFromPlan_whenPrivateVisibility_shouldReturnCreatedTrip() throws Exception {
         // Given
         UUID tripPlanId = UUID.randomUUID();
-        TripFromPlanCreationRequest request =
-                TestEntityFactory.createTripFromPlanCreationRequest(TripVisibility.PRIVATE);
+        TripVisibility visibility = TripVisibility.PRIVATE;
 
         UUID tripId = UUID.randomUUID();
         TripSettingsDTO tripSettings =
@@ -505,14 +501,13 @@ class TripControllerTest {
 
         doReturn(expectedResponse)
                 .when(tripService)
-                .createTripFromPlan(
-                        any(UUID.class), any(UUID.class), any(TripFromPlanCreationRequest.class));
+                .createTripFromPlan(any(UUID.class), any(UUID.class), any(TripVisibility.class));
 
         // When & Then
         mockMvc.perform(
                         post(TRIP_FROM_PLAN_URL, tripPlanId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
+                                .content(objectMapper.writeValueAsString(visibility)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(
@@ -521,16 +516,12 @@ class TripControllerTest {
     }
 
     @Test
-    void createTripFromPlan_whenVisibilityIsNull_shouldReturnBadRequest() throws Exception {
-        // Given
-        UUID tripPlanId = UUID.randomUUID();
-        TripFromPlanCreationRequest request = new TripFromPlanCreationRequest(null);
-
+    void createTripFromPlan_whenVisibilityIsInvalid_shouldReturnBadRequest() throws Exception {
         // When & Then
         mockMvc.perform(
-                        post(TRIP_FROM_PLAN_URL, tripPlanId)
+                        post(TRIP_FROM_PLAN_URL, UUID.randomUUID())
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
+                                .content("\"INVALID_VISIBILITY\""))
                 .andExpect(status().isBadRequest());
     }
 
@@ -538,19 +529,17 @@ class TripControllerTest {
     void createTripFromPlan_whenTripPlanNotFound_shouldReturnNotFound() throws Exception {
         // Given
         UUID nonExistentPlanId = UUID.randomUUID();
-        TripFromPlanCreationRequest request =
-                TestEntityFactory.createTripFromPlanCreationRequest(TripVisibility.PUBLIC);
+        TripVisibility visibility = TripVisibility.PUBLIC;
 
         doThrow(new EntityNotFoundException("Trip plan not found"))
                 .when(tripService)
-                .createTripFromPlan(
-                        any(UUID.class), any(UUID.class), any(TripFromPlanCreationRequest.class));
+                .createTripFromPlan(any(UUID.class), any(UUID.class), any(TripVisibility.class));
 
         // When & Then
         mockMvc.perform(
                         post(TRIP_FROM_PLAN_URL, nonExistentPlanId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
+                                .content(objectMapper.writeValueAsString(visibility)))
                 .andExpect(status().isNotFound());
     }
 
@@ -558,19 +547,17 @@ class TripControllerTest {
     void createTripFromPlan_whenUserNotOwner_shouldReturnForbidden() throws Exception {
         // Given
         UUID tripPlanId = UUID.randomUUID();
-        TripFromPlanCreationRequest request =
-                TestEntityFactory.createTripFromPlanCreationRequest(TripVisibility.PUBLIC);
+        TripVisibility visibility = TripVisibility.PUBLIC;
 
         doThrow(new AccessDeniedException("User does not have permission to access trip plan"))
                 .when(tripService)
-                .createTripFromPlan(
-                        any(UUID.class), any(UUID.class), any(TripFromPlanCreationRequest.class));
+                .createTripFromPlan(any(UUID.class), any(UUID.class), any(TripVisibility.class));
 
         // When & Then
         mockMvc.perform(
                         post(TRIP_FROM_PLAN_URL, tripPlanId)
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(objectMapper.writeValueAsString(request)))
+                                .content(objectMapper.writeValueAsString(visibility)))
                 .andExpect(status().isForbidden());
     }
 }

@@ -1,7 +1,6 @@
 package com.tomassirio.wanderer.command.controller;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripStatusRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
@@ -9,6 +8,7 @@ import com.tomassirio.wanderer.command.dto.TripVisibilityRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
+import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.dto.TripUpdateDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
@@ -76,11 +76,11 @@ public class TripController {
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Parameter(description = "ID of the trip plan to create a trip from") @PathVariable
                     UUID tripPlanId,
-            @Valid @RequestBody TripFromPlanCreationRequest request) {
+            @Valid @RequestBody TripVisibility visibility) {
 
         log.info("Received request to create trip from plan {} by user {}", tripPlanId, userId);
 
-        TripDTO createdTrip = tripService.createTripFromPlan(userId, tripPlanId, request);
+        TripDTO createdTrip = tripService.createTripFromPlan(userId, tripPlanId, visibility);
 
         log.info("Successfully created trip with ID: {} from plan", createdTrip.id());
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);

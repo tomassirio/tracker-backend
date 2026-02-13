@@ -1,7 +1,6 @@
 package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
@@ -144,8 +143,7 @@ public class TripServiceImpl implements TripService {
 
     @Override
     @Transactional
-    public TripDTO createTripFromPlan(
-            UUID userId, UUID tripPlanId, TripFromPlanCreationRequest request) {
+    public TripDTO createTripFromPlan(UUID userId, UUID tripPlanId, TripVisibility visibility) {
         // Validate user exists
         userRepository
                 .findById(userId)
@@ -180,8 +178,7 @@ public class TripServiceImpl implements TripService {
                 Trip.builder()
                         .name(tripPlan.getName())
                         .userId(userId)
-                        .tripSettings(
-                                embeddedObjectsInitializer.createTripSettings(request.visibility()))
+                        .tripSettings(embeddedObjectsInitializer.createTripSettings(visibility))
                         .tripDetails(tripDetails)
                         .tripPlanId(tripPlan.getId())
                         .creationTimestamp(Instant.now())
