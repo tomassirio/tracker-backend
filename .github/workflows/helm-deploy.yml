@@ -42,7 +42,7 @@ on:
 
 env:
   ENV_SUFFIX: ${{ inputs.environment == 'dev' && '-dev' || '' }}
-  LOCAL_DOMAIN: ${{ inputs.environment == 'dev' && 'http://wanderer.localwanderer-dev.com' || 'https://wanderer.localwanderer.com' }}
+  LOCAL_DOMAIN: ${{ inputs.environment == 'dev' && 'https://wanderer.localwanderer-dev.com,http://wanderer.localwanderer-dev.com' || 'https://wanderer.localwanderer.com' }}
   CORS_ORIGINS: http://localhost:51538,http://localhost:3000
 
 jobs:
