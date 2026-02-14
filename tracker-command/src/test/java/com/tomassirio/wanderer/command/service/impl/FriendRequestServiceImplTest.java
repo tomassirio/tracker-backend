@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class FriendRequestServiceImplTest {
@@ -26,6 +27,8 @@ class FriendRequestServiceImplTest {
     @Mock private FriendRequestRepository friendRequestRepository;
 
     @Mock private FriendshipService friendshipService;
+
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private FriendRequestServiceImpl friendRequestService;
 

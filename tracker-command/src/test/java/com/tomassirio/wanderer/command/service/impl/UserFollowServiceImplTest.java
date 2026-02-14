@@ -15,11 +15,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class UserFollowServiceImplTest {
 
     @Mock private UserFollowRepository userFollowRepository;
+
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private UserFollowServiceImpl userFollowService;
 
@@ -54,6 +57,7 @@ class UserFollowServiceImplTest {
         assertEquals(followedId, response.followedId());
 
         verify(userFollowRepository).save(any(UserFollow.class));
+        verify(eventPublisher).publishEvent(any(Object.class));
     }
 
     @Test
@@ -83,6 +87,7 @@ class UserFollowServiceImplTest {
         userFollowService.unfollowUser(followerId, followedId);
 
         verify(userFollowRepository).deleteByFollowerIdAndFollowedId(followerId, followedId);
+        verify(eventPublisher).publishEvent(any(Object.class));
     }
 
     @Test
