@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.event;
 
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,4 +16,6 @@ public class TripCreatedEvent {
     private String tripName;
     private UUID ownerId;
     private String visibility;
+    private UUID tripPlanId;
+    private Instant creationTimestamp;
 }

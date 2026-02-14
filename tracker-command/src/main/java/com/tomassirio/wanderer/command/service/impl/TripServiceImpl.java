@@ -11,8 +11,6 @@ import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.TripService;
-import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
-import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
@@ -20,69 +18,69 @@ import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripSettingsDTO;
 import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class TripServiceImpl implements TripService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final TripPlanRepository tripPlanRepository;
     private final TripMapper tripMapper = TripMapper.INSTANCE;
-    private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
-    private final TripStatusTransitionHandler statusTransitionHandler;
     private final OwnershipValidator ownershipValidator;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional
     public TripDTO createTrip(UUID ownerId, TripCreationRequest request) {
+        // Validate user exists
         userRepository
                 .findById(ownerId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        Trip trip =
-                Trip.builder()
-                        .name(request.name())
-                        .userId(ownerId)
-                        .tripSettings(
-                                embeddedObjectsInitializer.createTripSettings(request.visibility()))
-                        .tripDetails(embeddedObjectsInitializer.createTripDetails())
-                        .tripPlanId(null)
-                        .creationTimestamp(Instant.now())
-                        .enabled(true)
-                        .build();
+        // Pre-generate ID for the trip
+        UUID tripId = UUID.randomUUID();
+        Instant creationTimestamp = Instant.now();
 
-        Trip saved = tripRepository.save(trip);
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 TripCreatedEvent.builder()
-                        .tripId(saved.getId())
-                        .tripName(saved.getName())
+                        .tripId(tripId)
+                        .tripName(request.name())
                         .ownerId(ownerId)
-                        .visibility(
-                                saved.getTripSettings() != null
-                                        ? saved.getTripSettings().getVisibility().name()
-                                        : null)
+                        .visibility(request.visibility().name())
+                        .tripPlanId(null)
+                        .creationTimestamp(creationTimestamp)
                         .build());
 
-        return tripMapper.toDTO(saved);
+        // Return DTO with available data (eventual consistency - full data will be in DB
+        // eventually)
+        return new TripDTO(
+                tripId.toString(),
+                request.name(),
+                ownerId.toString(),
+                null, // username not available in command
+                new TripSettingsDTO(null, request.visibility(), null),
+                null, // details will be created by persistence handler
+                null, // tripPlanId
+                List.of(), // comments
+                List.of(), // tripUpdates
+                creationTimestamp,
+                true);
     }
 
     @Override
-    @Transactional
     public TripDTO updateTrip(UUID userId, UUID id, TripUpdateRequest request) {
+        // Validate trip exists and ownership
         Trip trip =
                 tripRepository
                         .findById(id)
@@ -90,32 +88,37 @@ public class TripServiceImpl implements TripService {
 
         ownershipValidator.validateOwnership(trip, userId, Trip::getUserId, Trip::getId, "trip");
 
-        trip.setName(request.name());
-
-        embeddedObjectsInitializer.ensureTripSettings(trip, request.visibility());
-        trip.getTripSettings().setVisibility(request.visibility());
-
-        embeddedObjectsInitializer.ensureTripDetails(trip);
-
-        Trip saved = tripRepository.save(trip);
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 TripMetadataUpdatedEvent.builder()
                         .tripId(id)
-                        .tripName(saved.getName())
-                        .visibility(
-                                saved.getTripSettings() != null
-                                        ? saved.getTripSettings().getVisibility().name()
-                                        : null)
+                        .tripName(request.name())
+                        .visibility(request.visibility().name())
                         .build());
 
-        return tripMapper.toDTO(saved);
+        // Return DTO with updated data (eventual consistency)
+        return new TripDTO(
+                id.toString(),
+                request.name(),
+                userId.toString(),
+                null,
+                new TripSettingsDTO(
+                        trip.getTripSettings() != null
+                                ? trip.getTripSettings().getTripStatus()
+                                : null,
+                        request.visibility(),
+                        null),
+                null,
+                null,
+                List.of(),
+                List.of(),
+                trip.getCreationTimestamp(),
+                trip.getEnabled());
     }
 
     @Override
-    @Transactional
     public void deleteTrip(UUID userId, UUID id) {
+        // Validate trip exists and ownership
         Trip trip =
                 tripRepository
                         .findById(id)
@@ -123,15 +126,13 @@ public class TripServiceImpl implements TripService {
 
         ownershipValidator.validateOwnership(trip, userId, Trip::getUserId, Trip::getId, "trip");
 
-        tripRepository.deleteById(id);
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will delete from DB
         eventPublisher.publishEvent(TripDeletedEvent.builder().tripId(id).ownerId(userId).build());
     }
 
     @Override
-    @Transactional
     public TripDTO changeVisibility(UUID userId, UUID id, TripVisibility visibility) {
+        // Validate trip exists and ownership
         Trip trip =
                 tripRepository
                         .findById(id)
@@ -142,12 +143,7 @@ public class TripServiceImpl implements TripService {
         TripVisibility previousVisibility =
                 trip.getTripSettings() != null ? trip.getTripSettings().getVisibility() : null;
 
-        embeddedObjectsInitializer.ensureTripSettings(trip, visibility);
-        trip.getTripSettings().setVisibility(visibility);
-
-        Trip saved = tripRepository.save(trip);
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 TripVisibilityChangedEvent.builder()
                         .tripId(id)
@@ -156,12 +152,29 @@ public class TripServiceImpl implements TripService {
                                 previousVisibility != null ? previousVisibility.name() : null)
                         .build());
 
-        return tripMapper.toDTO(saved);
+        // Return DTO with updated visibility (eventual consistency)
+        return new TripDTO(
+                id.toString(),
+                trip.getName(),
+                userId.toString(),
+                null,
+                new TripSettingsDTO(
+                        trip.getTripSettings() != null
+                                ? trip.getTripSettings().getTripStatus()
+                                : null,
+                        visibility,
+                        null),
+                null,
+                null,
+                List.of(),
+                List.of(),
+                trip.getCreationTimestamp(),
+                trip.getEnabled());
     }
 
     @Override
-    @Transactional
     public TripDTO changeStatus(UUID userId, UUID id, TripStatus status) {
+        // Validate trip exists and ownership
         Trip trip =
                 tripRepository
                         .findById(id)
@@ -170,15 +183,9 @@ public class TripServiceImpl implements TripService {
         ownershipValidator.validateOwnership(trip, userId, Trip::getUserId, Trip::getId, "trip");
 
         TripStatus previousStatus =
-                embeddedObjectsInitializer.ensureTripSettingsAndGetPreviousStatus(trip, status);
-        trip.getTripSettings().setTripStatus(status);
+                trip.getTripSettings() != null ? trip.getTripSettings().getTripStatus() : null;
 
-        embeddedObjectsInitializer.ensureTripDetails(trip);
-        statusTransitionHandler.handleStatusTransition(trip, previousStatus, status);
-
-        TripDTO result = tripMapper.toDTO(tripRepository.save(trip));
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 TripStatusChangedEvent.builder()
                         .tripId(id)
@@ -186,11 +193,27 @@ public class TripServiceImpl implements TripService {
                         .previousStatus(previousStatus != null ? previousStatus.name() : null)
                         .build());
 
-        return result;
+        // Return DTO with updated status (eventual consistency)
+        return new TripDTO(
+                id.toString(),
+                trip.getName(),
+                userId.toString(),
+                null,
+                new TripSettingsDTO(
+                        status,
+                        trip.getTripSettings() != null
+                                ? trip.getTripSettings().getVisibility()
+                                : null,
+                        null),
+                null,
+                null,
+                List.of(),
+                List.of(),
+                trip.getCreationTimestamp(),
+                trip.getEnabled());
     }
 
     @Override
-    @Transactional
     public TripDTO createTripFromPlan(UUID userId, UUID tripPlanId, TripVisibility visibility) {
         // Validate user exists
         userRepository
@@ -226,13 +249,13 @@ public class TripServiceImpl implements TripService {
                 Trip.builder()
                         .name(tripPlan.getName())
                         .userId(userId)
-                        .tripSettings(embeddedObjectsInitializer.createTripSettings(visibility))
+                        .tripSettings(null) // Will be created by persistence handler
                         .tripDetails(tripDetails)
                         .tripPlanId(tripPlan.getId())
                         .creationTimestamp(Instant.now())
                         .enabled(true)
                         .build();
 
-        return tripMapper.toDTO(tripRepository.save(trip));
+        return tripMapper.toDTO(trip);
     }
 }

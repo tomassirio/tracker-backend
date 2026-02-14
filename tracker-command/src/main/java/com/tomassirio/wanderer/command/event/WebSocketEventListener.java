@@ -9,25 +9,29 @@ import com.tomassirio.wanderer.command.websocket.UserFollowPayload;
 import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Event listener that handles domain events and broadcasts them via WebSocket.
  *
  * <p>This decouples the business logic in services from WebSocket broadcasting concerns. Services
- * publish domain events, and this listener asynchronously broadcasts them to WebSocket clients.
+ * publish domain events, persistence handlers write to DB, and this listener broadcasts to
+ * WebSocket clients after the transaction commits.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Order(2) // Execute after persistence
 public class WebSocketEventListener {
 
     private final WebSocketEventService webSocketEventService;
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTripStatusChanged(TripStatusChangedEvent event) {
         log.debug(
                 "Handling TripStatusChangedEvent for trip: {}, status: {}",
@@ -38,7 +42,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTripUpdated(TripUpdatedEvent event) {
         log.debug("Handling TripUpdatedEvent for trip: {}", event.getTripId());
         TripUpdatedPayload payload =
@@ -53,7 +57,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCommentAdded(CommentAddedEvent event) {
         log.debug(
                 "Handling CommentAddedEvent for trip: {}, comment: {}",
@@ -71,7 +75,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleCommentReaction(CommentReactionEvent event) {
         log.debug(
                 "Handling CommentReactionEvent for trip: {}, comment: {}, added: {}",
@@ -94,7 +98,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendRequestSent(FriendRequestSentEvent event) {
         log.debug(
                 "Handling FriendRequestSentEvent: {} from {} to {}",
@@ -112,7 +116,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendRequestAccepted(FriendRequestAcceptedEvent event) {
         log.debug("Handling FriendRequestAcceptedEvent: {}", event.getRequestId());
         FriendRequestPayload payload =
@@ -126,7 +130,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleFriendRequestDeclined(FriendRequestDeclinedEvent event) {
         log.debug("Handling FriendRequestDeclinedEvent: {}", event.getRequestId());
         FriendRequestPayload payload =
@@ -140,7 +144,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleUserFollowed(UserFollowedEvent event) {
         log.debug(
                 "Handling UserFollowedEvent: {} followed {}",
@@ -156,7 +160,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleUserUnfollowed(UserUnfollowedEvent event) {
         log.debug(
                 "Handling UserUnfollowedEvent: {} unfollowed {}",
@@ -172,7 +176,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTripCreated(TripCreatedEvent event) {
         log.debug("Handling TripCreatedEvent: {}", event.getTripId());
         TripLifecyclePayload payload =
@@ -186,7 +190,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTripMetadataUpdated(TripMetadataUpdatedEvent event) {
         log.debug("Handling TripMetadataUpdatedEvent: {}", event.getTripId());
         TripLifecyclePayload payload =
@@ -200,7 +204,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTripDeleted(TripDeletedEvent event) {
         log.debug("Handling TripDeletedEvent: {}", event.getTripId());
         TripLifecyclePayload payload =
@@ -214,7 +218,7 @@ public class WebSocketEventListener {
     }
 
     @Async
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handleTripVisibilityChanged(TripVisibilityChangedEvent event) {
         log.debug("Handling TripVisibilityChangedEvent: {}", event.getTripId());
         webSocketEventService.broadcastTripVisibilityChanged(
