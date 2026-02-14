@@ -118,6 +118,13 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Awaitility for async testing -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Cucumber (test scope) - versions centralized in parent dependencyManagement -->
         <dependency>
             <groupId>io.cucumber</groupId>
