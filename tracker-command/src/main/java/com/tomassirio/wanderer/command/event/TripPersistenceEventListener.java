@@ -43,7 +43,16 @@ public class TripPersistenceEventListener {
                         .tripSettings(
                                 embeddedObjectsInitializer.createTripSettings(
                                         TripVisibility.valueOf(event.getVisibility())))
-                        .tripDetails(embeddedObjectsInitializer.createTripDetails())
+                        .tripDetails(
+                                event.getStartLocation() != null
+                                                || event.getStartTimestamp() != null
+                                        ? embeddedObjectsInitializer.createTripDetailsFromEvent(
+                                                event.getStartLocation(),
+                                                event.getEndLocation(),
+                                                event.getWaypoints(),
+                                                event.getStartTimestamp(),
+                                                event.getEndTimestamp())
+                                        : embeddedObjectsInitializer.createTripDetails())
                         .tripPlanId(event.getTripPlanId())
                         .creationTimestamp(event.getCreationTimestamp())
                         .enabled(true)

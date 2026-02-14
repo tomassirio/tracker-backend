@@ -566,8 +566,10 @@ class TripServiceImplTest {
 
         // Then
         assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
-        assertThat(updatedTrip.tripDetails().startTimestamp())
-                .isNotNull(); // Should set start timestamp
+        // In CQRS with eventual consistency, timestamps are set asynchronously by the persistence
+        // listener
+        // So the command returns null timestamps - they will be set later
+        assertThat(updatedTrip.tripDetails().startTimestamp()).isNull(); // Set async by persistence
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
@@ -644,9 +646,9 @@ class TripServiceImplTest {
 
         // Then
         assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.FINISHED);
+        // In CQRS, timestamps from existing trip are returned but end timestamp is set async
         assertThat(updatedTrip.tripDetails().startTimestamp()).isEqualTo(startTime);
-        assertThat(updatedTrip.tripDetails().endTimestamp())
-                .isNotNull(); // Should set end timestamp
+        assertThat(updatedTrip.tripDetails().endTimestamp()).isNull(); // Set async by persistence
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
@@ -689,7 +691,8 @@ class TripServiceImplTest {
 
         // Then
         assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
-        assertThat(updatedTrip.tripDetails().startTimestamp()).isNotNull();
+        // In CQRS with eventual consistency, start timestamp is set asynchronously
+        assertThat(updatedTrip.tripDetails().startTimestamp()).isNull(); // Set async by persistence
         assertThat(updatedTrip.tripDetails().endTimestamp()).isNull();
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
@@ -734,9 +737,9 @@ class TripServiceImplTest {
 
         // Then
         assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.PAUSED);
+        // In CQRS, existing timestamps are preserved in the returned DTO
         assertThat(updatedTrip.tripDetails().startTimestamp()).isEqualTo(startTime);
-        assertThat(updatedTrip.tripDetails().endTimestamp())
-                .isNull(); // Should not set end timestamp for pause
+        assertThat(updatedTrip.tripDetails().endTimestamp()).isNull(); // Remains null for pause
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }

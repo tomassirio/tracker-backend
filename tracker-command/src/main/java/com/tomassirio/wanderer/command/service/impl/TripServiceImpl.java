@@ -13,7 +13,6 @@ import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.commons.domain.Trip;
-import com.tomassirio.wanderer.commons.domain.TripDetails;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
@@ -252,9 +251,19 @@ public class TripServiceImpl implements TripService {
         ownershipValidator.validateOwnership(
                 tripPlan, userId, TripPlan::getUserId, TripPlan::getId, "trip plan");
 
-        // Create trip details from trip plan data
-        TripDetails tripDetails =
-                TripDetails.builder()
+        // Pre-generate ID and timestamp
+        UUID tripId = UUID.randomUUID();
+        Instant creationTimestamp = Instant.now();
+
+        // Publish event - persistence handler will write to DB
+        eventPublisher.publishEvent(
+                TripCreatedEvent.builder()
+                        .tripId(tripId)
+                        .tripName(tripPlan.getName())
+                        .ownerId(userId)
+                        .visibility(visibility.name())
+                        .tripPlanId(tripPlanId)
+                        .creationTimestamp(creationTimestamp)
                         .startLocation(tripPlan.getStartLocation())
                         .endLocation(tripPlan.getEndLocation())
                         .waypoints(
@@ -265,20 +274,25 @@ public class TripServiceImpl implements TripService {
                                 tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC))
                         .endTimestamp(
                                 tripPlan.getEndDate().atStartOfDay().toInstant(ZoneOffset.UTC))
-                        .build();
+                        .build());
 
-        // Create trip from plan
-        Trip trip =
-                Trip.builder()
-                        .name(tripPlan.getName())
-                        .userId(userId)
-                        .tripSettings(null) // Will be created by persistence handler
-                        .tripDetails(tripDetails)
-                        .tripPlanId(tripPlan.getId())
-                        .creationTimestamp(Instant.now())
-                        .enabled(true)
-                        .build();
-
-        return tripMapper.toDTO(trip);
+        // Return DTO with available data (eventual consistency)
+        return new TripDTO(
+                tripId.toString(),
+                tripPlan.getName(),
+                userId.toString(),
+                null, // username not available in command
+                new TripSettingsDTO(TripStatus.CREATED, visibility, null),
+                new TripDetailsDTO(
+                        tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC),
+                        tripPlan.getEndDate().atStartOfDay().toInstant(ZoneOffset.UTC),
+                        tripPlan.getStartLocation(),
+                        tripPlan.getEndLocation(),
+                        tripPlan.getWaypoints() != null ? tripPlan.getWaypoints() : List.of()),
+                tripPlanId.toString(),
+                List.of(), // comments
+                List.of(), // tripUpdates
+                creationTimestamp,
+                true);
     }
 }
