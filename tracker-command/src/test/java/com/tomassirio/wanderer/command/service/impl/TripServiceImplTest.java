@@ -11,6 +11,11 @@ import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
+import com.tomassirio.wanderer.command.event.TripCreatedEvent;
+import com.tomassirio.wanderer.command.event.TripDeletedEvent;
+import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;
+import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
+import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
@@ -171,14 +176,6 @@ class TripServiceImplTest {
                 TestEntityFactory.createTripCreationRequest(
                         "Summer Road Trip", TripVisibility.PUBLIC);
 
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(
-                        invocation -> {
-                            Trip trip = invocation.getArgument(0);
-                            trip.setId(UUID.randomUUID());
-                            return trip;
-                        });
-
         // When
         TripDTO createdTrip = tripService.createTrip(USER_ID, request);
 
@@ -192,7 +189,7 @@ class TripServiceImplTest {
         assertThat(createdTrip.enabled()).isTrue();
         assertThat(createdTrip.creationTimestamp()).isNotNull();
 
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
         verify(userRepository).findById(USER_ID);
     }
 
@@ -201,14 +198,6 @@ class TripServiceImplTest {
         // Given
         TripCreationRequest request =
                 TestEntityFactory.createTripCreationRequest("Private Trip", TripVisibility.PRIVATE);
-
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(
-                        invocation -> {
-                            Trip trip = invocation.getArgument(0);
-                            trip.setId(UUID.randomUUID());
-                            return trip;
-                        });
 
         // When
         TripDTO createdTrip = tripService.createTrip(USER_ID, request);
@@ -219,7 +208,7 @@ class TripServiceImplTest {
         assertThat(createdTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
         assertThat(createdTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
 
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
     }
 
     @Test
@@ -227,14 +216,6 @@ class TripServiceImplTest {
         // Given
         TripCreationRequest request =
                 TestEntityFactory.createTripCreationRequest("New Trip", TripVisibility.PUBLIC);
-
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(
-                        invocation -> {
-                            Trip trip = invocation.getArgument(0);
-                            trip.setId(UUID.randomUUID());
-                            return trip;
-                        });
 
         // When
         TripDTO createdTrip = tripService.createTrip(USER_ID, request);
@@ -246,7 +227,7 @@ class TripServiceImplTest {
         assertThat(createdTrip.tripPlanId()).isNull();
         assertThat(createdTrip.tripSettings().updateRefresh()).isNull();
 
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
     }
 
     @Test
@@ -264,7 +245,7 @@ class TripServiceImplTest {
                 .hasMessage("User not found");
 
         verify(userRepository).findById(nonExistentUserId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -303,8 +284,6 @@ class TripServiceImplTest {
                         "Updated Trip Name", TripVisibility.PUBLIC);
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         TripDTO updatedTrip = tripService.updateTrip(USER_ID, tripId, request);
@@ -316,7 +295,7 @@ class TripServiceImplTest {
         assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
 
         verify(tripRepository).findById(tripId);
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripMetadataUpdatedEvent.class));
     }
 
     @Test
@@ -334,7 +313,7 @@ class TripServiceImplTest {
                 .hasMessage("Trip not found");
 
         verify(tripRepository).findById(nonExistentTripId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -372,8 +351,6 @@ class TripServiceImplTest {
                 TestEntityFactory.createTripUpdateRequest("Trip Name", TripVisibility.PUBLIC);
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         TripDTO updatedTrip = tripService.updateTrip(USER_ID, tripId, request);
@@ -382,7 +359,7 @@ class TripServiceImplTest {
         assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
         assertThat(updatedTrip.name()).isEqualTo("Trip Name");
 
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripMetadataUpdatedEvent.class));
     }
 
     @Test
@@ -417,7 +394,7 @@ class TripServiceImplTest {
                 .hasMessageContaining("does not have permission");
 
         verify(tripRepository).findById(tripId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -447,7 +424,7 @@ class TripServiceImplTest {
 
         // Then
         verify(tripRepository).findById(tripId);
-        verify(tripRepository).deleteById(tripId);
+        verify(eventPublisher).publishEvent(any(TripDeletedEvent.class));
     }
 
     @Test
@@ -479,7 +456,7 @@ class TripServiceImplTest {
                 .hasMessageContaining("does not have permission");
 
         verify(tripRepository).findById(tripId);
-        verify(tripRepository, never()).deleteById(tripId);
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -506,8 +483,6 @@ class TripServiceImplTest {
                         .build();
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         TripDTO updatedTrip = tripService.changeVisibility(USER_ID, tripId, TripVisibility.PRIVATE);
@@ -515,7 +490,7 @@ class TripServiceImplTest {
         // Then
         assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
         verify(tripRepository).findById(tripId);
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripVisibilityChangedEvent.class));
     }
 
     @Test
@@ -550,7 +525,7 @@ class TripServiceImplTest {
                 .hasMessageContaining("does not have permission");
 
         verify(tripRepository).findById(tripId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -585,8 +560,6 @@ class TripServiceImplTest {
                         .build();
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
@@ -596,7 +569,7 @@ class TripServiceImplTest {
         assertThat(updatedTrip.tripDetails().startTimestamp())
                 .isNotNull(); // Should set start timestamp
         verify(tripRepository).findById(tripId);
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
 
     @Test
@@ -629,7 +602,7 @@ class TripServiceImplTest {
                 .hasMessageContaining("does not have permission");
 
         verify(tripRepository).findById(tripId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -665,8 +638,6 @@ class TripServiceImplTest {
                         .build();
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.FINISHED);
@@ -677,7 +648,7 @@ class TripServiceImplTest {
         assertThat(updatedTrip.tripDetails().endTimestamp())
                 .isNotNull(); // Should set end timestamp
         verify(tripRepository).findById(tripId);
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
 
     @Test
@@ -712,8 +683,6 @@ class TripServiceImplTest {
                         .build();
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
@@ -723,7 +692,7 @@ class TripServiceImplTest {
         assertThat(updatedTrip.tripDetails().startTimestamp()).isNotNull();
         assertThat(updatedTrip.tripDetails().endTimestamp()).isNull();
         verify(tripRepository).findById(tripId);
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
 
     @Test
@@ -759,8 +728,6 @@ class TripServiceImplTest {
                         .build();
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.PAUSED);
@@ -771,7 +738,7 @@ class TripServiceImplTest {
         assertThat(updatedTrip.tripDetails().endTimestamp())
                 .isNull(); // Should not set end timestamp for pause
         verify(tripRepository).findById(tripId);
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
 
     @Test
@@ -790,7 +757,7 @@ class TripServiceImplTest {
                 .hasMessage("Trip not found");
 
         verify(tripRepository).findById(nonExistentTripId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -809,7 +776,7 @@ class TripServiceImplTest {
                 .hasMessage("Trip not found");
 
         verify(tripRepository).findById(nonExistentTripId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     // Tests for createTripFromPlan
@@ -827,13 +794,6 @@ class TripServiceImplTest {
                         java.time.LocalDate.now().plusDays(7));
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(
-                        invocation -> {
-                            Trip trip = invocation.getArgument(0);
-                            trip.setId(UUID.randomUUID());
-                            return trip;
-                        });
 
         // When
         TripDTO createdTrip =
@@ -856,7 +816,7 @@ class TripServiceImplTest {
         assertThat(createdTrip.enabled()).isTrue();
         assertThat(createdTrip.creationTimestamp()).isNotNull();
 
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
         verify(tripPlanRepository).findById(tripPlanId);
         verify(userRepository).findById(USER_ID);
         verify(ownershipValidator)
@@ -881,13 +841,6 @@ class TripServiceImplTest {
                         java.time.LocalDate.now().plusDays(7));
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(
-                        invocation -> {
-                            Trip trip = invocation.getArgument(0);
-                            trip.setId(UUID.randomUUID());
-                            return trip;
-                        });
 
         // When
         TripDTO createdTrip =
@@ -899,7 +852,7 @@ class TripServiceImplTest {
         assertThat(createdTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
         assertThat(createdTrip.tripPlanId()).isEqualTo(tripPlanId.toString());
 
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
     }
 
     @Test
@@ -918,7 +871,7 @@ class TripServiceImplTest {
                 .hasMessage("Trip plan not found");
 
         verify(tripPlanRepository).findById(nonExistentPlanId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -944,7 +897,7 @@ class TripServiceImplTest {
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(tripPlanRepository).findById(tripPlanId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -964,7 +917,7 @@ class TripServiceImplTest {
                 .hasMessage("User not found");
 
         verify(userRepository).findById(nonExistentUserId);
-        verify(tripRepository, never()).save(any(Trip.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -999,13 +952,6 @@ class TripServiceImplTest {
                         .build();
 
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
-        when(tripRepository.save(any(Trip.class)))
-                .thenAnswer(
-                        invocation -> {
-                            Trip trip = invocation.getArgument(0);
-                            trip.setId(UUID.randomUUID());
-                            return trip;
-                        });
 
         // When
         TripDTO createdTrip =
@@ -1020,7 +966,7 @@ class TripServiceImplTest {
         assertThat(createdTrip.tripDetails().waypoints().get(1).getLat()).isEqualTo(39.7392);
         assertThat(createdTrip.tripDetails().waypoints().get(1).getLon()).isEqualTo(-104.9903);
 
-        verify(tripRepository).save(any(Trip.class));
+        verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
         verify(tripPlanRepository).findById(tripPlanId);
     }
 }

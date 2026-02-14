@@ -18,6 +18,7 @@ import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripDetailsDTO;
 import com.tomassirio.wanderer.commons.dto.TripSettingsDTO;
 import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -69,8 +70,9 @@ public class TripServiceImpl implements TripService {
                 request.name(),
                 ownerId.toString(),
                 null, // username not available in command
-                new TripSettingsDTO(null, request.visibility(), null),
-                null, // details will be created by persistence handler
+                new TripSettingsDTO(TripStatus.CREATED, request.visibility(), null),
+                new TripDetailsDTO(
+                        null, null, null, null, List.of()), // details with nulls initially
                 null, // tripPlanId
                 List.of(), // comments
                 List.of(), // tripUpdates
@@ -108,7 +110,14 @@ public class TripServiceImpl implements TripService {
                                 : null,
                         request.visibility(),
                         null),
-                null,
+                trip.getTripDetails() != null
+                        ? new TripDetailsDTO(
+                                trip.getTripDetails().getStartTimestamp(),
+                                trip.getTripDetails().getEndTimestamp(),
+                                trip.getTripDetails().getStartLocation(),
+                                trip.getTripDetails().getEndLocation(),
+                                trip.getTripDetails().getWaypoints())
+                        : null,
                 null,
                 List.of(),
                 List.of(),
@@ -164,7 +173,14 @@ public class TripServiceImpl implements TripService {
                                 : null,
                         visibility,
                         null),
-                null,
+                trip.getTripDetails() != null
+                        ? new TripDetailsDTO(
+                                trip.getTripDetails().getStartTimestamp(),
+                                trip.getTripDetails().getEndTimestamp(),
+                                trip.getTripDetails().getStartLocation(),
+                                trip.getTripDetails().getEndLocation(),
+                                trip.getTripDetails().getWaypoints())
+                        : null,
                 null,
                 List.of(),
                 List.of(),
@@ -205,7 +221,14 @@ public class TripServiceImpl implements TripService {
                                 ? trip.getTripSettings().getVisibility()
                                 : null,
                         null),
-                null,
+                trip.getTripDetails() != null
+                        ? new TripDetailsDTO(
+                                trip.getTripDetails().getStartTimestamp(),
+                                trip.getTripDetails().getEndTimestamp(),
+                                trip.getTripDetails().getStartLocation(),
+                                trip.getTripDetails().getEndLocation(),
+                                trip.getTripDetails().getWaypoints())
+                        : null,
                 null,
                 List.of(),
                 List.of(),
