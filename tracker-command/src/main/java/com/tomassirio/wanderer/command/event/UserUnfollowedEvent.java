@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserUnfollowedEvent {
+public class UserUnfollowedEvent implements DomainEvent {
     private UUID followerId;
     private UUID followedId;
 }

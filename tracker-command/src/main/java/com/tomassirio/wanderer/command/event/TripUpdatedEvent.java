@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TripUpdatedEvent {
+public class TripUpdatedEvent implements DomainEvent {
     private UUID tripId;
     private Double latitude;
     private Double longitude;

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TripStatusChangedEvent {
+public class TripStatusChangedEvent implements DomainEvent {
     private UUID tripId;
     private String newStatus;
     private String previousStatus;

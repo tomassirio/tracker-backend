@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FriendRequestDeclinedEvent {
+public class FriendRequestDeclinedEvent implements DomainEvent {
     private UUID requestId;
     private UUID senderId;
     private UUID receiverId;

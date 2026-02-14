@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TripCreatedEvent {
+public class TripCreatedEvent implements DomainEvent {
     private UUID tripId;
     private String tripName;
     private UUID ownerId;

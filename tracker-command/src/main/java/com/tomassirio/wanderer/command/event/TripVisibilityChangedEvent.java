@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TripVisibilityChangedEvent {
+public class TripVisibilityChangedEvent implements DomainEvent {
     private UUID tripId;
     private String newVisibility;
     private String previousVisibility;

@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TripMetadataUpdatedEvent {
+public class TripMetadataUpdatedEvent implements DomainEvent {
     private UUID tripId;
     private String tripName;
     private String visibility;

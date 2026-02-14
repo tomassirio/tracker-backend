@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CommentReactionEvent {
+public class CommentReactionEvent implements DomainEvent {
     private UUID tripId;
     private UUID commentId;
     private String reactionType;

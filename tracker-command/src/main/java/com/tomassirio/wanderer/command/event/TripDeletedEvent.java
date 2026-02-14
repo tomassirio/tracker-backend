@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TripDeletedEvent {
+public class TripDeletedEvent implements DomainEvent {
     private UUID tripId;
     private UUID ownerId;
 }
