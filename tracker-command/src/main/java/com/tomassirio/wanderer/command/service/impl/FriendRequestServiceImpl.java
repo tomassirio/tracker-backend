@@ -1,5 +1,8 @@
 package com.tomassirio.wanderer.command.service.impl;
 
+import com.tomassirio.wanderer.command.event.FriendRequestAcceptedEvent;
+import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
+import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
 import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.command.service.FriendshipService;
@@ -11,6 +14,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +25,7 @@ public class FriendRequestServiceImpl implements FriendRequestService {
 
     private final FriendRequestRepository friendRequestRepository;
     private final FriendshipService friendshipService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -54,6 +59,15 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         FriendRequest saved = friendRequestRepository.save(request);
         log.info("Friend request created with ID: {}", saved.getId());
 
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                FriendRequestSentEvent.builder()
+                        .requestId(saved.getId())
+                        .senderId(senderId)
+                        .receiverId(receiverId)
+                        .status(FriendRequestStatus.PENDING.name())
+                        .build());
+
         return mapToResponse(saved);
     }
 
@@ -84,6 +98,15 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         friendshipService.createFriendship(request.getSenderId(), request.getReceiverId());
 
         log.info("Friend request {} accepted", requestId);
+
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                FriendRequestAcceptedEvent.builder()
+                        .requestId(requestId)
+                        .senderId(request.getSenderId())
+                        .receiverId(request.getReceiverId())
+                        .build());
+
         return mapToResponse(updated);
     }
 
@@ -111,6 +134,15 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         FriendRequest updated = friendRequestRepository.save(request);
 
         log.info("Friend request {} declined", requestId);
+
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                FriendRequestDeclinedEvent.builder()
+                        .requestId(requestId)
+                        .senderId(request.getSenderId())
+                        .receiverId(request.getReceiverId())
+                        .build());
+
         return mapToResponse(updated);
     }
 

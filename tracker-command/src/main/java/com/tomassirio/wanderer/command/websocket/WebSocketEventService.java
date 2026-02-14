@@ -49,6 +49,93 @@ public class WebSocketEventService {
         broadcastToTrip(payload.getTripId(), event);
     }
 
+    public void broadcastFriendRequestSent(FriendRequestPayload payload) {
+        WebSocketEvent senderEvent =
+                WebSocketEvent.create("FRIEND_REQUEST_SENT", payload.getSenderId(), payload);
+        broadcastToUser(payload.getSenderId(), senderEvent);
+
+        WebSocketEvent receiverEvent =
+                WebSocketEvent.create("FRIEND_REQUEST_RECEIVED", payload.getReceiverId(), payload);
+        broadcastToUser(payload.getReceiverId(), receiverEvent);
+    }
+
+    public void broadcastFriendRequestAccepted(FriendRequestPayload payload) {
+        WebSocketEvent senderEvent =
+                WebSocketEvent.create("FRIEND_REQUEST_ACCEPTED", payload.getSenderId(), payload);
+        broadcastToUser(payload.getSenderId(), senderEvent);
+
+        WebSocketEvent receiverEvent =
+                WebSocketEvent.create("FRIEND_REQUEST_ACCEPTED", payload.getReceiverId(), payload);
+        broadcastToUser(payload.getReceiverId(), receiverEvent);
+    }
+
+    public void broadcastFriendRequestDeclined(FriendRequestPayload payload) {
+        WebSocketEvent senderEvent =
+                WebSocketEvent.create("FRIEND_REQUEST_DECLINED", payload.getSenderId(), payload);
+        broadcastToUser(payload.getSenderId(), senderEvent);
+
+        WebSocketEvent receiverEvent =
+                WebSocketEvent.create("FRIEND_REQUEST_DECLINED", payload.getReceiverId(), payload);
+        broadcastToUser(payload.getReceiverId(), receiverEvent);
+    }
+
+    public void broadcastUserFollowed(UserFollowPayload payload) {
+        WebSocketEvent event =
+                WebSocketEvent.create("USER_FOLLOWED", payload.getFollowedId(), payload);
+        broadcastToUser(payload.getFollowedId(), event);
+    }
+
+    public void broadcastUserUnfollowed(UserFollowPayload payload) {
+        WebSocketEvent event =
+                WebSocketEvent.create("USER_UNFOLLOWED", payload.getFollowedId(), payload);
+        broadcastToUser(payload.getFollowedId(), event);
+    }
+
+    public void broadcastTripCreated(TripLifecyclePayload payload) {
+        WebSocketEvent event = WebSocketEvent.create("TRIP_CREATED", payload.getTripId(), payload);
+        broadcastToTrip(payload.getTripId(), event);
+    }
+
+    public void broadcastTripMetadataUpdated(TripLifecyclePayload payload) {
+        WebSocketEvent event =
+                WebSocketEvent.create("TRIP_METADATA_UPDATED", payload.getTripId(), payload);
+        broadcastToTrip(payload.getTripId(), event);
+    }
+
+    public void broadcastTripDeleted(TripLifecyclePayload payload) {
+        WebSocketEvent event = WebSocketEvent.create("TRIP_DELETED", payload.getTripId(), payload);
+        broadcastToTrip(payload.getTripId(), event);
+    }
+
+    public void broadcastTripVisibilityChanged(
+            UUID tripId, String newVisibility, String previousVisibility) {
+        TripVisibilityChangedPayload payload =
+                TripVisibilityChangedPayload.builder()
+                        .tripId(tripId)
+                        .newVisibility(newVisibility)
+                        .previousVisibility(previousVisibility)
+                        .build();
+
+        WebSocketEvent event = WebSocketEvent.create("TRIP_VISIBILITY_CHANGED", tripId, payload);
+        broadcastToTrip(tripId, event);
+    }
+
+    private void broadcastToUser(UUID userId, WebSocketEvent event) {
+        String topic = "/topic/users/" + userId;
+
+        try {
+            String message = objectMapper.writeValueAsString(event);
+            sessionManager.broadcast(topic, message);
+            log.info(
+                    "Broadcast {} event to user {} ({} subscribers)",
+                    event.getType(),
+                    userId,
+                    sessionManager.getSubscribersCount(topic));
+        } catch (JsonProcessingException e) {
+            log.error("Error serializing WebSocket event", e);
+        }
+    }
+
     private void broadcastToTrip(UUID tripId, WebSocketEvent event) {
         String topic = "/topic/trips/" + tripId;
 

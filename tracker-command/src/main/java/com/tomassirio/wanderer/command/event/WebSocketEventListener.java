@@ -2,7 +2,10 @@ package com.tomassirio.wanderer.command.event;
 
 import com.tomassirio.wanderer.command.websocket.CommentAddedPayload;
 import com.tomassirio.wanderer.command.websocket.CommentReactionPayload;
+import com.tomassirio.wanderer.command.websocket.FriendRequestPayload;
+import com.tomassirio.wanderer.command.websocket.TripLifecyclePayload;
 import com.tomassirio.wanderer.command.websocket.TripUpdatedPayload;
+import com.tomassirio.wanderer.command.websocket.UserFollowPayload;
 import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,5 +91,133 @@ public class WebSocketEventListener {
         } else {
             webSocketEventService.broadcastCommentReactionRemoved(payload);
         }
+    }
+
+    @Async
+    @EventListener
+    public void handleFriendRequestSent(FriendRequestSentEvent event) {
+        log.debug(
+                "Handling FriendRequestSentEvent: {} from {} to {}",
+                event.getRequestId(),
+                event.getSenderId(),
+                event.getReceiverId());
+        FriendRequestPayload payload =
+                FriendRequestPayload.builder()
+                        .requestId(event.getRequestId())
+                        .senderId(event.getSenderId())
+                        .receiverId(event.getReceiverId())
+                        .status(event.getStatus())
+                        .build();
+        webSocketEventService.broadcastFriendRequestSent(payload);
+    }
+
+    @Async
+    @EventListener
+    public void handleFriendRequestAccepted(FriendRequestAcceptedEvent event) {
+        log.debug("Handling FriendRequestAcceptedEvent: {}", event.getRequestId());
+        FriendRequestPayload payload =
+                FriendRequestPayload.builder()
+                        .requestId(event.getRequestId())
+                        .senderId(event.getSenderId())
+                        .receiverId(event.getReceiverId())
+                        .status("ACCEPTED")
+                        .build();
+        webSocketEventService.broadcastFriendRequestAccepted(payload);
+    }
+
+    @Async
+    @EventListener
+    public void handleFriendRequestDeclined(FriendRequestDeclinedEvent event) {
+        log.debug("Handling FriendRequestDeclinedEvent: {}", event.getRequestId());
+        FriendRequestPayload payload =
+                FriendRequestPayload.builder()
+                        .requestId(event.getRequestId())
+                        .senderId(event.getSenderId())
+                        .receiverId(event.getReceiverId())
+                        .status("DECLINED")
+                        .build();
+        webSocketEventService.broadcastFriendRequestDeclined(payload);
+    }
+
+    @Async
+    @EventListener
+    public void handleUserFollowed(UserFollowedEvent event) {
+        log.debug(
+                "Handling UserFollowedEvent: {} followed {}",
+                event.getFollowerId(),
+                event.getFollowedId());
+        UserFollowPayload payload =
+                UserFollowPayload.builder()
+                        .followId(event.getFollowId())
+                        .followerId(event.getFollowerId())
+                        .followedId(event.getFollowedId())
+                        .build();
+        webSocketEventService.broadcastUserFollowed(payload);
+    }
+
+    @Async
+    @EventListener
+    public void handleUserUnfollowed(UserUnfollowedEvent event) {
+        log.debug(
+                "Handling UserUnfollowedEvent: {} unfollowed {}",
+                event.getFollowerId(),
+                event.getFollowedId());
+        UserFollowPayload payload =
+                UserFollowPayload.builder()
+                        .followId(null)
+                        .followerId(event.getFollowerId())
+                        .followedId(event.getFollowedId())
+                        .build();
+        webSocketEventService.broadcastUserUnfollowed(payload);
+    }
+
+    @Async
+    @EventListener
+    public void handleTripCreated(TripCreatedEvent event) {
+        log.debug("Handling TripCreatedEvent: {}", event.getTripId());
+        TripLifecyclePayload payload =
+                TripLifecyclePayload.builder()
+                        .tripId(event.getTripId())
+                        .tripName(event.getTripName())
+                        .ownerId(event.getOwnerId())
+                        .visibility(event.getVisibility())
+                        .build();
+        webSocketEventService.broadcastTripCreated(payload);
+    }
+
+    @Async
+    @EventListener
+    public void handleTripMetadataUpdated(TripMetadataUpdatedEvent event) {
+        log.debug("Handling TripMetadataUpdatedEvent: {}", event.getTripId());
+        TripLifecyclePayload payload =
+                TripLifecyclePayload.builder()
+                        .tripId(event.getTripId())
+                        .tripName(event.getTripName())
+                        .ownerId(null)
+                        .visibility(event.getVisibility())
+                        .build();
+        webSocketEventService.broadcastTripMetadataUpdated(payload);
+    }
+
+    @Async
+    @EventListener
+    public void handleTripDeleted(TripDeletedEvent event) {
+        log.debug("Handling TripDeletedEvent: {}", event.getTripId());
+        TripLifecyclePayload payload =
+                TripLifecyclePayload.builder()
+                        .tripId(event.getTripId())
+                        .tripName(null)
+                        .ownerId(event.getOwnerId())
+                        .visibility(null)
+                        .build();
+        webSocketEventService.broadcastTripDeleted(payload);
+    }
+
+    @Async
+    @EventListener
+    public void handleTripVisibilityChanged(TripVisibilityChangedEvent event) {
+        log.debug("Handling TripVisibilityChangedEvent: {}", event.getTripId());
+        webSocketEventService.broadcastTripVisibilityChanged(
+                event.getTripId(), event.getNewVisibility(), event.getPreviousVisibility());
     }
 }

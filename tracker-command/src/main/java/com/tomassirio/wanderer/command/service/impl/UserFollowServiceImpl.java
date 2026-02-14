@@ -1,5 +1,7 @@
 package com.tomassirio.wanderer.command.service.impl;
 
+import com.tomassirio.wanderer.command.event.UserFollowedEvent;
+import com.tomassirio.wanderer.command.event.UserUnfollowedEvent;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
@@ -8,6 +10,7 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserFollowServiceImpl implements UserFollowService {
 
     private final UserFollowRepository userFollowRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -41,6 +45,14 @@ public class UserFollowServiceImpl implements UserFollowService {
         UserFollow saved = userFollowRepository.save(follow);
         log.info("User {} now follows user {}", followerId, followedId);
 
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                UserFollowedEvent.builder()
+                        .followId(saved.getId())
+                        .followerId(followerId)
+                        .followedId(followedId)
+                        .build());
+
         return new UserFollowResponse(
                 saved.getId(), saved.getFollowerId(), saved.getFollowedId(), saved.getCreatedAt());
     }
@@ -51,6 +63,13 @@ public class UserFollowServiceImpl implements UserFollowService {
         log.info("User {} unfollowing user {}", followerId, followedId);
         userFollowRepository.deleteByFollowerIdAndFollowedId(followerId, followedId);
         log.info("User {} unfollowed user {}", followerId, followedId);
+
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                UserUnfollowedEvent.builder()
+                        .followerId(followerId)
+                        .followedId(followedId)
+                        .build());
     }
 
     @Override

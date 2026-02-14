@@ -2,7 +2,11 @@ package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.dto.TripCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
+import com.tomassirio.wanderer.command.event.TripCreatedEvent;
+import com.tomassirio.wanderer.command.event.TripDeletedEvent;
+import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
+import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
@@ -59,7 +63,21 @@ public class TripServiceImpl implements TripService {
                         .enabled(true)
                         .build();
 
-        return tripMapper.toDTO(tripRepository.save(trip));
+        Trip saved = tripRepository.save(trip);
+
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                TripCreatedEvent.builder()
+                        .tripId(saved.getId())
+                        .tripName(saved.getName())
+                        .ownerId(ownerId)
+                        .visibility(
+                                saved.getTripSettings() != null
+                                        ? saved.getTripSettings().getVisibility().name()
+                                        : null)
+                        .build());
+
+        return tripMapper.toDTO(saved);
     }
 
     @Override
@@ -79,7 +97,20 @@ public class TripServiceImpl implements TripService {
 
         embeddedObjectsInitializer.ensureTripDetails(trip);
 
-        return tripMapper.toDTO(tripRepository.save(trip));
+        Trip saved = tripRepository.save(trip);
+
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                TripMetadataUpdatedEvent.builder()
+                        .tripId(id)
+                        .tripName(saved.getName())
+                        .visibility(
+                                saved.getTripSettings() != null
+                                        ? saved.getTripSettings().getVisibility().name()
+                                        : null)
+                        .build());
+
+        return tripMapper.toDTO(saved);
     }
 
     @Override
@@ -93,6 +124,9 @@ public class TripServiceImpl implements TripService {
         ownershipValidator.validateOwnership(trip, userId, Trip::getUserId, Trip::getId, "trip");
 
         tripRepository.deleteById(id);
+
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(TripDeletedEvent.builder().tripId(id).ownerId(userId).build());
     }
 
     @Override
@@ -105,10 +139,24 @@ public class TripServiceImpl implements TripService {
 
         ownershipValidator.validateOwnership(trip, userId, Trip::getUserId, Trip::getId, "trip");
 
+        TripVisibility previousVisibility =
+                trip.getTripSettings() != null ? trip.getTripSettings().getVisibility() : null;
+
         embeddedObjectsInitializer.ensureTripSettings(trip, visibility);
         trip.getTripSettings().setVisibility(visibility);
 
-        return tripMapper.toDTO(tripRepository.save(trip));
+        Trip saved = tripRepository.save(trip);
+
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                TripVisibilityChangedEvent.builder()
+                        .tripId(id)
+                        .newVisibility(visibility.name())
+                        .previousVisibility(
+                                previousVisibility != null ? previousVisibility.name() : null)
+                        .build());
+
+        return tripMapper.toDTO(saved);
     }
 
     @Override
