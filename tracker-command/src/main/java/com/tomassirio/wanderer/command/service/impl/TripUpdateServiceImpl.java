@@ -12,9 +12,11 @@ import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
+@Transactional
 public class TripUpdateServiceImpl implements TripUpdateService {
 
     private final TripRepository tripRepository;
