@@ -4,7 +4,6 @@ import com.tomassirio.wanderer.command.dto.TripPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripPlanUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripPlanService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
-import com.tomassirio.wanderer.commons.dto.TripPlanDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -44,16 +43,16 @@ public class TripPlanController {
     @Operation(
             summary = "Create a trip plan",
             description =
-                    "Creates a new trip plan with waypoints and route details. Returns 202 Accepted as the operation completes asynchronously.")
-    public ResponseEntity<TripPlanDTO> createTripPlan(
+                    "Creates a new trip plan with waypoints and route details. Returns 202 Accepted with the trip plan ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> createTripPlan(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody TripPlanCreationRequest request) {
         log.info("Received request to create trip plan by user {}", userId);
 
-        TripPlanDTO createdPlan = tripPlanService.createTripPlan(userId, request);
+        UUID planId = tripPlanService.createTripPlan(userId, request);
 
-        log.info("Accepted trip plan creation request with ID: {}", createdPlan.id());
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(createdPlan);
+        log.info("Accepted trip plan creation request with ID: {}", planId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(planId);
     }
 
     @PutMapping(ApiConstants.TRIP_PLAN_BY_ID_ENDPOINT)
@@ -61,17 +60,17 @@ public class TripPlanController {
     @Operation(
             summary = "Update a trip plan",
             description =
-                    "Updates an existing trip plan with new waypoints or route information. Returns 202 Accepted as the operation completes asynchronously.")
-    public ResponseEntity<TripPlanDTO> updateTripPlan(
+                    "Updates an existing trip plan with new waypoints or route information. Returns 202 Accepted with the trip plan ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> updateTripPlan(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID planId,
             @Valid @RequestBody TripPlanUpdateRequest request) {
         log.info("Received request to update trip plan {} by user {}", planId, userId);
 
-        TripPlanDTO updatedPlan = tripPlanService.updateTripPlan(userId, planId, request);
+        UUID updatedPlanId = tripPlanService.updateTripPlan(userId, planId, request);
 
-        log.info("Accepted trip plan update request for ID: {}", updatedPlan.id());
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(updatedPlan);
+        log.info("Accepted trip plan update request for ID: {}", updatedPlanId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(updatedPlanId);
     }
 
     @DeleteMapping(ApiConstants.TRIP_PLAN_BY_ID_ENDPOINT)

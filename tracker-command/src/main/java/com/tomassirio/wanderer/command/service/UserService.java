@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.command.service;
 
 import com.tomassirio.wanderer.command.dto.UserCreationRequest;
 import com.tomassirio.wanderer.command.dto.UserResponse;
+import java.util.UUID;
 
 /**
  * Service responsible for handling user write operations (command side).
@@ -31,8 +32,8 @@ public interface UserService {
      * Create a new user from the provided request.
      *
      * @param request validated creation request containing username and email
-     * @return a {@link UserResponse} containing the created user's id, username and email
+     * @return the UUID of the created user
      * @throws IllegalArgumentException if username or email are already in use
      */
-    UserResponse createUser(UserCreationRequest request);
+    UUID createUser(UserCreationRequest request);
 }

@@ -1,11 +1,11 @@
 package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.dto.UserCreationRequest;
-import com.tomassirio.wanderer.command.dto.UserResponse;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.domain.User;
 import java.util.Optional;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public UserResponse createUser(UserCreationRequest request) {
+    public UUID createUser(UserCreationRequest request) {
         log.info("Creating user with username={} email={}", request.username(), request.email());
 
         log.debug("Checking username uniqueness for {}", request.username());
@@ -34,6 +34,6 @@ public class UserServiceImpl implements UserService {
         User saved = userRepository.save(user);
 
         log.info("User created with id={}", saved.getId());
-        return new UserResponse(saved.getId(), saved.getUsername());
+        return saved.getId();
     }
 }

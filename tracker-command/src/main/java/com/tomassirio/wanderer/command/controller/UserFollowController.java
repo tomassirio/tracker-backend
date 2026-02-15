@@ -3,7 +3,6 @@ package com.tomassirio.wanderer.command.controller;
 import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.dto.UserFollowRequest;
-import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -42,16 +41,15 @@ public class UserFollowController {
     @Operation(
             summary = "Follow a user",
             description =
-                    "Follow another user. Returns 202 Accepted as the operation completes asynchronously.")
-    public ResponseEntity<UserFollowResponse> followUser(
+                    "Follow another user. Returns 202 Accepted with the follow relationship ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> followUser(
             @Parameter(hidden = true) @CurrentUserId UUID followerId,
             @Valid @RequestBody UserFollowRequest request) {
         log.info(
                 "Received request for user {} to follow user {}", followerId, request.followedId());
-        UserFollowResponse response =
-                userFollowService.followUser(followerId, request.followedId());
+        UUID followId = userFollowService.followUser(followerId, request.followedId());
         log.info("Accepted follow request from {} to {}", followerId, request.followedId());
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(followId);
     }
 
     @DeleteMapping(ApiConstants.FOLLOW_BY_ID_ENDPOINT)

@@ -8,8 +8,6 @@ import com.tomassirio.wanderer.command.service.TripPlanService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.command.service.validator.TripPlanValidator;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
-import com.tomassirio.wanderer.commons.dto.TripPlanDTO;
-import com.tomassirio.wanderer.commons.mapper.TripPlanMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.HashMap;
@@ -26,13 +24,12 @@ public class TripPlanServiceImpl implements TripPlanService {
 
     private final TripPlanRepository tripPlanRepository;
     private final TripPlanMetadataProcessor metadataProcessor;
-    private final TripPlanMapper tripPlanMapper = TripPlanMapper.INSTANCE;
     private final OwnershipValidator ownershipValidator;
     private final TripPlanValidator tripPlanValidator;
 
     @Override
     @Transactional
-    public TripPlanDTO createTripPlan(UUID userId, TripPlanCreationRequest request) {
+    public UUID createTripPlan(UUID userId, TripPlanCreationRequest request) {
         // Validate dates
         tripPlanValidator.validateDates(request.startDate(), request.endDate());
 
@@ -52,12 +49,12 @@ public class TripPlanServiceImpl implements TripPlanService {
 
         metadataProcessor.applyMetadata(tripPlan, tripPlan.getMetadata());
 
-        return tripPlanMapper.toDTO(tripPlanRepository.save(tripPlan));
+        return tripPlanRepository.save(tripPlan).getId();
     }
 
     @Override
     @Transactional
-    public TripPlanDTO updateTripPlan(UUID userId, UUID planId, TripPlanUpdateRequest request) {
+    public UUID updateTripPlan(UUID userId, UUID planId, TripPlanUpdateRequest request) {
         TripPlan tripPlan =
                 tripPlanRepository
                         .findById(planId)
@@ -76,7 +73,8 @@ public class TripPlanServiceImpl implements TripPlanService {
         // Re-validate metadata for the plan type
         metadataProcessor.applyMetadata(tripPlan, tripPlan.getMetadata());
 
-        return tripPlanMapper.toDTO(tripPlanRepository.save(tripPlan));
+        tripPlanRepository.save(tripPlan);
+        return planId;
     }
 
     @Override

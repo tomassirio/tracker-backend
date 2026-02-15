@@ -1,6 +1,5 @@
 package com.tomassirio.wanderer.command.service;
 
-import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import java.util.UUID;
 
 /**
@@ -16,10 +15,10 @@ public interface UserFollowService {
      *
      * @param followerId the ID of the user following
      * @param followedId the ID of the user being followed
-     * @return the created follow relationship
+     * @return the UUID of the created follow relationship
      * @throws IllegalArgumentException if already following
      */
-    UserFollowResponse followUser(UUID followerId, UUID followedId);
+    UUID followUser(UUID followerId, UUID followedId);
 
     /**
      * Unfollow a user.

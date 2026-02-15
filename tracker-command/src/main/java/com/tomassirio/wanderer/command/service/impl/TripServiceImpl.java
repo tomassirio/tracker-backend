@@ -16,10 +16,6 @@ import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import com.tomassirio.wanderer.commons.dto.TripDTO;
-import com.tomassirio.wanderer.commons.dto.TripDetailsDTO;
-import com.tomassirio.wanderer.commons.dto.TripSettingsDTO;
-import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -36,12 +32,11 @@ public class TripServiceImpl implements TripService {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final TripPlanRepository tripPlanRepository;
-    private final TripMapper tripMapper = TripMapper.INSTANCE;
     private final OwnershipValidator ownershipValidator;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public TripDTO createTrip(UUID ownerId, TripCreationRequest request) {
+    public UUID createTrip(UUID ownerId, TripCreationRequest request) {
         // Validate user exists
         userRepository
                 .findById(ownerId)
@@ -62,25 +57,11 @@ public class TripServiceImpl implements TripService {
                         .creationTimestamp(creationTimestamp)
                         .build());
 
-        // Return DTO with available data (eventual consistency - full data will be in DB
-        // eventually)
-        return new TripDTO(
-                tripId.toString(),
-                request.name(),
-                ownerId.toString(),
-                null, // username not available in command
-                new TripSettingsDTO(TripStatus.CREATED, request.visibility(), null),
-                new TripDetailsDTO(
-                        null, null, null, null, List.of()), // details with nulls initially
-                null, // tripPlanId
-                List.of(), // comments
-                List.of(), // tripUpdates
-                creationTimestamp,
-                true);
+        return tripId;
     }
 
     @Override
-    public TripDTO updateTrip(UUID userId, UUID id, TripUpdateRequest request) {
+    public UUID updateTrip(UUID userId, UUID id, TripUpdateRequest request) {
         // Validate trip exists and ownership
         Trip trip =
                 tripRepository
@@ -97,31 +78,7 @@ public class TripServiceImpl implements TripService {
                         .visibility(request.visibility().name())
                         .build());
 
-        // Return DTO with updated data (eventual consistency)
-        return new TripDTO(
-                id.toString(),
-                request.name(),
-                userId.toString(),
-                null,
-                new TripSettingsDTO(
-                        trip.getTripSettings() != null
-                                ? trip.getTripSettings().getTripStatus()
-                                : null,
-                        request.visibility(),
-                        null),
-                trip.getTripDetails() != null
-                        ? new TripDetailsDTO(
-                                trip.getTripDetails().getStartTimestamp(),
-                                trip.getTripDetails().getEndTimestamp(),
-                                trip.getTripDetails().getStartLocation(),
-                                trip.getTripDetails().getEndLocation(),
-                                trip.getTripDetails().getWaypoints())
-                        : null,
-                null,
-                List.of(),
-                List.of(),
-                trip.getCreationTimestamp(),
-                trip.getEnabled());
+        return id;
     }
 
     @Override
@@ -139,7 +96,7 @@ public class TripServiceImpl implements TripService {
     }
 
     @Override
-    public TripDTO changeVisibility(UUID userId, UUID id, TripVisibility visibility) {
+    public UUID changeVisibility(UUID userId, UUID id, TripVisibility visibility) {
         // Validate trip exists and ownership
         Trip trip =
                 tripRepository
@@ -160,35 +117,11 @@ public class TripServiceImpl implements TripService {
                                 previousVisibility != null ? previousVisibility.name() : null)
                         .build());
 
-        // Return DTO with updated visibility (eventual consistency)
-        return new TripDTO(
-                id.toString(),
-                trip.getName(),
-                userId.toString(),
-                null,
-                new TripSettingsDTO(
-                        trip.getTripSettings() != null
-                                ? trip.getTripSettings().getTripStatus()
-                                : null,
-                        visibility,
-                        null),
-                trip.getTripDetails() != null
-                        ? new TripDetailsDTO(
-                                trip.getTripDetails().getStartTimestamp(),
-                                trip.getTripDetails().getEndTimestamp(),
-                                trip.getTripDetails().getStartLocation(),
-                                trip.getTripDetails().getEndLocation(),
-                                trip.getTripDetails().getWaypoints())
-                        : null,
-                null,
-                List.of(),
-                List.of(),
-                trip.getCreationTimestamp(),
-                trip.getEnabled());
+        return id;
     }
 
     @Override
-    public TripDTO changeStatus(UUID userId, UUID id, TripStatus status) {
+    public UUID changeStatus(UUID userId, UUID id, TripStatus status) {
         // Validate trip exists and ownership
         Trip trip =
                 tripRepository
@@ -208,35 +141,11 @@ public class TripServiceImpl implements TripService {
                         .previousStatus(previousStatus != null ? previousStatus.name() : null)
                         .build());
 
-        // Return DTO with updated status (eventual consistency)
-        return new TripDTO(
-                id.toString(),
-                trip.getName(),
-                userId.toString(),
-                null,
-                new TripSettingsDTO(
-                        status,
-                        trip.getTripSettings() != null
-                                ? trip.getTripSettings().getVisibility()
-                                : null,
-                        null),
-                trip.getTripDetails() != null
-                        ? new TripDetailsDTO(
-                                trip.getTripDetails().getStartTimestamp(),
-                                trip.getTripDetails().getEndTimestamp(),
-                                trip.getTripDetails().getStartLocation(),
-                                trip.getTripDetails().getEndLocation(),
-                                trip.getTripDetails().getWaypoints())
-                        : null,
-                null,
-                List.of(),
-                List.of(),
-                trip.getCreationTimestamp(),
-                trip.getEnabled());
+        return id;
     }
 
     @Override
-    public TripDTO createTripFromPlan(UUID userId, UUID tripPlanId, TripVisibility visibility) {
+    public UUID createTripFromPlan(UUID userId, UUID tripPlanId, TripVisibility visibility) {
         // Validate user exists
         userRepository
                 .findById(userId)
@@ -276,23 +185,6 @@ public class TripServiceImpl implements TripService {
                                 tripPlan.getEndDate().atStartOfDay().toInstant(ZoneOffset.UTC))
                         .build());
 
-        // Return DTO with available data (eventual consistency)
-        return new TripDTO(
-                tripId.toString(),
-                tripPlan.getName(),
-                userId.toString(),
-                null, // username not available in command
-                new TripSettingsDTO(TripStatus.CREATED, visibility, null),
-                new TripDetailsDTO(
-                        tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC),
-                        tripPlan.getEndDate().atStartOfDay().toInstant(ZoneOffset.UTC),
-                        tripPlan.getStartLocation(),
-                        tripPlan.getEndLocation(),
-                        tripPlan.getWaypoints() != null ? tripPlan.getWaypoints() : List.of()),
-                tripPlanId.toString(),
-                List.of(), // comments
-                List.of(), // tripUpdates
-                creationTimestamp,
-                true);
+        return tripId;
     }
 }

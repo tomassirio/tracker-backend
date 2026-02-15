@@ -5,7 +5,6 @@ import com.tomassirio.wanderer.command.event.UserUnfollowedEvent;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
-import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,7 @@ public class UserFollowServiceImpl implements UserFollowService {
 
     @Override
     @Transactional
-    public UserFollowResponse followUser(UUID followerId, UUID followedId) {
+    public UUID followUser(UUID followerId, UUID followedId) {
         log.info("User {} following user {}", followerId, followedId);
 
         if (followerId.equals(followedId)) {
@@ -53,8 +52,7 @@ public class UserFollowServiceImpl implements UserFollowService {
                         .followedId(followedId)
                         .build());
 
-        return new UserFollowResponse(
-                saved.getId(), saved.getFollowerId(), saved.getFollowedId(), saved.getCreatedAt());
+        return saved.getId();
     }
 
     @Override

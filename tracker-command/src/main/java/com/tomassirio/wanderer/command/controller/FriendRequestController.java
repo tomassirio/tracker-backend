@@ -3,7 +3,6 @@ package com.tomassirio.wanderer.command.controller;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.dto.FriendRequestRequest;
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -41,18 +40,17 @@ public class FriendRequestController {
     @Operation(
             summary = "Send a friend request",
             description =
-                    "Send a friend request to another user. Returns 202 Accepted as the operation completes asynchronously.")
-    public ResponseEntity<FriendRequestResponse> sendFriendRequest(
+                    "Send a friend request to another user. Returns 202 Accepted with the friend request ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> sendFriendRequest(
             @Parameter(hidden = true) @CurrentUserId UUID senderId,
             @Valid @RequestBody FriendRequestRequest request) {
         log.info(
                 "Received request to send friend request from {} to {}",
                 senderId,
                 request.receiverId());
-        FriendRequestResponse response =
-                friendRequestService.sendFriendRequest(senderId, request.receiverId());
-        log.info("Accepted friend request with ID: {}", response.id());
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        UUID requestId = friendRequestService.sendFriendRequest(senderId, request.receiverId());
+        log.info("Accepted friend request with ID: {}", requestId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(requestId);
     }
 
     @PostMapping(ApiConstants.FRIEND_REQUEST_ACCEPT_ENDPOINT)
@@ -60,14 +58,13 @@ public class FriendRequestController {
     @Operation(
             summary = "Accept a friend request",
             description =
-                    "Accept a pending friend request. Returns 202 Accepted as the operation completes asynchronously.")
-    public ResponseEntity<FriendRequestResponse> acceptFriendRequest(
+                    "Accept a pending friend request. Returns 202 Accepted with the friend request ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> acceptFriendRequest(
             @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID requestId) {
         log.info("Received request to accept friend request {} by user {}", requestId, userId);
-        FriendRequestResponse response =
-                friendRequestService.acceptFriendRequest(requestId, userId);
+        UUID acceptedRequestId = friendRequestService.acceptFriendRequest(requestId, userId);
         log.info("Accepted friend request {} acceptance", requestId);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(acceptedRequestId);
     }
 
     @PostMapping(ApiConstants.FRIEND_REQUEST_DECLINE_ENDPOINT)
@@ -75,13 +72,12 @@ public class FriendRequestController {
     @Operation(
             summary = "Decline a friend request",
             description =
-                    "Decline a pending friend request. Returns 202 Accepted as the operation completes asynchronously.")
-    public ResponseEntity<FriendRequestResponse> declineFriendRequest(
+                    "Decline a pending friend request. Returns 202 Accepted with the friend request ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> declineFriendRequest(
             @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID requestId) {
         log.info("Received request to decline friend request {} by user {}", requestId, userId);
-        FriendRequestResponse response =
-                friendRequestService.declineFriendRequest(requestId, userId);
+        UUID declinedRequestId = friendRequestService.declineFriendRequest(requestId, userId);
         log.info("Accepted friend request {} declination", requestId);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(declinedRequestId);
     }
 }

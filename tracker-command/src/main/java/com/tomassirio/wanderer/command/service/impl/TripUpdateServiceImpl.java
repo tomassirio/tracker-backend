@@ -8,8 +8,6 @@ import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
-import com.tomassirio.wanderer.commons.dto.TripUpdateDTO;
-import com.tomassirio.wanderer.commons.mapper.TripUpdateMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.UUID;
@@ -25,13 +23,11 @@ public class TripUpdateServiceImpl implements TripUpdateService {
     private final TripUpdateRepository tripUpdateRepository;
     private final TripRepository tripRepository;
     private final OwnershipValidator ownershipValidator;
-    private final TripUpdateMapper tripUpdateMapper = TripUpdateMapper.INSTANCE;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
-    public TripUpdateDTO createTripUpdate(
-            UUID userId, UUID tripId, TripUpdateCreationRequest request) {
+    public UUID createTripUpdate(UUID userId, UUID tripId, TripUpdateCreationRequest request) {
         Trip trip =
                 tripRepository
                         .findById(tripId)
@@ -48,7 +44,7 @@ public class TripUpdateServiceImpl implements TripUpdateService {
                         .timestamp(Instant.now())
                         .build();
 
-        TripUpdateDTO result = tripUpdateMapper.toDTO(tripUpdateRepository.save(tripUpdate));
+        TripUpdate saved = tripUpdateRepository.save(tripUpdate);
 
         // Publish domain event - decoupled from WebSocket
         eventPublisher.publishEvent(
@@ -60,6 +56,6 @@ public class TripUpdateServiceImpl implements TripUpdateService {
                         .message(request.message())
                         .build());
 
-        return result;
+        return saved.getId();
     }
 }

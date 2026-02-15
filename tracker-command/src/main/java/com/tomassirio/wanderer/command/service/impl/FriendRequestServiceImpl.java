@@ -8,7 +8,6 @@ import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.command.service.FriendshipService;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.UUID;
@@ -29,7 +28,7 @@ public class FriendRequestServiceImpl implements FriendRequestService {
 
     @Override
     @Transactional
-    public FriendRequestResponse sendFriendRequest(UUID senderId, UUID receiverId) {
+    public UUID sendFriendRequest(UUID senderId, UUID receiverId) {
         log.info("Sending friend request from {} to {}", senderId, receiverId);
 
         if (senderId.equals(receiverId)) {
@@ -68,12 +67,12 @@ public class FriendRequestServiceImpl implements FriendRequestService {
                         .status(FriendRequestStatus.PENDING.name())
                         .build());
 
-        return mapToResponse(saved);
+        return saved.getId();
     }
 
     @Override
     @Transactional
-    public FriendRequestResponse acceptFriendRequest(UUID requestId, UUID userId) {
+    public UUID acceptFriendRequest(UUID requestId, UUID userId) {
         log.info("User {} accepting friend request {}", userId, requestId);
 
         FriendRequest request =
@@ -92,7 +91,7 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         request.setStatus(FriendRequestStatus.ACCEPTED);
         request.setUpdatedAt(Instant.now());
 
-        FriendRequest updated = friendRequestRepository.save(request);
+        friendRequestRepository.save(request);
 
         // Create bidirectional friendship
         friendshipService.createFriendship(request.getSenderId(), request.getReceiverId());
@@ -107,12 +106,12 @@ public class FriendRequestServiceImpl implements FriendRequestService {
                         .receiverId(request.getReceiverId())
                         .build());
 
-        return mapToResponse(updated);
+        return requestId;
     }
 
     @Override
     @Transactional
-    public FriendRequestResponse declineFriendRequest(UUID requestId, UUID userId) {
+    public UUID declineFriendRequest(UUID requestId, UUID userId) {
         log.info("User {} declining friend request {}", userId, requestId);
 
         FriendRequest request =
@@ -131,7 +130,7 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         request.setStatus(FriendRequestStatus.DECLINED);
         request.setUpdatedAt(Instant.now());
 
-        FriendRequest updated = friendRequestRepository.save(request);
+        friendRequestRepository.save(request);
 
         log.info("Friend request {} declined", requestId);
 
@@ -143,16 +142,6 @@ public class FriendRequestServiceImpl implements FriendRequestService {
                         .receiverId(request.getReceiverId())
                         .build());
 
-        return mapToResponse(updated);
-    }
-
-    private FriendRequestResponse mapToResponse(FriendRequest request) {
-        return new FriendRequestResponse(
-                request.getId(),
-                request.getSenderId(),
-                request.getReceiverId(),
-                request.getStatus(),
-                request.getCreatedAt(),
-                request.getUpdatedAt());
+        return requestId;
     }
 }
