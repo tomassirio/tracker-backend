@@ -20,7 +20,7 @@ public class FriendshipRemovedEventHandler implements EventHandler<FriendshipRem
 
     @Override
     @EventListener
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(FriendshipRemovedEvent event) {
         log.debug(
                 "Persisting FriendshipRemovedEvent between {} and {}",

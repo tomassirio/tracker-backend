@@ -14,14 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class TripPlanCreatedEventHandler implements EventHandler<TripPlanCreatedEvent> {
 
     private final TripPlanRepository tripPlanRepository;
 
     @Override
     @EventListener
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(TripPlanCreatedEvent event) {
         log.debug("Persisting TripPlanCreatedEvent for trip plan: {}", event.getTripPlanId());
 

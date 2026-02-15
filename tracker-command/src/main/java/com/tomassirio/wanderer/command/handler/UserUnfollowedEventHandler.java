@@ -26,7 +26,7 @@ public class UserUnfollowedEventHandler implements EventHandler<UserUnfollowedEv
 
     @Override
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(UserUnfollowedEvent event) {
         log.debug(
                 "Persisting UserUnfollowedEvent: {} unfollows {}",

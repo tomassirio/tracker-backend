@@ -29,7 +29,7 @@ public class TripCreatedEventHandler implements EventHandler<TripCreatedEvent> {
 
     @Override
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(TripCreatedEvent event) {
         log.debug("Persisting TripCreatedEvent for trip: {}", event.getTripId());
 

@@ -21,7 +21,7 @@ public class UserCreatedEventHandler implements EventHandler<UserCreatedEvent> {
 
     @Override
     @EventListener
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(UserCreatedEvent event) {
         log.debug("Persisting UserCreatedEvent for user: {}", event.getUserId());
 

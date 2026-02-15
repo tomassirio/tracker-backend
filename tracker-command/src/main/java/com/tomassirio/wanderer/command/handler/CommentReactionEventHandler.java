@@ -30,7 +30,7 @@ public class CommentReactionEventHandler implements EventHandler<CommentReaction
 
     @Override
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(CommentReactionEvent event) {
         log.debug(
                 "Persisting CommentReactionEvent for comment: {}, reaction: {}, added: {}",

@@ -28,7 +28,7 @@ public class FriendRequestSentEventHandler implements EventHandler<FriendRequest
 
     @Override
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(FriendRequestSentEvent event) {
         log.debug("Persisting FriendRequestSentEvent for request: {}", event.getRequestId());
 

@@ -22,7 +22,7 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
 
     @Override
     @EventListener
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(FriendshipCreatedEvent event) {
         log.debug(
                 "Persisting FriendshipCreatedEvent between {} and {}",

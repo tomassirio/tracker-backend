@@ -35,7 +35,7 @@ public class CommentAddedEventHandler implements EventHandler<CommentAddedEvent>
 
     @Override
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(CommentAddedEvent event) {
         log.debug("Persisting CommentAddedEvent for comment: {}", event.getCommentId());
 

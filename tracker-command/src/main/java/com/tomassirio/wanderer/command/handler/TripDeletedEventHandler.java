@@ -25,7 +25,7 @@ public class TripDeletedEventHandler implements EventHandler<TripDeletedEvent> {
 
     @Override
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(TripDeletedEvent event) {
         log.debug("Persisting TripDeletedEvent for trip: {}", event.getTripId());
 

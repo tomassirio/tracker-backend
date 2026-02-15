@@ -29,7 +29,7 @@ public class TripVisibilityChangedEventHandler implements EventHandler<TripVisib
 
     @Override
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(TripVisibilityChangedEvent event) {
         log.debug("Persisting TripVisibilityChangedEvent for trip: {}", event.getTripId());
 

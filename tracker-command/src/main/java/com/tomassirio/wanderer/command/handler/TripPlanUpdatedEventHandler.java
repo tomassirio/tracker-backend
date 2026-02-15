@@ -22,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdatedEvent> {
 
     private final TripPlanRepository tripPlanRepository;
@@ -30,7 +29,7 @@ public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdated
 
     @Override
     @EventListener
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(TripPlanUpdatedEvent event) {
         log.debug("Persisting TripPlanUpdatedEvent for trip plan: {}", event.getTripPlanId());
 

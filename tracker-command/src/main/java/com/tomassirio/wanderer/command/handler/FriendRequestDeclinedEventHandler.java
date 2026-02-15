@@ -30,7 +30,7 @@ public class FriendRequestDeclinedEventHandler implements EventHandler<FriendReq
 
     @Override
     @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void handle(FriendRequestDeclinedEvent event) {
         log.debug("Persisting FriendRequestDeclinedEvent for request: {}", event.getRequestId());
 
