@@ -73,7 +73,7 @@ class TripCreatedEventPersistenceHandlerTest {
         assertThat(savedTrip.getCreationTimestamp()).isEqualTo(creationTimestamp);
         assertThat(savedTrip.getTripSettings()).isEqualTo(tripSettings);
         assertThat(savedTrip.getTripDetails()).isEqualTo(tripDetails);
-        assertThat(savedTrip.isEnabled()).isTrue();
+        assertThat(savedTrip.getEnabled()).isTrue();
     }
 
     @Test
