@@ -102,7 +102,7 @@ class TripControllerTest {
                         post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Summer Road Trip 2025"))
                 .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
@@ -147,7 +147,7 @@ class TripControllerTest {
                         post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(
                         jsonPath("$.tripSettings.visibility").value(TripVisibility.PRIVATE.name()));
@@ -241,7 +241,7 @@ class TripControllerTest {
                         post(TRIPS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(
                         jsonPath("$.tripSettings.visibility")
                                 .value(TripVisibility.PROTECTED.name()));
@@ -281,7 +281,7 @@ class TripControllerTest {
                         put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Updated Trip Name"))
                 .andExpect(
@@ -321,7 +321,7 @@ class TripControllerTest {
                         put(TRIP_BY_ID_URL, tripId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(
                         jsonPath("$.tripSettings.visibility").value(TripVisibility.PRIVATE.name()));
     }
@@ -393,7 +393,7 @@ class TripControllerTest {
         doNothing().when(tripService).deleteTrip(any(UUID.class), eq(tripId));
 
         // When & Then
-        mockMvc.perform(delete(TRIP_BY_ID_URL, tripId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete(TRIP_BY_ID_URL, tripId)).andExpect(status().isAccepted());
     }
 
     @Test
@@ -454,7 +454,7 @@ class TripControllerTest {
                         post(TRIP_FROM_PLAN_URL, tripPlanId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(visibility)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(jsonPath("$.name").value("Summer Road Trip Plan"))
                 .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
@@ -508,7 +508,7 @@ class TripControllerTest {
                         post(TRIP_FROM_PLAN_URL, tripPlanId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(visibility)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(tripId.toString()))
                 .andExpect(
                         jsonPath("$.tripSettings.visibility").value(TripVisibility.PRIVATE.name()))

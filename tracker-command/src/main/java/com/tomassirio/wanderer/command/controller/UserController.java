@@ -31,12 +31,15 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    @Operation(summary = "Create a new user", description = "Registers a new user in the system")
+    @Operation(
+            summary = "Create a new user",
+            description =
+                    "Registers a new user in the system. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<UserResponse> createUser(
             @Valid @RequestBody UserCreationRequest request) {
         log.info("Received request to create user: {}", request.username());
         UserResponse created = userService.createUser(request);
-        log.info("Successfully created user with ID: {}", created.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        log.info("Accepted user creation request with ID: {}", created.id());
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(created);
     }
 }

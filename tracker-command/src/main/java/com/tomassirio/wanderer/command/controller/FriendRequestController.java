@@ -40,7 +40,8 @@ public class FriendRequestController {
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Send a friend request",
-            description = "Send a friend request to another user")
+            description =
+                    "Send a friend request to another user. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<FriendRequestResponse> sendFriendRequest(
             @Parameter(hidden = true) @CurrentUserId UUID senderId,
             @Valid @RequestBody FriendRequestRequest request) {
@@ -50,33 +51,37 @@ public class FriendRequestController {
                 request.receiverId());
         FriendRequestResponse response =
                 friendRequestService.sendFriendRequest(senderId, request.receiverId());
-        log.info("Friend request sent with ID: {}", response.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        log.info("Accepted friend request with ID: {}", response.id());
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
     @PostMapping(ApiConstants.FRIEND_REQUEST_ACCEPT_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Accept a friend request", description = "Accept a pending friend request")
+    @Operation(
+            summary = "Accept a friend request",
+            description =
+                    "Accept a pending friend request. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<FriendRequestResponse> acceptFriendRequest(
             @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID requestId) {
         log.info("Received request to accept friend request {} by user {}", requestId, userId);
         FriendRequestResponse response =
                 friendRequestService.acceptFriendRequest(requestId, userId);
-        log.info("Friend request {} accepted", requestId);
-        return ResponseEntity.ok(response);
+        log.info("Accepted friend request {} acceptance", requestId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
     @PostMapping(ApiConstants.FRIEND_REQUEST_DECLINE_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Decline a friend request",
-            description = "Decline a pending friend request")
+            description =
+                    "Decline a pending friend request. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<FriendRequestResponse> declineFriendRequest(
             @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID requestId) {
         log.info("Received request to decline friend request {} by user {}", requestId, userId);
         FriendRequestResponse response =
                 friendRequestService.declineFriendRequest(requestId, userId);
-        log.info("Friend request {} declined", requestId);
-        return ResponseEntity.ok(response);
+        log.info("Accepted friend request {} declination", requestId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 }

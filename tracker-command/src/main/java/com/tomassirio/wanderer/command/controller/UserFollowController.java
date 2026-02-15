@@ -39,7 +39,10 @@ public class UserFollowController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Follow a user", description = "Follow another user")
+    @Operation(
+            summary = "Follow a user",
+            description =
+                    "Follow another user. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<UserFollowResponse> followUser(
             @Parameter(hidden = true) @CurrentUserId UUID followerId,
             @Valid @RequestBody UserFollowRequest request) {
@@ -47,19 +50,22 @@ public class UserFollowController {
                 "Received request for user {} to follow user {}", followerId, request.followedId());
         UserFollowResponse response =
                 userFollowService.followUser(followerId, request.followedId());
-        log.info("User {} now follows user {}", followerId, request.followedId());
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        log.info("Accepted follow request from {} to {}", followerId, request.followedId());
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
     @DeleteMapping(ApiConstants.FOLLOW_BY_ID_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Unfollow a user", description = "Unfollow a user")
+    @Operation(
+            summary = "Unfollow a user",
+            description =
+                    "Unfollow a user. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<Void> unfollowUser(
             @Parameter(hidden = true) @CurrentUserId UUID followerId,
             @PathVariable UUID followedId) {
         log.info("Received request for user {} to unfollow user {}", followerId, followedId);
         userFollowService.unfollowUser(followerId, followedId);
-        log.info("User {} unfollowed user {}", followerId, followedId);
-        return ResponseEntity.noContent().build();
+        log.info("Accepted unfollow request from {} to {}", followerId, followedId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 }

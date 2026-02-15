@@ -95,7 +95,7 @@ class TripPlanControllerTest {
                         post(TRIP_PLANS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(planId.toString()))
                 .andExpect(jsonPath("$.name").value("Europe Summer Trip 2025"))
                 .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
@@ -145,7 +145,7 @@ class TripPlanControllerTest {
                         post(TRIP_PLANS_BASE_URL)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.planType").value(TripPlanType.MULTI_DAY.name()));
     }
 
@@ -368,7 +368,7 @@ class TripPlanControllerTest {
                         put(TRIP_PLAN_BY_ID_URL, planId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(planId.toString()))
                 .andExpect(jsonPath("$.name").value("Updated Plan Name"))
                 .andExpect(jsonPath("$.userId").value(USER_ID.toString()));
@@ -408,7 +408,7 @@ class TripPlanControllerTest {
                         put(TRIP_PLAN_BY_ID_URL, planId)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.startDate").value(newStartDate.toString()))
                 .andExpect(jsonPath("$.endDate").value(newEndDate.toString()));
     }
@@ -534,7 +534,7 @@ class TripPlanControllerTest {
         doNothing().when(tripPlanService).deleteTripPlan(any(UUID.class), eq(planId));
 
         // When & Then
-        mockMvc.perform(delete(TRIP_PLAN_BY_ID_URL, planId)).andExpect(status().isNoContent());
+        mockMvc.perform(delete(TRIP_PLAN_BY_ID_URL, planId)).andExpect(status().isAccepted());
     }
 
     @Test

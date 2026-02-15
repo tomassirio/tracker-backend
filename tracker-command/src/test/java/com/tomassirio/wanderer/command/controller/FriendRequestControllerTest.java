@@ -86,7 +86,7 @@ class FriendRequestControllerTest {
                                 .header("Authorization", token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(requestId.toString()))
                 .andExpect(jsonPath("$.senderId").value(senderId.toString()))
                 .andExpect(jsonPath("$.receiverId").value(receiverId.toString()))
@@ -111,7 +111,7 @@ class FriendRequestControllerTest {
         mockMvc.perform(
                         post("/api/1/users/friends/requests/" + requestId + "/accept")
                                 .header("Authorization", token))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(requestId.toString()))
                 .andExpect(jsonPath("$.status").value("ACCEPTED"));
 
@@ -136,7 +136,7 @@ class FriendRequestControllerTest {
         mockMvc.perform(
                         post("/api/1/users/friends/requests/" + requestId + "/decline")
                                 .header("Authorization", token))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(requestId.toString()))
                 .andExpect(jsonPath("$.status").value("DECLINED"));
 

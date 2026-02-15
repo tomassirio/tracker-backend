@@ -76,7 +76,7 @@ class UserFollowControllerTest {
                                 .header("Authorization", token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.followerId").value(followerId.toString()))
                 .andExpect(jsonPath("$.followedId").value(followedId.toString()));
 
@@ -86,7 +86,7 @@ class UserFollowControllerTest {
     @Test
     void unfollowUser_Success() throws Exception {
         mockMvc.perform(delete("/api/1/users/follows/" + followedId).header("Authorization", token))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isAccepted());
 
         verify(userFollowService).unfollowUser(followerId, followedId);
     }

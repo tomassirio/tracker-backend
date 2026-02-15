@@ -89,7 +89,7 @@ class CommentControllerTest {
                         post(TRIPS_BASE_URL + "/{tripId}/comments", TRIP_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
                 .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
                 .andExpect(jsonPath("$.tripId").value(TRIP_ID.toString()))
@@ -127,7 +127,7 @@ class CommentControllerTest {
                         post(TRIPS_BASE_URL + "/{tripId}/comments", TRIP_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
                 .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
                 .andExpect(jsonPath("$.tripId").value(TRIP_ID.toString()))
@@ -231,7 +231,7 @@ class CommentControllerTest {
                         post(COMMENTS_BASE_URL + "/{commentId}/reactions", COMMENT_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
                 .andExpect(jsonPath("$.reactions.heart").value(1));
 
@@ -279,7 +279,7 @@ class CommentControllerTest {
                         delete(COMMENTS_BASE_URL + "/{commentId}/reactions", COMMENT_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
                 .andExpect(jsonPath("$.reactions.heart").value(0));
 
@@ -337,7 +337,7 @@ class CommentControllerTest {
                             post(COMMENTS_BASE_URL + "/{commentId}/reactions", COMMENT_ID)
                                     .contentType(MediaType.APPLICATION_JSON)
                                     .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isAccepted())
                     .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()));
         }
     }
@@ -368,7 +368,7 @@ class CommentControllerTest {
                         post(COMMENTS_BASE_URL + "/{commentId}/reactions", COMMENT_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
                 .andExpect(jsonPath("$.parentCommentId").value(PARENT_COMMENT_ID.toString()))
                 .andExpect(jsonPath("$.reactions.laugh").value(1));

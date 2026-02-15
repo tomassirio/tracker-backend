@@ -58,7 +58,7 @@ class UserControllerTest {
                         post("/api/1/users")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(id.toString()))
                 .andExpect(jsonPath("$.username").value("johndoe"));
     }

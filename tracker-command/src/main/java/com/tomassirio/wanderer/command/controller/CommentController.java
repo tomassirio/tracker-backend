@@ -43,7 +43,7 @@ public class CommentController {
             description =
                     "Creates a new top-level comment on a trip or a reply to an existing comment. "
                             + "To create a reply, include the parentCommentId in the request body. "
-                            + "Maximum nesting depth is 1 (cannot reply to a reply).")
+                            + "Maximum nesting depth is 1 (cannot reply to a reply). Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<CommentDTO> createComment(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID tripId,
@@ -53,15 +53,16 @@ public class CommentController {
 
         CommentDTO createdComment = commentService.createComment(userId, tripId, request);
 
-        log.info("Successfully created comment with ID: {}", createdComment.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdComment);
+        log.info("Accepted comment creation request with ID: {}", createdComment.id());
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(createdComment);
     }
 
     @PostMapping(ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_REACTIONS_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Add a reaction to a comment",
-            description = "Adds a reaction to a comment or reply")
+            description =
+                    "Adds a reaction to a comment or reply. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<CommentDTO> addReactionToComment(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID commentId,
@@ -76,15 +77,16 @@ public class CommentController {
         CommentDTO updatedComment =
                 commentService.addReactionToComment(userId, commentId, request.reactionType());
 
-        log.info("Successfully added reaction {} to comment {}", request.reactionType(), commentId);
-        return ResponseEntity.ok(updatedComment);
+        log.info("Accepted reaction addition request for comment {}", commentId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(updatedComment);
     }
 
     @DeleteMapping(ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_REACTIONS_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Remove a reaction from a comment",
-            description = "Removes a reaction from a comment or reply")
+            description =
+                    "Removes a reaction from a comment or reply. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<CommentDTO> removeReactionFromComment(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID commentId,
@@ -99,10 +101,7 @@ public class CommentController {
         CommentDTO updatedComment =
                 commentService.removeReactionFromComment(userId, commentId, request.reactionType());
 
-        log.info(
-                "Successfully removed reaction {} from comment {}",
-                request.reactionType(),
-                commentId);
-        return ResponseEntity.ok(updatedComment);
+        log.info("Accepted reaction removal request for comment {}", commentId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(updatedComment);
     }
 }
