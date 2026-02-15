@@ -1,19 +1,15 @@
 package com.tomassirio.wanderer.command.handler.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
 import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
+import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
-import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +22,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FriendRequestDeclinedEventPersistenceHandlerTest {
 
     @Mock private FriendRequestRepository friendRequestRepository;
+    @Mock private WebSocketEventService webSocketEventService;
 
     @InjectMocks private FriendRequestDeclinedEventPersistenceHandler handler;
 
@@ -49,7 +46,8 @@ class FriendRequestDeclinedEventPersistenceHandlerTest {
                         .receiverId(request.getReceiverId())
                         .build();
 
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        // Validation is done in service layer, handler uses getReferenceById
+        when(friendRequestRepository.getReferenceById(requestId)).thenReturn(request);
 
         // When
         handler.handle(event);
@@ -64,19 +62,23 @@ class FriendRequestDeclinedEventPersistenceHandlerTest {
     }
 
     @Test
-    void handle_whenRequestNotFound_shouldThrowEntityNotFoundException() {
+    void broadcast_shouldBroadcastEvent() {
         // Given
         UUID requestId = UUID.randomUUID();
+        UUID senderId = UUID.randomUUID();
+        UUID receiverId = UUID.randomUUID();
+
         FriendRequestDeclinedEvent event =
-                FriendRequestDeclinedEvent.builder().requestId(requestId).build();
+                FriendRequestDeclinedEvent.builder()
+                        .requestId(requestId)
+                        .senderId(senderId)
+                        .receiverId(receiverId)
+                        .build();
 
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+        // When
+        handler.broadcast(event);
 
-        // When & Then
-        assertThatThrownBy(() -> handler.handle(event))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Friend request not found");
-
-        verify(friendRequestRepository, never()).save(any());
+        // Then
+        verify(webSocketEventService).broadcast(event);
     }
 }

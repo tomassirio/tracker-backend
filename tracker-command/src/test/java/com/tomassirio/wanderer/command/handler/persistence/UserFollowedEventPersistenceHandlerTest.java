@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 
 import com.tomassirio.wanderer.command.event.UserFollowedEvent;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
+import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
 import java.time.Instant;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UserFollowedEventPersistenceHandlerTest {
 
     @Mock private UserFollowRepository userFollowRepository;
+    @Mock private WebSocketEventService webSocketEventService;
 
     @InjectMocks private UserFollowedEventPersistenceHandler handler;
 
@@ -50,5 +52,27 @@ class UserFollowedEventPersistenceHandlerTest {
         assertThat(saved.getFollowerId()).isEqualTo(followerId);
         assertThat(saved.getFollowedId()).isEqualTo(followedId);
         assertThat(saved.getCreatedAt()).isEqualTo(createdAt);
+    }
+
+    @Test
+    void broadcast_shouldBroadcastEvent() {
+        // Given
+        UUID followId = UUID.randomUUID();
+        UUID followerId = UUID.randomUUID();
+        UUID followedId = UUID.randomUUID();
+
+        UserFollowedEvent event =
+                UserFollowedEvent.builder()
+                        .followId(followId)
+                        .followerId(followerId)
+                        .followedId(followedId)
+                        .createdAt(Instant.now())
+                        .build();
+
+        // When
+        handler.broadcast(event);
+
+        // Then
+        verify(webSocketEventService).broadcast(event);
     }
 }

@@ -1,18 +1,20 @@
 package com.tomassirio.wanderer.command.handler.persistence;
 
+import com.tomassirio.wanderer.command.event.Broadcastable;
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
 import com.tomassirio.wanderer.command.handler.EventHandler;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
+import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Event handler for persisting trip status change events to the database.
@@ -23,16 +25,16 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1) // Execute before WebSocket broadcasting
 public class TripStatusChangedEventPersistenceHandler
         implements EventHandler<TripStatusChangedEvent> {
 
     private final TripRepository tripRepository;
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
     private final TripStatusTransitionHandler statusTransitionHandler;
+    private final WebSocketEventService webSocketEventService;
 
     @Override
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(TripStatusChangedEvent event) {
         log.debug("Persisting TripStatusChangedEvent for trip: {}", event.getTripId());
@@ -57,5 +59,13 @@ public class TripStatusChangedEventPersistenceHandler
                             tripRepository.save(trip);
                             log.info("Trip status changed: {}", event.getTripId());
                         });
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void broadcast(TripStatusChangedEvent event) {
+        if (event instanceof Broadcastable broadcastable) {
+            log.debug("Broadcasting TripStatusChangedEvent for trip: {}", event.getTripId());
+            webSocketEventService.broadcast(broadcastable);
+        }
     }
 }

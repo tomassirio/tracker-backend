@@ -5,7 +5,6 @@ import com.tomassirio.wanderer.command.handler.EventHandler;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
-import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +14,12 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Event handler for persisting trip plan update events to the database.
+ *
+ * <p>This handler implements the CQRS write side by handling TripPlanUpdatedEvent and updating trip
+ * plans in the database. Validation is performed in the service layer before the event is emitted.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -30,10 +35,8 @@ public class TripPlanUpdatedEventPersistenceHandler implements EventHandler<Trip
     public void handle(TripPlanUpdatedEvent event) {
         log.debug("Persisting TripPlanUpdatedEvent for trip plan: {}", event.getTripPlanId());
 
-        TripPlan tripPlan =
-                tripPlanRepository
-                        .findById(event.getTripPlanId())
-                        .orElseThrow(() -> new EntityNotFoundException("Trip plan not found"));
+        // Trip plan is validated in the service layer before event emission
+        TripPlan tripPlan = tripPlanRepository.getReferenceById(event.getTripPlanId());
 
         tripPlan.setName(event.getName());
         tripPlan.setStartDate(event.getStartDate());

@@ -1,62 +1,54 @@
 package com.tomassirio.wanderer.command.handler.persistence;
 
+import com.tomassirio.wanderer.command.event.Broadcastable;
 import com.tomassirio.wanderer.command.event.CommentAddedEvent;
 import com.tomassirio.wanderer.command.handler.EventHandler;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
+import com.tomassirio.wanderer.command.websocket.WebSocketEventService;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Event handler for persisting comment creation events to the database.
  *
  * <p>This handler implements the CQRS write side by handling CommentAddedEvent and persisting new
- * comments to the database.
+ * comments to the database. Validation is performed in the service layer before the event is
+ * emitted.
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class CommentAddedEventPersistenceHandler implements EventHandler<CommentAddedEvent> {
 
     private final CommentRepository commentRepository;
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final WebSocketEventService webSocketEventService;
 
     @Override
-    @EventListener
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handle(CommentAddedEvent event) {
         log.debug("Persisting CommentAddedEvent for comment: {}", event.getCommentId());
 
-        User user =
-                userRepository
-                        .findById(event.getUserId())
-                        .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
-        Trip trip =
-                tripRepository
-                        .findById(event.getTripId())
-                        .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+        // Entities are validated in the service layer before event emission
+        User user = userRepository.getReferenceById(event.getUserId());
+        Trip trip = tripRepository.getReferenceById(event.getTripId());
 
         Comment parentComment = null;
         if (event.getParentCommentId() != null) {
-            parentComment =
-                    commentRepository
-                            .findById(event.getParentCommentId())
-                            .orElseThrow(
-                                    () -> new EntityNotFoundException("Parent comment not found"));
+            parentComment = commentRepository.getReferenceById(event.getParentCommentId());
         }
 
         Comment comment =
@@ -72,5 +64,13 @@ public class CommentAddedEventPersistenceHandler implements EventHandler<Comment
 
         commentRepository.save(comment);
         log.info("Comment created and persisted: {}", event.getCommentId());
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void broadcast(CommentAddedEvent event) {
+        if (event instanceof Broadcastable broadcastable) {
+            log.debug("Broadcasting CommentAddedEvent for comment: {}", event.getCommentId());
+            webSocketEventService.broadcast(broadcastable);
+        }
     }
 }

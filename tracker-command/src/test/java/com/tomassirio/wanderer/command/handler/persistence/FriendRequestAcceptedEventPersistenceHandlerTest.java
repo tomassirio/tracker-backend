@@ -1,9 +1,6 @@
 package com.tomassirio.wanderer.command.handler.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,9 +8,7 @@ import com.tomassirio.wanderer.command.event.FriendRequestAcceptedEvent;
 import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
-import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +44,8 @@ class FriendRequestAcceptedEventPersistenceHandlerTest {
                         .receiverId(request.getReceiverId())
                         .build();
 
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
+        // Validation is done in service layer, handler uses getReferenceById
+        when(friendRequestRepository.getReferenceById(requestId)).thenReturn(request);
 
         // When
         handler.handle(event);
@@ -61,22 +57,5 @@ class FriendRequestAcceptedEventPersistenceHandlerTest {
         FriendRequest saved = captor.getValue();
         assertThat(saved.getStatus()).isEqualTo(FriendRequestStatus.ACCEPTED);
         assertThat(saved.getUpdatedAt()).isNotNull();
-    }
-
-    @Test
-    void handle_whenRequestNotFound_shouldThrowEntityNotFoundException() {
-        // Given
-        UUID requestId = UUID.randomUUID();
-        FriendRequestAcceptedEvent event =
-                FriendRequestAcceptedEvent.builder().requestId(requestId).build();
-
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.empty());
-
-        // When & Then
-        assertThatThrownBy(() -> handler.handle(event))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Friend request not found");
-
-        verify(friendRequestRepository, never()).save(any());
     }
 }

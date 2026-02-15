@@ -1,9 +1,6 @@
 package com.tomassirio.wanderer.command.handler.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -13,9 +10,7 @@ import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
-import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +29,7 @@ class TripUpdatedEventPersistenceHandlerTest {
 
     @Test
     void handle_shouldPersistTripUpdate() {
+        // Given
         UUID tripId = UUID.randomUUID();
         UUID tripUpdateId = UUID.randomUUID();
         GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
@@ -51,10 +47,13 @@ class TripUpdatedEventPersistenceHandlerTest {
                         .timestamp(timestamp)
                         .build();
 
-        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        // Validation is done in service layer, handler uses getReferenceById
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
 
+        // When
         handler.handle(event);
 
+        // Then
         ArgumentCaptor<TripUpdate> captor = ArgumentCaptor.forClass(TripUpdate.class);
         verify(tripUpdateRepository).save(captor.capture());
 
@@ -65,20 +64,5 @@ class TripUpdatedEventPersistenceHandlerTest {
         assertThat(saved.getBattery()).isEqualTo(85);
         assertThat(saved.getMessage()).isEqualTo("Arrived at Santiago!");
         assertThat(saved.getTimestamp()).isEqualTo(timestamp);
-    }
-
-    @Test
-    void handle_whenTripNotFound_shouldThrowEntityNotFoundException() {
-        UUID tripId = UUID.randomUUID();
-        TripUpdatedEvent event =
-                TripUpdatedEvent.builder().tripUpdateId(UUID.randomUUID()).tripId(tripId).build();
-
-        when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> handler.handle(event))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Trip not found");
-
-        verify(tripUpdateRepository, never()).save(any());
     }
 }

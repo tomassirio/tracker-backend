@@ -5,11 +5,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.tomassirio.wanderer.command.websocket.payload.CommentAddedPayload;
-import com.tomassirio.wanderer.command.websocket.payload.CommentReactionPayload;
-import com.tomassirio.wanderer.command.websocket.payload.FriendRequestPayload;
-import com.tomassirio.wanderer.command.websocket.payload.TripUpdatedPayload;
-import com.tomassirio.wanderer.command.websocket.payload.UserFollowPayload;
+import com.tomassirio.wanderer.command.event.CommentAddedEvent;
+import com.tomassirio.wanderer.command.event.CommentReactionEvent;
+import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
+import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
+import com.tomassirio.wanderer.command.event.UserFollowedEvent;
+import com.tomassirio.wanderer.commons.domain.GeoLocation;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,126 +25,147 @@ class WebSocketEventServiceTest {
     @Mock private WebSocketSessionManager sessionManager;
 
     private WebSocketEventService service;
-    private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
-        objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new ObjectMapper();
         service = new WebSocketEventService(sessionManager, objectMapper);
     }
 
     @Test
-    void broadcastToTrip_shouldBroadcastToTripTopic() {
+    void broadcast_withTripUpdatedEvent_shouldBroadcastToTripTopic() {
         // Given
         UUID tripId = UUID.randomUUID();
-        TripUpdatedPayload payload =
-                TripUpdatedPayload.builder()
+        UUID tripUpdateId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(40.7128).lon(-74.0060).build();
+
+        TripUpdatedEvent event =
+                TripUpdatedEvent.builder()
+                        .tripUpdateId(tripUpdateId)
                         .tripId(tripId)
-                        .latitude(40.7128)
-                        .longitude(-74.0060)
+                        .location(location)
                         .batteryLevel(85)
                         .message("Test message")
+                        .timestamp(Instant.now())
                         .build();
 
         // When
-        service.broadcastToTrip(tripId, WebSocketEventType.TRIP_UPDATED, payload);
+        service.broadcast(event);
 
         // Then
         verify(sessionManager).broadcast(eq("/topic/trips/" + tripId), anyString());
     }
 
     @Test
-    void broadcastToTrip_withCommentAdded_shouldBroadcastToTripTopic() {
+    void broadcast_withCommentAddedEvent_shouldBroadcastToTripTopic() {
         // Given
         UUID tripId = UUID.randomUUID();
         UUID commentId = UUID.randomUUID();
-        CommentAddedPayload payload =
-                CommentAddedPayload.builder()
-                        .tripId(tripId)
+        UUID userId = UUID.randomUUID();
+
+        CommentAddedEvent event =
+                CommentAddedEvent.builder()
                         .commentId(commentId)
-                        .id(commentId)
-                        .userId(UUID.randomUUID())
+                        .tripId(tripId)
+                        .userId(userId)
                         .username("testuser")
                         .message("Test comment")
+                        .timestamp(Instant.now())
                         .build();
 
         // When
-        service.broadcastToTrip(tripId, WebSocketEventType.COMMENT_ADDED, payload);
+        service.broadcast(event);
 
         // Then
         verify(sessionManager).broadcast(eq("/topic/trips/" + tripId), anyString());
     }
 
     @Test
-    void broadcastToTrip_withCommentReactionAdded_shouldBroadcastToTripTopic() {
+    void broadcast_withCommentReactionAddedEvent_shouldBroadcastToTripTopic() {
         // Given
         UUID tripId = UUID.randomUUID();
-        CommentReactionPayload payload =
-                CommentReactionPayload.builder()
-                        .tripId(tripId)
-                        .commentId(UUID.randomUUID())
-                        .reactionType("HEART")
-                        .userId(UUID.randomUUID())
-                        .build();
-
-        // When
-        service.broadcastToTrip(tripId, WebSocketEventType.COMMENT_REACTION_ADDED, payload);
-
-        // Then
-        verify(sessionManager).broadcast(eq("/topic/trips/" + tripId), anyString());
-    }
-
-    @Test
-    void broadcastToTrip_withCommentReactionRemoved_shouldBroadcastToTripTopic() {
-        // Given
-        UUID tripId = UUID.randomUUID();
-        CommentReactionPayload payload =
-                CommentReactionPayload.builder()
-                        .tripId(tripId)
-                        .commentId(UUID.randomUUID())
-                        .reactionType("HEART")
-                        .userId(UUID.randomUUID())
-                        .build();
-
-        // When
-        service.broadcastToTrip(tripId, WebSocketEventType.COMMENT_REACTION_REMOVED, payload);
-
-        // Then
-        verify(sessionManager).broadcast(eq("/topic/trips/" + tripId), anyString());
-    }
-
-    @Test
-    void broadcastToUser_shouldBroadcastToUserTopic() {
-        // Given
+        UUID commentId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
-        FriendRequestPayload payload =
-                FriendRequestPayload.builder()
-                        .requestId(UUID.randomUUID())
-                        .senderId(UUID.randomUUID())
-                        .receiverId(userId)
-                        .status("PENDING")
+
+        CommentReactionEvent event =
+                CommentReactionEvent.builder()
+                        .tripId(tripId)
+                        .commentId(commentId)
+                        .reactionType("HEART")
+                        .userId(userId)
+                        .added(true)
                         .build();
 
         // When
-        service.broadcastToUser(userId, WebSocketEventType.FRIEND_REQUEST_RECEIVED, payload);
+        service.broadcast(event);
 
         // Then
-        verify(sessionManager).broadcast(eq("/topic/users/" + userId), anyString());
+        verify(sessionManager).broadcast(eq("/topic/trips/" + tripId), anyString());
     }
 
     @Test
-    void broadcastToUser_withUserFollowed_shouldBroadcastToUserTopic() {
+    void broadcast_withCommentReactionRemovedEvent_shouldBroadcastToTripTopic() {
         // Given
-        UUID followedId = UUID.randomUUID();
-        UserFollowPayload payload =
-                UserFollowPayload.builder()
-                        .followId(UUID.randomUUID())
-                        .followerId(UUID.randomUUID())
-                        .followedId(followedId)
+        UUID tripId = UUID.randomUUID();
+        UUID commentId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        CommentReactionEvent event =
+                CommentReactionEvent.builder()
+                        .tripId(tripId)
+                        .commentId(commentId)
+                        .reactionType("HEART")
+                        .userId(userId)
+                        .added(false)
                         .build();
 
         // When
-        service.broadcastToUser(followedId, WebSocketEventType.USER_FOLLOWED, payload);
+        service.broadcast(event);
+
+        // Then
+        verify(sessionManager).broadcast(eq("/topic/trips/" + tripId), anyString());
+    }
+
+    @Test
+    void broadcast_withFriendRequestSentEvent_shouldBroadcastToUserTopic() {
+        // Given
+        UUID requestId = UUID.randomUUID();
+        UUID senderId = UUID.randomUUID();
+        UUID receiverId = UUID.randomUUID();
+
+        FriendRequestSentEvent event =
+                FriendRequestSentEvent.builder()
+                        .requestId(requestId)
+                        .senderId(senderId)
+                        .receiverId(receiverId)
+                        .status("PENDING")
+                        .createdAt(Instant.now())
+                        .build();
+
+        // When
+        service.broadcast(event);
+
+        // Then
+        verify(sessionManager).broadcast(eq("/topic/users/" + receiverId), anyString());
+    }
+
+    @Test
+    void broadcast_withUserFollowedEvent_shouldBroadcastToUserTopic() {
+        // Given
+        UUID followId = UUID.randomUUID();
+        UUID followerId = UUID.randomUUID();
+        UUID followedId = UUID.randomUUID();
+
+        UserFollowedEvent event =
+                UserFollowedEvent.builder()
+                        .followId(followId)
+                        .followerId(followerId)
+                        .followedId(followedId)
+                        .createdAt(Instant.now())
+                        .build();
+
+        // When
+        service.broadcast(event);
 
         // Then
         verify(sessionManager).broadcast(eq("/topic/users/" + followedId), anyString());

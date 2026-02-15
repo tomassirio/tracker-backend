@@ -2,7 +2,7 @@ package com.tomassirio.wanderer.command.websocket;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.UUID;
+import com.tomassirio.wanderer.command.event.Broadcastable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,9 +10,8 @@ import org.springframework.stereotype.Service;
 /**
  * Service for broadcasting WebSocket events to subscribers.
  *
- * <p>This service provides a simple, functional interface for WebSocket handlers to broadcast
- * events to trip or user topics. Each handler is responsible for creating its own payload and
- * calling the appropriate broadcast method.
+ * <p>This service provides a simple interface for broadcasting events that implement {@link
+ * Broadcastable}. The event itself knows its topic, event type, and payload.
  */
 @Slf4j
 @Service
@@ -23,43 +22,26 @@ public class WebSocketEventService {
     private final ObjectMapper objectMapper;
 
     /**
-     * Broadcasts an event to all subscribers of a trip topic.
+     * Broadcasts a Broadcastable event to its designated topic.
      *
-     * @param tripId the trip ID to broadcast to
-     * @param eventType the type of event (use constants from {@link WebSocketEventType})
-     * @param payload the event payload
+     * @param event the event to broadcast (must implement {@link Broadcastable})
      */
-    public void broadcastToTrip(UUID tripId, String eventType, Object payload) {
-        String topic = "/topic/trips/" + tripId;
-        WebSocketEvent event = WebSocketEvent.create(eventType, tripId, payload);
-        broadcast(topic, event, "trip", tripId);
-    }
+    public void broadcast(Broadcastable event) {
+        String topic = event.getTopic();
+        WebSocketEvent wsEvent =
+                WebSocketEvent.create(
+                        event.getEventType(), event.getTargetId(), event.toWebSocketPayload());
 
-    /**
-     * Broadcasts an event to all subscribers of a user topic.
-     *
-     * @param userId the user ID to broadcast to
-     * @param eventType the type of event (use constants from {@link WebSocketEventType})
-     * @param payload the event payload
-     */
-    public void broadcastToUser(UUID userId, String eventType, Object payload) {
-        String topic = "/topic/users/" + userId;
-        WebSocketEvent event = WebSocketEvent.create(eventType, userId, payload);
-        broadcast(topic, event, "user", userId);
-    }
-
-    private void broadcast(String topic, WebSocketEvent event, String targetType, UUID targetId) {
         try {
-            String message = objectMapper.writeValueAsString(event);
+            String message = objectMapper.writeValueAsString(wsEvent);
             sessionManager.broadcast(topic, message);
             log.info(
-                    "Broadcast {} event to {} {} ({} subscribers)",
-                    event.getType(),
-                    targetType,
-                    targetId,
+                    "Broadcast {} event to {} ({} subscribers)",
+                    event.getEventType(),
+                    topic,
                     sessionManager.getSubscribersCount(topic));
         } catch (JsonProcessingException e) {
-            log.error("Error serializing WebSocket event: {}", event.getType(), e);
+            log.error("Error serializing WebSocket event: {}", event.getEventType(), e);
         }
     }
 }

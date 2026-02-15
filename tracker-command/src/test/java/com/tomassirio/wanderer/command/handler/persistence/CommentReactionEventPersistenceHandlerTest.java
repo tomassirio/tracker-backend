@@ -1,9 +1,6 @@
 package com.tomassirio.wanderer.command.handler.persistence;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,8 +9,6 @@ import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
-import jakarta.persistence.EntityNotFoundException;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +39,8 @@ class CommentReactionEventPersistenceHandlerTest {
                         .added(true)
                         .build();
 
-        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        // Validation is done in service layer, handler uses getReferenceById
+        when(commentRepository.getReferenceById(commentId)).thenReturn(comment);
 
         // When
         handler.handle(event);
@@ -69,32 +65,13 @@ class CommentReactionEventPersistenceHandlerTest {
                         .added(false)
                         .build();
 
-        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
+        // Validation is done in service layer, handler uses getReferenceById
+        when(commentRepository.getReferenceById(commentId)).thenReturn(comment);
 
         // When
         handler.handle(event);
 
         // Then
         assertThat(comment.getReactions().getHeart()).isEqualTo(4);
-    }
-
-    @Test
-    void handle_whenCommentNotFound_shouldThrowEntityNotFoundException() {
-        // Given
-        UUID commentId = UUID.randomUUID();
-        CommentReactionEvent event =
-                CommentReactionEvent.builder()
-                        .commentId(commentId)
-                        .reactionType(ReactionType.HEART.name())
-                        .added(true)
-                        .build();
-
-        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
-
-        // When & Then
-        assertThatThrownBy(() -> handler.handle(event))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("Comment not found");
-        verify(commentRepository, never()).save(any());
     }
 }
