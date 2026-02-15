@@ -9,8 +9,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
+import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
 import com.tomassirio.wanderer.command.event.TripCreatedEvent;
 import com.tomassirio.wanderer.command.event.TripDeletedEvent;
 import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;

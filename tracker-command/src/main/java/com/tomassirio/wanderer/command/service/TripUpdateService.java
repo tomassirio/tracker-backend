@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.command.service;
 
-import com.tomassirio.wanderer.command.dto.TripUpdateCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
 import java.util.UUID;
 
 /**

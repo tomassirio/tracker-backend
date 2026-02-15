@@ -6,6 +6,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Event representing the removal of a friendship between two users.
+ *
+ * <p>This is a persistence-only event used to delete bidirectional friendship entries from the
+ * database.
+ */
 @Data
 @Builder
 @NoArgsConstructor

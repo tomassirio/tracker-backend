@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.command.service.impl;
 
-import com.tomassirio.wanderer.command.dto.UserCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.event.UserCreatedEvent;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.UserService;

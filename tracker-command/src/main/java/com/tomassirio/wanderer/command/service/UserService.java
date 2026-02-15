@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.command.service;
 
-import com.tomassirio.wanderer.command.dto.UserCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import java.util.UUID;
 
 /**

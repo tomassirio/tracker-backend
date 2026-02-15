@@ -9,7 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.CommentCreationRequest;
 import com.tomassirio.wanderer.command.event.CommentAddedEvent;
 import com.tomassirio.wanderer.command.event.CommentReactionEvent;
 import com.tomassirio.wanderer.command.repository.CommentRepository;

@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
-import com.tomassirio.wanderer.command.dto.ReactionRequest;
+import com.tomassirio.wanderer.command.controller.request.CommentCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.ReactionRequest;
 import com.tomassirio.wanderer.command.service.CommentService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;

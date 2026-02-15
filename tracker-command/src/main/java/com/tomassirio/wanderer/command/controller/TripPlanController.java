@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.dto.TripPlanCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripPlanUpdateRequest;
+import com.tomassirio.wanderer.command.controller.request.TripPlanCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripPlanUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripPlanService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;

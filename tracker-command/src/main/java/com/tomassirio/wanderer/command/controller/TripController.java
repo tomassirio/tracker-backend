@@ -1,10 +1,10 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripStatusRequest;
-import com.tomassirio.wanderer.command.dto.TripUpdateCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
-import com.tomassirio.wanderer.command.dto.TripVisibilityRequest;
+import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripStatusRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
+import com.tomassirio.wanderer.command.controller.request.TripVisibilityRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;

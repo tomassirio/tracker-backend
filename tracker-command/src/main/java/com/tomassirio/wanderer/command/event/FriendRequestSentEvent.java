@@ -27,7 +27,7 @@ public class FriendRequestSentEvent implements DomainEvent, Broadcastable {
 
     @Override
     public String getTopic() {
-        return "/topic/users/" + receiverId;
+        return WebSocketEventType.userTopic(receiverId);
     }
 
     @Override

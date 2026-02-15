@@ -23,7 +23,7 @@ public class UserUnfollowedEvent implements DomainEvent, Broadcastable {
 
     @Override
     public String getTopic() {
-        return "/topic/users/" + followedId;
+        return WebSocketEventType.userTopic(followedId);
     }
 
     @Override

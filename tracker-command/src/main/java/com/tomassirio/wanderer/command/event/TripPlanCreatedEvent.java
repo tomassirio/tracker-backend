@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.event;
 
+import com.tomassirio.wanderer.command.websocket.WebSocketEventType;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import java.time.Instant;
@@ -16,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TripPlanCreatedEvent implements DomainEvent {
+public class TripPlanCreatedEvent implements DomainEvent, Broadcastable {
     private UUID tripPlanId;
     private UUID userId;
     private String name;
@@ -28,4 +29,24 @@ public class TripPlanCreatedEvent implements DomainEvent {
     private List<GeoLocation> waypoints;
     private Map<String, Object> metadata;
     private Instant createdTimestamp;
+
+    @Override
+    public String getEventType() {
+        return WebSocketEventType.TRIP_PLAN_CREATED;
+    }
+
+    @Override
+    public String getTopic() {
+        return WebSocketEventType.userTopic(userId);
+    }
+
+    @Override
+    public UUID getTargetId() {
+        return userId;
+    }
+
+    @Override
+    public Object toWebSocketPayload() {
+        return this;
+    }
 }

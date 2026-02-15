@@ -26,7 +26,7 @@ public class UserFollowedEvent implements DomainEvent, Broadcastable {
 
     @Override
     public String getTopic() {
-        return "/topic/users/" + followedId;
+        return WebSocketEventType.userTopic(followedId);
     }
 
     @Override

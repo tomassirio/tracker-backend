@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.command.service;
 
-import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.CommentCreationRequest;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import java.util.UUID;
 

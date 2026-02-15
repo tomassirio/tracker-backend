@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.command.service;
 
-import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
+import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import java.util.UUID;

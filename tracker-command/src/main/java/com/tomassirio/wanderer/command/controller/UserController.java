@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.dto.UserCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;

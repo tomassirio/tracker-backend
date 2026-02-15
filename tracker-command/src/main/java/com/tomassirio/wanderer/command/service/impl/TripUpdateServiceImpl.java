@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.command.service.impl;
 
-import com.tomassirio.wanderer.command.dto.TripUpdateCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.TripUpdateService;

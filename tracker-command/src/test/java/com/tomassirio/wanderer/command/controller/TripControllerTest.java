@@ -14,8 +14,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
+import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;

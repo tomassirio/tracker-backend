@@ -9,7 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.command.dto.UserCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import java.util.UUID;

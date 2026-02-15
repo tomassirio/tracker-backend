@@ -28,7 +28,7 @@ public class CommentReactionEvent implements DomainEvent, Broadcastable {
 
     @Override
     public String getTopic() {
-        return "/topic/trips/" + tripId;
+        return WebSocketEventType.tripTopic(tripId);
     }
 
     @Override

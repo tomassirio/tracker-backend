@@ -24,7 +24,7 @@ public class FriendRequestDeclinedEvent implements DomainEvent, Broadcastable {
 
     @Override
     public String getTopic() {
-        return "/topic/users/" + senderId;
+        return WebSocketEventType.userTopic(senderId);
     }
 
     @Override

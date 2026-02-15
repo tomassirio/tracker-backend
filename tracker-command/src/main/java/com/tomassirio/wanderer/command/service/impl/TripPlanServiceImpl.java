@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.command.service.impl;
 
-import com.tomassirio.wanderer.command.dto.TripPlanCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripPlanUpdateRequest;
+import com.tomassirio.wanderer.command.controller.request.TripPlanCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripPlanUpdateRequest;
 import com.tomassirio.wanderer.command.event.TripPlanCreatedEvent;
 import com.tomassirio.wanderer.command.event.TripPlanDeletedEvent;
 import com.tomassirio.wanderer.command.event.TripPlanUpdatedEvent;

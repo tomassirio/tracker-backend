@@ -1,0 +1,35 @@
+package com.tomassirio.wanderer.command.handler;
+
+import com.tomassirio.wanderer.command.event.TripDeletedEvent;
+import com.tomassirio.wanderer.command.repository.TripRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.event.TransactionalEventListener;
+
+/**
+ * Event handler for TripDeletedEvent that handles persistence.
+ *
+ * <p>This handler deletes the trip during the transaction. WebSocket broadcasting is handled
+ * centrally by {@link com.tomassirio.wanderer.command.websocket.BroadcastableEventListener}.
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class TripDeletedEventHandler implements EventHandler<TripDeletedEvent> {
+
+    private final TripRepository tripRepository;
+
+    @Override
+    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void handle(TripDeletedEvent event) {
+        log.debug("Persisting TripDeletedEvent for trip: {}", event.getTripId());
+
+        tripRepository.deleteById(event.getTripId());
+        log.info("Trip deleted: {}", event.getTripId());
+    }
+}
