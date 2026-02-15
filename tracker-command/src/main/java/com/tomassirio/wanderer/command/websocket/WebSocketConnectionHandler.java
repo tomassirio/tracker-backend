@@ -19,7 +19,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class TripWebSocketHandler extends TextWebSocketHandler {
+public class WebSocketConnectionHandler extends TextWebSocketHandler {
 
     private final JwtUtils jwtUtils;
     private final ObjectMapper objectMapper;
