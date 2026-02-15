@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.event;
 
+import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,4 +15,5 @@ public class UserFollowedEvent implements DomainEvent {
     private UUID followId;
     private UUID followerId;
     private UUID followedId;
+    private Instant createdAt;
 }

@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.service.impl;
 import com.tomassirio.wanderer.command.event.FriendRequestAcceptedEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
+import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
 import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.command.service.FriendshipService;
@@ -15,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,7 +27,6 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional
     public UUID sendFriendRequest(UUID senderId, UUID receiverId) {
         log.info("Sending friend request from {} to {}", senderId, receiverId);
 
@@ -47,31 +46,26 @@ public class FriendRequestServiceImpl implements FriendRequestService {
             throw new IllegalArgumentException("Friend request already sent");
         }
 
-        FriendRequest request =
-                FriendRequest.builder()
-                        .senderId(senderId)
-                        .receiverId(receiverId)
-                        .status(FriendRequestStatus.PENDING)
-                        .createdAt(Instant.now())
-                        .build();
+        // Pre-generate ID and timestamp
+        UUID requestId = UUID.randomUUID();
+        Instant createdAt = Instant.now();
 
-        FriendRequest saved = friendRequestRepository.save(request);
-        log.info("Friend request created with ID: {}", saved.getId());
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 FriendRequestSentEvent.builder()
-                        .requestId(saved.getId())
+                        .requestId(requestId)
                         .senderId(senderId)
                         .receiverId(receiverId)
                         .status(FriendRequestStatus.PENDING.name())
+                        .createdAt(createdAt)
                         .build());
 
-        return saved.getId();
+        log.info("Friend request created with ID: {}", requestId);
+
+        return requestId;
     }
 
     @Override
-    @Transactional
     public UUID acceptFriendRequest(UUID requestId, UUID userId) {
         log.info("User {} accepting friend request {}", userId, requestId);
 
@@ -88,17 +82,7 @@ public class FriendRequestServiceImpl implements FriendRequestService {
             throw new IllegalArgumentException("Friend request is not pending");
         }
 
-        request.setStatus(FriendRequestStatus.ACCEPTED);
-        request.setUpdatedAt(Instant.now());
-
-        friendRequestRepository.save(request);
-
-        // Create bidirectional friendship
-        friendshipService.createFriendship(request.getSenderId(), request.getReceiverId());
-
-        log.info("Friend request {} accepted", requestId);
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will update DB
         eventPublisher.publishEvent(
                 FriendRequestAcceptedEvent.builder()
                         .requestId(requestId)
@@ -106,11 +90,19 @@ public class FriendRequestServiceImpl implements FriendRequestService {
                         .receiverId(request.getReceiverId())
                         .build());
 
+        // Create bidirectional friendship via event
+        eventPublisher.publishEvent(
+                FriendshipCreatedEvent.builder()
+                        .userId(request.getSenderId())
+                        .friendId(request.getReceiverId())
+                        .build());
+
+        log.info("Friend request {} accepted", requestId);
+
         return requestId;
     }
 
     @Override
-    @Transactional
     public UUID declineFriendRequest(UUID requestId, UUID userId) {
         log.info("User {} declining friend request {}", userId, requestId);
 
@@ -127,20 +119,15 @@ public class FriendRequestServiceImpl implements FriendRequestService {
             throw new IllegalArgumentException("Friend request is not pending");
         }
 
-        request.setStatus(FriendRequestStatus.DECLINED);
-        request.setUpdatedAt(Instant.now());
-
-        friendRequestRepository.save(request);
-
-        log.info("Friend request {} declined", requestId);
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will update DB
         eventPublisher.publishEvent(
                 FriendRequestDeclinedEvent.builder()
                         .requestId(requestId)
                         .senderId(request.getSenderId())
                         .receiverId(request.getReceiverId())
                         .build());
+
+        log.info("Friend request {} declined", requestId);
 
         return requestId;
     }

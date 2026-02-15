@@ -10,6 +10,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
+import com.tomassirio.wanderer.command.event.CommentAddedEvent;
+import com.tomassirio.wanderer.command.event.CommentReactionEvent;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
@@ -18,7 +20,6 @@ import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
-import com.tomassirio.wanderer.commons.mapper.CommentMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -30,7 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
@@ -50,8 +50,6 @@ class CommentServiceImplTest {
     @Mock private UserRepository userRepository;
 
     @Mock private ApplicationEventPublisher eventPublisher;
-
-    @Spy private CommentMapper commentMapper = CommentMapper.INSTANCE;
 
     @InjectMocks private CommentServiceImpl commentService;
 
@@ -98,24 +96,24 @@ class CommentServiceImplTest {
         CommentCreationRequest request = new CommentCreationRequest(COMMENT_MESSAGE, null);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
-        when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
         // When
         UUID result = commentService.createComment(USER_ID, TRIP_ID, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(COMMENT_ID);
 
-        ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
-        verify(commentRepository).save(commentCaptor.capture());
+        ArgumentCaptor<CommentAddedEvent> eventCaptor =
+                ArgumentCaptor.forClass(CommentAddedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
 
-        Comment savedComment = commentCaptor.getValue();
-        assertThat(savedComment.getUser()).isEqualTo(user);
-        assertThat(savedComment.getTrip()).isEqualTo(trip);
-        assertThat(savedComment.getParentComment()).isNull();
-        assertThat(savedComment.getMessage()).isEqualTo(COMMENT_MESSAGE);
-        assertThat(savedComment.getReactions()).isNotNull();
+        CommentAddedEvent event = eventCaptor.getValue();
+        assertThat(event.getCommentId()).isEqualTo(result);
+        assertThat(event.getUserId()).isEqualTo(USER_ID);
+        assertThat(event.getTripId()).isEqualTo(TRIP_ID);
+        assertThat(event.getParentCommentId()).isNull();
+        assertThat(event.getMessage()).isEqualTo(COMMENT_MESSAGE);
+        assertThat(event.getUsername()).isEqualTo(USERNAME);
     }
 
     @Test
@@ -130,7 +128,7 @@ class CommentServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Trip not found");
 
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(eventPublisher, never()).publishEvent(any(CommentAddedEvent.class));
     }
 
     // ============ CREATE REPLY TESTS ============
@@ -144,20 +142,20 @@ class CommentServiceImplTest {
         when(tripRepository.findById(TRIP_ID)).thenReturn(Optional.of(trip));
         when(commentRepository.findById(PARENT_COMMENT_ID))
                 .thenReturn(Optional.of(topLevelComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(replyComment);
 
         // When
         UUID result = commentService.createComment(USER_ID, TRIP_ID, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(replyComment.getId());
 
-        ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
-        verify(commentRepository).save(commentCaptor.capture());
+        ArgumentCaptor<CommentAddedEvent> eventCaptor =
+                ArgumentCaptor.forClass(CommentAddedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
 
-        Comment savedComment = commentCaptor.getValue();
-        assertThat(savedComment.getParentComment()).isEqualTo(topLevelComment);
+        CommentAddedEvent event = eventCaptor.getValue();
+        assertThat(event.getCommentId()).isEqualTo(result);
+        assertThat(event.getParentCommentId()).isEqualTo(PARENT_COMMENT_ID);
     }
 
     @Test
@@ -174,7 +172,7 @@ class CommentServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Parent comment not found");
 
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(eventPublisher, never()).publishEvent(any(CommentAddedEvent.class));
     }
 
     @Test
@@ -192,16 +190,15 @@ class CommentServiceImplTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("Cannot create a reply to a reply. Maximum nesting depth is 1.");
 
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(eventPublisher, never()).publishEvent(any(CommentAddedEvent.class));
     }
 
     // ============ ADD REACTION TO COMMENT TESTS ============
 
     @Test
-    void addReactionToComment_whenValidRequest_shouldIncrementReactionAndReturnComment() {
+    void addReactionToComment_whenValidRequest_shouldPublishEventAndReturnCommentId() {
         // Given
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
         // When
         UUID result = commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
@@ -209,28 +206,17 @@ class CommentServiceImplTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(COMMENT_ID);
-        assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(1);
 
-        verify(commentRepository).save(topLevelComment);
-    }
+        ArgumentCaptor<CommentReactionEvent> eventCaptor =
+                ArgumentCaptor.forClass(CommentReactionEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
 
-    @Test
-    void addReactionToComment_whenReactionsIsNull_shouldCreateReactionsAndIncrement() {
-        // Given
-        topLevelComment.setReactions(null);
-        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
-
-        // When
-        UUID result = commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.SMILEY);
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(COMMENT_ID);
-        assertThat(topLevelComment.getReactions()).isNotNull();
-        assertThat(topLevelComment.getReactions().getSmiley()).isEqualTo(1);
-
-        verify(commentRepository).save(topLevelComment);
+        CommentReactionEvent event = eventCaptor.getValue();
+        assertThat(event.getCommentId()).isEqualTo(COMMENT_ID);
+        assertThat(event.getTripId()).isEqualTo(TRIP_ID);
+        assertThat(event.getReactionType()).isEqualTo(ReactionType.HEART.name());
+        assertThat(event.getUserId()).isEqualTo(USER_ID);
+        assertThat(event.isAdded()).isTrue();
     }
 
     @Test
@@ -246,14 +232,13 @@ class CommentServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Comment not found");
 
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(eventPublisher, never()).publishEvent(any(CommentReactionEvent.class));
     }
 
     @Test
-    void addReactionToComment_withAllReactionTypes_shouldWorkCorrectly() {
+    void addReactionToComment_withAllReactionTypes_shouldPublishEventsCorrectly() {
         // Given
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
         // Test all reaction types
         ReactionType[] reactionTypes =
@@ -274,59 +259,18 @@ class CommentServiceImplTest {
             assertThat(result).isEqualTo(COMMENT_ID);
         }
 
-        // Verify all reactions were incremented
-        assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(1);
-        assertThat(topLevelComment.getReactions().getSmiley()).isEqualTo(1);
-        assertThat(topLevelComment.getReactions().getSad()).isEqualTo(1);
-        assertThat(topLevelComment.getReactions().getLaugh()).isEqualTo(1);
-        assertThat(topLevelComment.getReactions().getAnger()).isEqualTo(1);
+        // Verify events were published for each reaction type
+        verify(eventPublisher, org.mockito.Mockito.times(5))
+                .publishEvent(any(CommentReactionEvent.class));
     }
 
     // ============ REMOVE REACTION FROM COMMENT TESTS ============
 
     @Test
-    void removeReactionFromComment_whenValidRequest_shouldDecrementReactionAndReturnComment() {
+    void removeReactionFromComment_whenValidRequest_shouldPublishEventAndReturnCommentId() {
         // Given
         topLevelComment.getReactions().setHeart(5);
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
-
-        // When
-        UUID result =
-                commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(COMMENT_ID);
-        assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(4);
-
-        verify(commentRepository).save(topLevelComment);
-    }
-
-    @Test
-    void removeReactionFromComment_whenReactionIsZero_shouldNotGoBelowZero() {
-        // Given
-        topLevelComment.getReactions().setHeart(0);
-        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
-
-        // When
-        UUID result =
-                commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-
-        // Then
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(COMMENT_ID);
-        assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(0);
-
-        verify(commentRepository).save(topLevelComment);
-    }
-
-    @Test
-    void removeReactionFromComment_whenReactionsIsNull_shouldReturnCommentWithoutSaving() {
-        // Given
-        topLevelComment.setReactions(null);
-        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
 
         // When
         UUID result =
@@ -336,7 +280,14 @@ class CommentServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(COMMENT_ID);
 
-        verify(commentRepository, never()).save(any(Comment.class));
+        ArgumentCaptor<CommentReactionEvent> eventCaptor =
+                ArgumentCaptor.forClass(CommentReactionEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        CommentReactionEvent event = eventCaptor.getValue();
+        assertThat(event.getCommentId()).isEqualTo(COMMENT_ID);
+        assertThat(event.getReactionType()).isEqualTo(ReactionType.HEART.name());
+        assertThat(event.isAdded()).isFalse();
     }
 
     @Test
@@ -352,46 +303,16 @@ class CommentServiceImplTest {
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessage("Comment not found");
 
-        verify(commentRepository, never()).save(any(Comment.class));
+        verify(eventPublisher, never()).publishEvent(any(CommentReactionEvent.class));
     }
 
     // ============ EDGE CASE TESTS ============
-
-    @Test
-    void reactions_whenMultipleIncrementsAndDecrements_shouldTrackCorrectly() {
-        // Given
-        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
-
-        // When - Add reactions multiple times
-        commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-        commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-        commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-
-        // Then
-        assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(3);
-
-        // When - Remove reactions
-        commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-
-        // Then
-        assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(2);
-
-        // When - Try to remove below zero
-        commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-        commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-        commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
-
-        // Then - Should stay at 0
-        assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(0);
-    }
 
     @Test
     void addReactionToReply_shouldWorkSameAsTopLevelComment() {
         // Given - Test that replies can have reactions too
         when(commentRepository.findById(replyComment.getId()))
                 .thenReturn(Optional.of(replyComment));
-        when(commentRepository.save(any(Comment.class))).thenReturn(replyComment);
 
         // When
         UUID result =
@@ -401,8 +322,14 @@ class CommentServiceImplTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(replyComment.getId());
-        assertThat(replyComment.getReactions().getLaugh()).isEqualTo(1);
 
-        verify(commentRepository).save(replyComment);
+        ArgumentCaptor<CommentReactionEvent> eventCaptor =
+                ArgumentCaptor.forClass(CommentReactionEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        CommentReactionEvent event = eventCaptor.getValue();
+        assertThat(event.getCommentId()).isEqualTo(replyComment.getId());
+        assertThat(event.getReactionType()).isEqualTo(ReactionType.LAUGH.name());
+        assertThat(event.isAdded()).isTrue();
     }
 }

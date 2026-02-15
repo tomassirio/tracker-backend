@@ -9,8 +9,6 @@ import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.CommentService;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
-import com.tomassirio.wanderer.commons.domain.Reactions;
-import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
@@ -19,7 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +29,6 @@ public class CommentServiceImpl implements CommentService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional
     public UUID createComment(UUID userId, UUID tripId, CommentCreationRequest request) {
         log.info("Creating comment for trip {} by user {}", tripId, userId);
 
@@ -41,15 +37,15 @@ public class CommentServiceImpl implements CommentService {
                         .findById(userId)
                         .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        Trip trip =
-                tripRepository
-                        .findById(tripId)
-                        .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+        // Validate trip exists
+        tripRepository
+                .findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
 
-        Comment parentComment = null;
+        // Validate parent comment if this is a reply
         if (request.parentCommentId() != null) {
             log.info("This is a reply to comment {}", request.parentCommentId());
-            parentComment =
+            Comment parentComment =
                     commentRepository
                             .findById(request.parentCommentId())
                             .orElseThrow(
@@ -62,37 +58,29 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
-        Comment comment =
-                Comment.builder()
-                        .user(user)
-                        .trip(trip)
-                        .parentComment(parentComment)
-                        .message(request.message())
-                        .reactions(new Reactions())
-                        .timestamp(Instant.now())
-                        .build();
+        // Pre-generate ID and timestamp
+        UUID commentId = UUID.randomUUID();
+        Instant timestamp = Instant.now();
 
-        Comment savedComment = commentRepository.save(comment);
-
-        String commentType = savedComment.isReply() ? "reply" : "comment";
-        log.info("Successfully created {} with ID: {}", commentType, savedComment.getId());
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 CommentAddedEvent.builder()
+                        .commentId(commentId)
                         .tripId(tripId)
-                        .commentId(savedComment.getId())
                         .userId(userId)
                         .username(user.getUsername())
                         .message(request.message())
                         .parentCommentId(request.parentCommentId())
+                        .timestamp(timestamp)
                         .build());
 
-        return savedComment.getId();
+        String commentType = request.parentCommentId() != null ? "reply" : "comment";
+        log.info("Successfully created {} with ID: {}", commentType, commentId);
+
+        return commentId;
     }
 
     @Override
-    @Transactional
     public UUID addReactionToComment(UUID userId, UUID commentId, ReactionType reactionType) {
         log.info("Adding reaction {} to comment {} by user {}", reactionType, commentId, userId);
 
@@ -101,30 +89,22 @@ public class CommentServiceImpl implements CommentService {
                         .findById(commentId)
                         .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        if (comment.getReactions() == null) {
-            comment.setReactions(new Reactions());
-        }
-
-        comment.getReactions().incrementReaction(reactionType);
-        Comment savedComment = commentRepository.save(comment);
-
-        log.info("Successfully added reaction {} to comment {}", reactionType, commentId);
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will update DB
         eventPublisher.publishEvent(
                 CommentReactionEvent.builder()
-                        .tripId(savedComment.getTrip().getId())
+                        .tripId(comment.getTrip().getId())
                         .commentId(commentId)
                         .reactionType(reactionType.name())
                         .userId(userId)
                         .added(true)
                         .build());
 
+        log.info("Successfully added reaction {} to comment {}", reactionType, commentId);
+
         return commentId;
     }
 
     @Override
-    @Transactional
     public UUID removeReactionFromComment(UUID userId, UUID commentId, ReactionType reactionType) {
         log.info(
                 "Removing reaction {} from comment {} by user {}", reactionType, commentId, userId);
@@ -134,23 +114,17 @@ public class CommentServiceImpl implements CommentService {
                         .findById(commentId)
                         .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        if (comment.getReactions() != null) {
-            comment.getReactions().decrementReaction(reactionType);
-            commentRepository.save(comment);
-            log.info("Successfully removed reaction {} from comment {}", reactionType, commentId);
+        // Publish event - persistence handler will update DB
+        eventPublisher.publishEvent(
+                CommentReactionEvent.builder()
+                        .tripId(comment.getTrip().getId())
+                        .commentId(commentId)
+                        .reactionType(reactionType.name())
+                        .userId(userId)
+                        .added(false)
+                        .build());
 
-            // Publish domain event - decoupled from WebSocket
-            eventPublisher.publishEvent(
-                    CommentReactionEvent.builder()
-                            .tripId(comment.getTrip().getId())
-                            .commentId(commentId)
-                            .reactionType(reactionType.name())
-                            .userId(userId)
-                            .added(false)
-                            .build());
-        } else {
-            log.warn("No reactions found on comment {}", commentId);
-        }
+        log.info("Successfully removed reaction {} from comment {}", reactionType, commentId);
 
         return commentId;
     }

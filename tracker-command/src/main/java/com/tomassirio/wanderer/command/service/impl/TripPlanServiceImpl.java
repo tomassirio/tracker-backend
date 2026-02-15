@@ -2,6 +2,9 @@ package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.dto.TripPlanCreationRequest;
 import com.tomassirio.wanderer.command.dto.TripPlanUpdateRequest;
+import com.tomassirio.wanderer.command.event.TripPlanCreatedEvent;
+import com.tomassirio.wanderer.command.event.TripPlanDeletedEvent;
+import com.tomassirio.wanderer.command.event.TripPlanUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
 import com.tomassirio.wanderer.command.service.TripPlanService;
@@ -12,11 +15,12 @@ import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @AllArgsConstructor
@@ -26,34 +30,56 @@ public class TripPlanServiceImpl implements TripPlanService {
     private final TripPlanMetadataProcessor metadataProcessor;
     private final OwnershipValidator ownershipValidator;
     private final TripPlanValidator tripPlanValidator;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional
     public UUID createTripPlan(UUID userId, TripPlanCreationRequest request) {
         // Validate dates
         tripPlanValidator.validateDates(request.startDate(), request.endDate());
 
-        TripPlan tripPlan =
+        // Pre-generate ID and timestamp
+        UUID tripPlanId = UUID.randomUUID();
+        Instant createdTimestamp = Instant.now();
+
+        // Process metadata
+        Map<String, Object> metadata = new HashMap<>();
+        TripPlan tempPlan =
                 TripPlan.builder()
+                        .id(tripPlanId)
                         .name(request.name())
                         .planType(request.planType())
                         .userId(userId)
-                        .createdTimestamp(Instant.now())
+                        .createdTimestamp(createdTimestamp)
                         .startDate(request.startDate())
                         .endDate(request.endDate())
                         .startLocation(request.startLocation())
                         .endLocation(request.endLocation())
                         .waypoints(Optional.ofNullable(request.waypoints()).orElse(List.of()))
-                        .metadata(new HashMap<>())
+                        .metadata(metadata)
                         .build();
 
-        metadataProcessor.applyMetadata(tripPlan, tripPlan.getMetadata());
+        metadataProcessor.applyMetadata(tempPlan, metadata);
 
-        return tripPlanRepository.save(tripPlan).getId();
+        // Publish event - persistence handler will write to DB
+        eventPublisher.publishEvent(
+                TripPlanCreatedEvent.builder()
+                        .tripPlanId(tripPlanId)
+                        .userId(userId)
+                        .name(request.name())
+                        .planType(request.planType())
+                        .startDate(request.startDate())
+                        .endDate(request.endDate())
+                        .startLocation(request.startLocation())
+                        .endLocation(request.endLocation())
+                        .waypoints(Optional.ofNullable(request.waypoints()).orElse(List.of()))
+                        .metadata(metadata)
+                        .createdTimestamp(createdTimestamp)
+                        .build());
+
+        return tripPlanId;
     }
 
     @Override
-    @Transactional
     public UUID updateTripPlan(UUID userId, UUID planId, TripPlanUpdateRequest request) {
         TripPlan tripPlan =
                 tripPlanRepository
@@ -63,22 +89,22 @@ public class TripPlanServiceImpl implements TripPlanService {
         ownershipValidator.validateOwnership(
                 tripPlan, userId, TripPlan::getUserId, TripPlan::getId, "trip plan");
 
-        tripPlan.setName(request.name());
-        tripPlan.setStartDate(request.startDate());
-        tripPlan.setEndDate(request.endDate());
-        tripPlan.setStartLocation(request.startLocation());
-        tripPlan.setEndLocation(request.endLocation());
-        tripPlan.setWaypoints(request.waypoints() != null ? request.waypoints() : List.of());
+        // Publish event - persistence handler will update DB
+        eventPublisher.publishEvent(
+                TripPlanUpdatedEvent.builder()
+                        .tripPlanId(planId)
+                        .name(request.name())
+                        .startDate(request.startDate())
+                        .endDate(request.endDate())
+                        .startLocation(request.startLocation())
+                        .endLocation(request.endLocation())
+                        .waypoints(request.waypoints() != null ? request.waypoints() : List.of())
+                        .build());
 
-        // Re-validate metadata for the plan type
-        metadataProcessor.applyMetadata(tripPlan, tripPlan.getMetadata());
-
-        tripPlanRepository.save(tripPlan);
         return planId;
     }
 
     @Override
-    @Transactional
     public void deleteTripPlan(UUID userId, UUID planId) {
         TripPlan tripPlan =
                 tripPlanRepository
@@ -88,6 +114,8 @@ public class TripPlanServiceImpl implements TripPlanService {
         ownershipValidator.validateOwnership(
                 tripPlan, userId, TripPlan::getUserId, TripPlan::getId, "trip plan");
 
-        tripPlanRepository.deleteById(planId);
+        // Publish event - persistence handler will delete from DB
+        eventPublisher.publishEvent(
+                TripPlanDeletedEvent.builder().tripPlanId(planId).userId(userId).build());
     }
 }

@@ -4,14 +4,12 @@ import com.tomassirio.wanderer.command.event.UserFollowedEvent;
 import com.tomassirio.wanderer.command.event.UserUnfollowedEvent;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.command.service.UserFollowService;
-import com.tomassirio.wanderer.commons.domain.UserFollow;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +20,6 @@ public class UserFollowServiceImpl implements UserFollowService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional
     public UUID followUser(UUID followerId, UUID followedId) {
         log.info("User {} following user {}", followerId, followedId);
 
@@ -34,40 +31,36 @@ public class UserFollowServiceImpl implements UserFollowService {
             throw new IllegalArgumentException("Already following this user");
         }
 
-        UserFollow follow =
-                UserFollow.builder()
-                        .followerId(followerId)
-                        .followedId(followedId)
-                        .createdAt(Instant.now())
-                        .build();
+        // Pre-generate ID and timestamp
+        UUID followId = UUID.randomUUID();
+        Instant createdAt = Instant.now();
 
-        UserFollow saved = userFollowRepository.save(follow);
-        log.info("User {} now follows user {}", followerId, followedId);
-
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 UserFollowedEvent.builder()
-                        .followId(saved.getId())
+                        .followId(followId)
                         .followerId(followerId)
                         .followedId(followedId)
+                        .createdAt(createdAt)
                         .build());
 
-        return saved.getId();
+        log.info("User {} now follows user {}", followerId, followedId);
+
+        return followId;
     }
 
     @Override
-    @Transactional
     public void unfollowUser(UUID followerId, UUID followedId) {
         log.info("User {} unfollowing user {}", followerId, followedId);
-        userFollowRepository.deleteByFollowerIdAndFollowedId(followerId, followedId);
-        log.info("User {} unfollowed user {}", followerId, followedId);
 
-        // Publish domain event - decoupled from WebSocket
+        // Publish event - persistence handler will delete from DB
         eventPublisher.publishEvent(
                 UserUnfollowedEvent.builder()
                         .followerId(followerId)
                         .followedId(followedId)
                         .build());
+
+        log.info("User {} unfollowed user {}", followerId, followedId);
     }
 
     @Override

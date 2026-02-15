@@ -7,6 +7,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service for broadcasting WebSocket events to subscribers.
+ *
+ * <p>This service provides a simple, functional interface for WebSocket handlers to broadcast
+ * events to trip or user topics. Each handler is responsible for creating its own payload and
+ * calling the appropriate broadcast method.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -15,140 +22,44 @@ public class WebSocketEventService {
     private final WebSocketSessionManager sessionManager;
     private final ObjectMapper objectMapper;
 
-    public void broadcastTripStatusChanged(UUID tripId, String newStatus, String previousStatus) {
-        TripStatusChangedPayload payload =
-                TripStatusChangedPayload.builder()
-                        .tripId(tripId)
-                        .newStatus(newStatus)
-                        .previousStatus(previousStatus)
-                        .build();
-
-        WebSocketEvent event = WebSocketEvent.create("TRIP_STATUS_CHANGED", tripId, payload);
-        broadcastToTrip(tripId, event);
-    }
-
-    public void broadcastTripUpdated(TripUpdatedPayload payload) {
-        WebSocketEvent event = WebSocketEvent.create("TRIP_UPDATED", payload.getTripId(), payload);
-        broadcastToTrip(payload.getTripId(), event);
-    }
-
-    public void broadcastCommentAdded(CommentAddedPayload payload) {
-        WebSocketEvent event = WebSocketEvent.create("COMMENT_ADDED", payload.getTripId(), payload);
-        broadcastToTrip(payload.getTripId(), event);
-    }
-
-    public void broadcastCommentReactionAdded(CommentReactionPayload payload) {
-        WebSocketEvent event =
-                WebSocketEvent.create("COMMENT_REACTION_ADDED", payload.getTripId(), payload);
-        broadcastToTrip(payload.getTripId(), event);
-    }
-
-    public void broadcastCommentReactionRemoved(CommentReactionPayload payload) {
-        WebSocketEvent event =
-                WebSocketEvent.create("COMMENT_REACTION_REMOVED", payload.getTripId(), payload);
-        broadcastToTrip(payload.getTripId(), event);
-    }
-
-    public void broadcastFriendRequestSent(FriendRequestPayload payload) {
-        WebSocketEvent senderEvent =
-                WebSocketEvent.create("FRIEND_REQUEST_SENT", payload.getSenderId(), payload);
-        broadcastToUser(payload.getSenderId(), senderEvent);
-
-        WebSocketEvent receiverEvent =
-                WebSocketEvent.create("FRIEND_REQUEST_RECEIVED", payload.getReceiverId(), payload);
-        broadcastToUser(payload.getReceiverId(), receiverEvent);
-    }
-
-    public void broadcastFriendRequestAccepted(FriendRequestPayload payload) {
-        WebSocketEvent senderEvent =
-                WebSocketEvent.create("FRIEND_REQUEST_ACCEPTED", payload.getSenderId(), payload);
-        broadcastToUser(payload.getSenderId(), senderEvent);
-
-        WebSocketEvent receiverEvent =
-                WebSocketEvent.create("FRIEND_REQUEST_ACCEPTED", payload.getReceiverId(), payload);
-        broadcastToUser(payload.getReceiverId(), receiverEvent);
-    }
-
-    public void broadcastFriendRequestDeclined(FriendRequestPayload payload) {
-        WebSocketEvent senderEvent =
-                WebSocketEvent.create("FRIEND_REQUEST_DECLINED", payload.getSenderId(), payload);
-        broadcastToUser(payload.getSenderId(), senderEvent);
-
-        WebSocketEvent receiverEvent =
-                WebSocketEvent.create("FRIEND_REQUEST_DECLINED", payload.getReceiverId(), payload);
-        broadcastToUser(payload.getReceiverId(), receiverEvent);
-    }
-
-    public void broadcastUserFollowed(UserFollowPayload payload) {
-        WebSocketEvent event =
-                WebSocketEvent.create("USER_FOLLOWED", payload.getFollowedId(), payload);
-        broadcastToUser(payload.getFollowedId(), event);
-    }
-
-    public void broadcastUserUnfollowed(UserFollowPayload payload) {
-        WebSocketEvent event =
-                WebSocketEvent.create("USER_UNFOLLOWED", payload.getFollowedId(), payload);
-        broadcastToUser(payload.getFollowedId(), event);
-    }
-
-    public void broadcastTripCreated(TripLifecyclePayload payload) {
-        WebSocketEvent event = WebSocketEvent.create("TRIP_CREATED", payload.getTripId(), payload);
-        broadcastToTrip(payload.getTripId(), event);
-    }
-
-    public void broadcastTripMetadataUpdated(TripLifecyclePayload payload) {
-        WebSocketEvent event =
-                WebSocketEvent.create("TRIP_METADATA_UPDATED", payload.getTripId(), payload);
-        broadcastToTrip(payload.getTripId(), event);
-    }
-
-    public void broadcastTripDeleted(TripLifecyclePayload payload) {
-        WebSocketEvent event = WebSocketEvent.create("TRIP_DELETED", payload.getTripId(), payload);
-        broadcastToTrip(payload.getTripId(), event);
-    }
-
-    public void broadcastTripVisibilityChanged(
-            UUID tripId, String newVisibility, String previousVisibility) {
-        TripVisibilityChangedPayload payload =
-                TripVisibilityChangedPayload.builder()
-                        .tripId(tripId)
-                        .newVisibility(newVisibility)
-                        .previousVisibility(previousVisibility)
-                        .build();
-
-        WebSocketEvent event = WebSocketEvent.create("TRIP_VISIBILITY_CHANGED", tripId, payload);
-        broadcastToTrip(tripId, event);
-    }
-
-    private void broadcastToUser(UUID userId, WebSocketEvent event) {
-        String topic = "/topic/users/" + userId;
-
-        try {
-            String message = objectMapper.writeValueAsString(event);
-            sessionManager.broadcast(topic, message);
-            log.info(
-                    "Broadcast {} event to user {} ({} subscribers)",
-                    event.getType(),
-                    userId,
-                    sessionManager.getSubscribersCount(topic));
-        } catch (JsonProcessingException e) {
-            log.error("Error serializing WebSocket event", e);
-        }
-    }
-
-    private void broadcastToTrip(UUID tripId, WebSocketEvent event) {
+    /**
+     * Broadcasts an event to all subscribers of a trip topic.
+     *
+     * @param tripId the trip ID to broadcast to
+     * @param eventType the type of event (use constants from {@link WebSocketEventType})
+     * @param payload the event payload
+     */
+    public void broadcastToTrip(UUID tripId, String eventType, Object payload) {
         String topic = "/topic/trips/" + tripId;
+        WebSocketEvent event = WebSocketEvent.create(eventType, tripId, payload);
+        broadcast(topic, event, "trip", tripId);
+    }
 
+    /**
+     * Broadcasts an event to all subscribers of a user topic.
+     *
+     * @param userId the user ID to broadcast to
+     * @param eventType the type of event (use constants from {@link WebSocketEventType})
+     * @param payload the event payload
+     */
+    public void broadcastToUser(UUID userId, String eventType, Object payload) {
+        String topic = "/topic/users/" + userId;
+        WebSocketEvent event = WebSocketEvent.create(eventType, userId, payload);
+        broadcast(topic, event, "user", userId);
+    }
+
+    private void broadcast(String topic, WebSocketEvent event, String targetType, UUID targetId) {
         try {
             String message = objectMapper.writeValueAsString(event);
             sessionManager.broadcast(topic, message);
             log.info(
-                    "Broadcast {} event to trip {} ({} subscribers)",
+                    "Broadcast {} event to {} {} ({} subscribers)",
                     event.getType(),
-                    tripId,
+                    targetType,
+                    targetId,
                     sessionManager.getSubscribersCount(topic));
         } catch (JsonProcessingException e) {
-            log.error("Error serializing WebSocket event", e);
+            log.error("Error serializing WebSocket event: {}", event.getType(), e);
         }
     }
 }

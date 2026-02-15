@@ -95,7 +95,6 @@ public class TripWebSocketHandler extends TextWebSocketHandler {
     }
 
     private String extractToken(WebSocketSession session) {
-        String uri = session.getUri() != null ? session.getUri().toString() : "";
         String query = session.getUri() != null ? session.getUri().getQuery() : "";
 
         if (query == null || query.isEmpty()) {
