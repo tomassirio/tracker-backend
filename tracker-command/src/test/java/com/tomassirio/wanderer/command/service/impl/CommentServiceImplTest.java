@@ -18,7 +18,6 @@ import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
-import com.tomassirio.wanderer.commons.dto.CommentDTO;
 import com.tomassirio.wanderer.commons.mapper.CommentMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
@@ -33,6 +32,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class CommentServiceImplTest {
@@ -48,6 +48,8 @@ class CommentServiceImplTest {
     @Mock private TripRepository tripRepository;
 
     @Mock private UserRepository userRepository;
+
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @Spy private CommentMapper commentMapper = CommentMapper.INSTANCE;
 
@@ -99,17 +101,11 @@ class CommentServiceImplTest {
         when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
         // When
-        CommentDTO result = commentService.createComment(USER_ID, TRIP_ID, request);
+        UUID result = commentService.createComment(USER_ID, TRIP_ID, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(COMMENT_ID.toString());
-        assertThat(result.userId()).isEqualTo(USER_ID.toString());
-        assertThat(result.username()).isEqualTo(USERNAME);
-        assertThat(result.tripId()).isEqualTo(TRIP_ID.toString());
-        assertThat(result.parentCommentId()).isNull();
-        assertThat(result.message()).isEqualTo(COMMENT_MESSAGE);
-        assertThat(result.reactions()).isNotNull();
+        assertThat(result).isEqualTo(COMMENT_ID);
 
         ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
         verify(commentRepository).save(commentCaptor.capture());
@@ -151,15 +147,11 @@ class CommentServiceImplTest {
         when(commentRepository.save(any(Comment.class))).thenReturn(replyComment);
 
         // When
-        CommentDTO result = commentService.createComment(USER_ID, TRIP_ID, request);
+        UUID result = commentService.createComment(USER_ID, TRIP_ID, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.userId()).isEqualTo(USER_ID.toString());
-        assertThat(result.username()).isEqualTo(USERNAME);
-        assertThat(result.tripId()).isEqualTo(TRIP_ID.toString());
-        assertThat(result.parentCommentId()).isNotNull();
-        assertThat(result.message()).isEqualTo(REPLY_MESSAGE);
+        assertThat(result).isEqualTo(replyComment.getId());
 
         ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
         verify(commentRepository).save(commentCaptor.capture());
@@ -212,12 +204,11 @@ class CommentServiceImplTest {
         when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
         // When
-        CommentDTO result =
-                commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
+        UUID result = commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(COMMENT_ID.toString());
+        assertThat(result).isEqualTo(COMMENT_ID);
         assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(1);
 
         verify(commentRepository).save(topLevelComment);
@@ -231,11 +222,11 @@ class CommentServiceImplTest {
         when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
         // When
-        CommentDTO result =
-                commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.SMILEY);
+        UUID result = commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.SMILEY);
 
         // Then
         assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(COMMENT_ID);
         assertThat(topLevelComment.getReactions()).isNotNull();
         assertThat(topLevelComment.getReactions().getSmiley()).isEqualTo(1);
 
@@ -276,11 +267,11 @@ class CommentServiceImplTest {
 
         for (ReactionType reactionType : reactionTypes) {
             // When
-            CommentDTO result =
-                    commentService.addReactionToComment(USER_ID, COMMENT_ID, reactionType);
+            UUID result = commentService.addReactionToComment(USER_ID, COMMENT_ID, reactionType);
 
             // Then
             assertThat(result).isNotNull();
+            assertThat(result).isEqualTo(COMMENT_ID);
         }
 
         // Verify all reactions were incremented
@@ -301,12 +292,12 @@ class CommentServiceImplTest {
         when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
         // When
-        CommentDTO result =
+        UUID result =
                 commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(COMMENT_ID.toString());
+        assertThat(result).isEqualTo(COMMENT_ID);
         assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(4);
 
         verify(commentRepository).save(topLevelComment);
@@ -320,11 +311,12 @@ class CommentServiceImplTest {
         when(commentRepository.save(any(Comment.class))).thenReturn(topLevelComment);
 
         // When
-        CommentDTO result =
+        UUID result =
                 commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
 
         // Then
         assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(COMMENT_ID);
         assertThat(topLevelComment.getReactions().getHeart()).isEqualTo(0);
 
         verify(commentRepository).save(topLevelComment);
@@ -337,12 +329,12 @@ class CommentServiceImplTest {
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
 
         // When
-        CommentDTO result =
+        UUID result =
                 commentService.removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(COMMENT_ID.toString());
+        assertThat(result).isEqualTo(COMMENT_ID);
 
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -402,12 +394,13 @@ class CommentServiceImplTest {
         when(commentRepository.save(any(Comment.class))).thenReturn(replyComment);
 
         // When
-        CommentDTO result =
+        UUID result =
                 commentService.addReactionToComment(
                         USER_ID, replyComment.getId(), ReactionType.LAUGH);
 
         // Then
         assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(replyComment.getId());
         assertThat(replyComment.getReactions().getLaugh()).isEqualTo(1);
 
         verify(commentRepository).save(replyComment);

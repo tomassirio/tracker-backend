@@ -10,13 +10,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
-import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
 import com.tomassirio.wanderer.commons.dto.FriendRequestRequest;
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.security.CurrentUserIdArgumentResolver;
 import com.tomassirio.wanderer.commons.security.JwtUtils;
-import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,16 +65,8 @@ class FriendRequestControllerTest {
     @Test
     void sendFriendRequest_Success() throws Exception {
         FriendRequestRequest request = new FriendRequestRequest(receiverId);
-        FriendRequestResponse response =
-                new FriendRequestResponse(
-                        requestId,
-                        senderId,
-                        receiverId,
-                        FriendRequestStatus.PENDING,
-                        Instant.now(),
-                        null);
 
-        doReturn(response)
+        doReturn(requestId)
                 .when(friendRequestService)
                 .sendFriendRequest(eq(senderId), eq(receiverId));
 
@@ -86,59 +75,36 @@ class FriendRequestControllerTest {
                                 .header("Authorization", token)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(requestId.toString()))
-                .andExpect(jsonPath("$.senderId").value(senderId.toString()))
-                .andExpect(jsonPath("$.receiverId").value(receiverId.toString()))
-                .andExpect(jsonPath("$.status").value("PENDING"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(requestId.toString()));
     }
 
     @Test
     void acceptFriendRequest_Success() throws Exception {
-        FriendRequestResponse response =
-                new FriendRequestResponse(
-                        requestId,
-                        senderId,
-                        receiverId,
-                        FriendRequestStatus.ACCEPTED,
-                        Instant.now(),
-                        Instant.now());
-
-        doReturn(response)
+        doReturn(requestId)
                 .when(friendRequestService)
                 .acceptFriendRequest(eq(requestId), eq(senderId));
 
         mockMvc.perform(
                         post("/api/1/users/friends/requests/" + requestId + "/accept")
                                 .header("Authorization", token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(requestId.toString()))
-                .andExpect(jsonPath("$.status").value("ACCEPTED"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(requestId.toString()));
 
         verify(friendRequestService).acceptFriendRequest(requestId, senderId);
     }
 
     @Test
     void declineFriendRequest_Success() throws Exception {
-        FriendRequestResponse response =
-                new FriendRequestResponse(
-                        requestId,
-                        senderId,
-                        receiverId,
-                        FriendRequestStatus.DECLINED,
-                        Instant.now(),
-                        Instant.now());
-
-        doReturn(response)
+        doReturn(requestId)
                 .when(friendRequestService)
                 .declineFriendRequest(eq(requestId), eq(senderId));
 
         mockMvc.perform(
                         post("/api/1/users/friends/requests/" + requestId + "/decline")
                                 .header("Authorization", token))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(requestId.toString()))
-                .andExpect(jsonPath("$.status").value("DECLINED"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(requestId.toString()));
 
         verify(friendRequestService).declineFriendRequest(requestId, senderId);
     }

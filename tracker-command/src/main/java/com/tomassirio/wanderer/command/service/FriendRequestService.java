@@ -1,6 +1,5 @@
 package com.tomassirio.wanderer.command.service;
 
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import java.util.UUID;
 
 /**
@@ -16,31 +15,31 @@ public interface FriendRequestService {
      *
      * @param senderId the ID of the user sending the request
      * @param receiverId the ID of the user receiving the request
-     * @return the created friend request
+     * @return the UUID of the created friend request
      * @throws IllegalArgumentException if a pending request already exists or users are already
      *     friends
      */
-    FriendRequestResponse sendFriendRequest(UUID senderId, UUID receiverId);
+    UUID sendFriendRequest(UUID senderId, UUID receiverId);
 
     /**
      * Accept a friend request.
      *
      * @param requestId the ID of the friend request
      * @param userId the ID of the user accepting the request
-     * @return the updated friend request
+     * @return the UUID of the friend request
      * @throws jakarta.persistence.EntityNotFoundException if request not found
      * @throws IllegalArgumentException if user is not the receiver or request is not pending
      */
-    FriendRequestResponse acceptFriendRequest(UUID requestId, UUID userId);
+    UUID acceptFriendRequest(UUID requestId, UUID userId);
 
     /**
      * Decline a friend request.
      *
      * @param requestId the ID of the friend request
      * @param userId the ID of the user declining the request
-     * @return the updated friend request
+     * @return the UUID of the friend request
      * @throws jakarta.persistence.EntityNotFoundException if request not found
      * @throws IllegalArgumentException if user is not the receiver or request is not pending
      */
-    FriendRequestResponse declineFriendRequest(UUID requestId, UUID userId);
+    UUID declineFriendRequest(UUID requestId, UUID userId);
 }

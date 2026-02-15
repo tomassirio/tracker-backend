@@ -1,6 +1,8 @@
 package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
+import com.tomassirio.wanderer.command.event.CommentAddedEvent;
+import com.tomassirio.wanderer.command.event.CommentReactionEvent;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
@@ -10,13 +12,12 @@ import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
-import com.tomassirio.wanderer.commons.dto.CommentDTO;
-import com.tomassirio.wanderer.commons.mapper.CommentMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,11 +29,11 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
-    private final CommentMapper commentMapper = CommentMapper.INSTANCE;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
-    public CommentDTO createComment(UUID userId, UUID tripId, CommentCreationRequest request) {
+    public UUID createComment(UUID userId, UUID tripId, CommentCreationRequest request) {
         log.info("Creating comment for trip {} by user {}", tripId, userId);
 
         User user =
@@ -76,12 +77,23 @@ public class CommentServiceImpl implements CommentService {
         String commentType = savedComment.isReply() ? "reply" : "comment";
         log.info("Successfully created {} with ID: {}", commentType, savedComment.getId());
 
-        return commentMapper.toDTO(savedComment);
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                CommentAddedEvent.builder()
+                        .tripId(tripId)
+                        .commentId(savedComment.getId())
+                        .userId(userId)
+                        .username(user.getUsername())
+                        .message(request.message())
+                        .parentCommentId(request.parentCommentId())
+                        .build());
+
+        return savedComment.getId();
     }
 
     @Override
     @Transactional
-    public CommentDTO addReactionToComment(UUID userId, UUID commentId, ReactionType reactionType) {
+    public UUID addReactionToComment(UUID userId, UUID commentId, ReactionType reactionType) {
         log.info("Adding reaction {} to comment {} by user {}", reactionType, commentId, userId);
 
         Comment comment =
@@ -98,13 +110,22 @@ public class CommentServiceImpl implements CommentService {
 
         log.info("Successfully added reaction {} to comment {}", reactionType, commentId);
 
-        return commentMapper.toDTO(savedComment);
+        // Publish domain event - decoupled from WebSocket
+        eventPublisher.publishEvent(
+                CommentReactionEvent.builder()
+                        .tripId(savedComment.getTrip().getId())
+                        .commentId(commentId)
+                        .reactionType(reactionType.name())
+                        .userId(userId)
+                        .added(true)
+                        .build());
+
+        return commentId;
     }
 
     @Override
     @Transactional
-    public CommentDTO removeReactionFromComment(
-            UUID userId, UUID commentId, ReactionType reactionType) {
+    public UUID removeReactionFromComment(UUID userId, UUID commentId, ReactionType reactionType) {
         log.info(
                 "Removing reaction {} from comment {} by user {}", reactionType, commentId, userId);
 
@@ -115,12 +136,22 @@ public class CommentServiceImpl implements CommentService {
 
         if (comment.getReactions() != null) {
             comment.getReactions().decrementReaction(reactionType);
-            Comment savedComment = commentRepository.save(comment);
+            commentRepository.save(comment);
             log.info("Successfully removed reaction {} from comment {}", reactionType, commentId);
-            return commentMapper.toDTO(savedComment);
+
+            // Publish domain event - decoupled from WebSocket
+            eventPublisher.publishEvent(
+                    CommentReactionEvent.builder()
+                            .tripId(comment.getTrip().getId())
+                            .commentId(commentId)
+                            .reactionType(reactionType.name())
+                            .userId(userId)
+                            .added(false)
+                            .build());
+        } else {
+            log.warn("No reactions found on comment {}", commentId);
         }
 
-        log.warn("No reactions found on comment {}", commentId);
-        return commentMapper.toDTO(comment);
+        return commentId;
     }
 }

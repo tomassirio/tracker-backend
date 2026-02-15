@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
-import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,11 +14,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class UserFollowServiceImplTest {
 
     @Mock private UserFollowRepository userFollowRepository;
+
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks private UserFollowServiceImpl userFollowService;
 
@@ -47,13 +49,13 @@ class UserFollowServiceImplTest {
                 .thenReturn(false);
         when(userFollowRepository.save(any(UserFollow.class))).thenReturn(userFollow);
 
-        UserFollowResponse response = userFollowService.followUser(followerId, followedId);
+        UUID response = userFollowService.followUser(followerId, followedId);
 
         assertNotNull(response);
-        assertEquals(followerId, response.followerId());
-        assertEquals(followedId, response.followedId());
+        assertEquals(userFollow.getId(), response);
 
         verify(userFollowRepository).save(any(UserFollow.class));
+        verify(eventPublisher).publishEvent(any(Object.class));
     }
 
     @Test
@@ -83,6 +85,7 @@ class UserFollowServiceImplTest {
         userFollowService.unfollowUser(followerId, followedId);
 
         verify(userFollowRepository).deleteByFollowerIdAndFollowedId(followerId, followedId);
+        verify(eventPublisher).publishEvent(any(Object.class));
     }
 
     @Test
