@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.dto.UserCreationRequest;
-import com.tomassirio.wanderer.command.dto.UserResponse;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.User;
 import java.util.Optional;
@@ -36,9 +35,8 @@ class UserServiceImplTest {
         when(userRepository.findByUsername(req.username())).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenReturn(saved);
 
-        UserResponse resp = userService.createUser(req);
-        assertEquals(saved.getId(), resp.id());
-        assertEquals(saved.getUsername(), resp.username());
+        UUID resp = userService.createUser(req);
+        assertEquals(saved.getId(), resp);
     }
 
     @Test

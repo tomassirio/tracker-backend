@@ -6,7 +6,6 @@ import static org.mockito.Mockito.*;
 
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
-import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,11 +49,10 @@ class UserFollowServiceImplTest {
                 .thenReturn(false);
         when(userFollowRepository.save(any(UserFollow.class))).thenReturn(userFollow);
 
-        UserFollowResponse response = userFollowService.followUser(followerId, followedId);
+        UUID response = userFollowService.followUser(followerId, followedId);
 
         assertNotNull(response);
-        assertEquals(followerId, response.followerId());
-        assertEquals(followedId, response.followedId());
+        assertEquals(userFollow.getId(), response);
 
         verify(userFollowRepository).save(any(UserFollow.class));
         verify(eventPublisher).publishEvent(any(Object.class));

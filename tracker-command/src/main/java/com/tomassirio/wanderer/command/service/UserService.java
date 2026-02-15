@@ -1,7 +1,6 @@
 package com.tomassirio.wanderer.command.service;
 
 import com.tomassirio.wanderer.command.dto.UserCreationRequest;
-import com.tomassirio.wanderer.command.dto.UserResponse;
 import java.util.UUID;
 
 /**
@@ -19,7 +18,7 @@ import java.util.UUID;
  * <ul>
  *   <li>Input: {@link UserCreationRequest} containing username and email (validated by the
  *       controller).
- *   <li>Output: {@link UserResponse} with created user's id, username and email.
+ *   <li>Output: UUID of the created user.
  *   <li>Error modes: throws {@link IllegalArgumentException} when username or email are already in
  *       use.
  * </ul>

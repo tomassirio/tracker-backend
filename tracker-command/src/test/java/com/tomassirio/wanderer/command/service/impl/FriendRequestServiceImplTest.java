@@ -8,7 +8,6 @@ import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.command.service.FriendshipService;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.Optional;
@@ -61,14 +60,10 @@ class FriendRequestServiceImplTest {
                 .thenReturn(Optional.empty());
         when(friendRequestRepository.save(any(FriendRequest.class))).thenReturn(friendRequest);
 
-        FriendRequestResponse response =
-                friendRequestService.sendFriendRequest(senderId, receiverId);
+        UUID response = friendRequestService.sendFriendRequest(senderId, receiverId);
 
         assertNotNull(response);
-        assertEquals(requestId, response.id());
-        assertEquals(senderId, response.senderId());
-        assertEquals(receiverId, response.receiverId());
-        assertEquals(FriendRequestStatus.PENDING, response.status());
+        assertEquals(requestId, response);
 
         verify(friendRequestRepository).save(any(FriendRequest.class));
     }
@@ -114,10 +109,10 @@ class FriendRequestServiceImplTest {
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
         when(friendRequestRepository.save(any(FriendRequest.class))).thenReturn(friendRequest);
 
-        FriendRequestResponse response =
-                friendRequestService.acceptFriendRequest(requestId, receiverId);
+        UUID response = friendRequestService.acceptFriendRequest(requestId, receiverId);
 
         assertNotNull(response);
+        assertEquals(requestId, response);
         assertEquals(FriendRequestStatus.ACCEPTED, friendRequest.getStatus());
         assertNotNull(friendRequest.getUpdatedAt());
 
@@ -164,10 +159,10 @@ class FriendRequestServiceImplTest {
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
         when(friendRequestRepository.save(any(FriendRequest.class))).thenReturn(friendRequest);
 
-        FriendRequestResponse response =
-                friendRequestService.declineFriendRequest(requestId, receiverId);
+        UUID response = friendRequestService.declineFriendRequest(requestId, receiverId);
 
         assertNotNull(response);
+        assertEquals(requestId, response);
         assertEquals(FriendRequestStatus.DECLINED, friendRequest.getStatus());
         assertNotNull(friendRequest.getUpdatedAt());
     }

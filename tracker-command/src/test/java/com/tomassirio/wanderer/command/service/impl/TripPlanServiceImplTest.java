@@ -18,7 +18,6 @@ import com.tomassirio.wanderer.command.service.validator.TripPlanValidator;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
-import com.tomassirio.wanderer.commons.dto.TripPlanDTO;
 import com.tomassirio.wanderer.commons.mapper.TripPlanMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
@@ -104,18 +103,11 @@ class TripPlanServiceImplTest {
         when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(savedPlan);
 
         // When
-        TripPlanDTO result = tripPlanService.createTripPlan(userId, request);
+        UUID result = tripPlanService.createTripPlan(userId, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(planId.toString());
-        assertThat(result.name()).isEqualTo("Europe Summer Trip");
-        assertThat(result.planType()).isEqualTo(TripPlanType.SIMPLE);
-        assertThat(result.userId()).isEqualTo(userId.toString());
-        assertThat(result.startDate()).isEqualTo(startDate);
-        assertThat(result.endDate()).isEqualTo(endDate);
-        assertThat(result.startLocation()).isEqualTo(startLocation);
-        assertThat(result.endLocation()).isEqualTo(endLocation);
+        assertThat(result).isEqualTo(planId);
 
         verify(tripPlanRepository).save(tripPlanCaptor.capture());
         TripPlan capturedPlan = tripPlanCaptor.getValue();
@@ -157,12 +149,11 @@ class TripPlanServiceImplTest {
         when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(savedPlan);
 
         // When
-        TripPlanDTO result = tripPlanService.createTripPlan(userId, request);
+        UUID result = tripPlanService.createTripPlan(userId, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.planType()).isEqualTo(TripPlanType.MULTI_DAY);
-        assertThat(result.name()).isEqualTo("Multi-Day Adventure");
+        assertThat(result).isEqualTo(planId);
 
         verify(tripPlanRepository).save(tripPlanCaptor.capture());
         assertThat(tripPlanCaptor.getValue().getPlanType()).isEqualTo(TripPlanType.MULTI_DAY);
@@ -223,7 +214,7 @@ class TripPlanServiceImplTest {
         when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(savedPlan);
 
         // When
-        TripPlanDTO result = tripPlanService.createTripPlan(userId, request);
+        UUID result = tripPlanService.createTripPlan(userId, request);
 
         // Then
         verify(tripPlanRepository).save(tripPlanCaptor.capture());
@@ -280,14 +271,11 @@ class TripPlanServiceImplTest {
         when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(updatedPlan);
 
         // When
-        TripPlanDTO result = tripPlanService.updateTripPlan(userId, planId, request);
+        UUID result = tripPlanService.updateTripPlan(userId, planId, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(planId.toString());
-        assertThat(result.name()).isEqualTo("Updated Plan Name");
-        assertThat(result.startDate()).isEqualTo(startDate.plusDays(1));
-        assertThat(result.endDate()).isEqualTo(endDate.plusDays(1));
+        assertThat(result).isEqualTo(planId);
 
         verify(ownershipValidator)
                 .validateOwnership(eq(existingPlan), eq(userId), any(), any(), eq("trip plan"));

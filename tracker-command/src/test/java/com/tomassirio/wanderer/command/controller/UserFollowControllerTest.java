@@ -12,11 +12,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.service.UserFollowService;
 import com.tomassirio.wanderer.commons.dto.UserFollowRequest;
-import com.tomassirio.wanderer.commons.dto.UserFollowResponse;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.security.CurrentUserIdArgumentResolver;
 import com.tomassirio.wanderer.commons.security.JwtUtils;
-import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,10 +64,9 @@ class UserFollowControllerTest {
     @Test
     void followUser_Success() throws Exception {
         UserFollowRequest request = new UserFollowRequest(followedId);
-        UserFollowResponse response =
-                new UserFollowResponse(UUID.randomUUID(), followerId, followedId, Instant.now());
+        UUID followId = UUID.randomUUID();
 
-        doReturn(response).when(userFollowService).followUser(eq(followerId), eq(followedId));
+        doReturn(followId).when(userFollowService).followUser(eq(followerId), eq(followedId));
 
         mockMvc.perform(
                         post("/api/1/users/follows")
@@ -77,8 +74,7 @@ class UserFollowControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.followerId").value(followerId.toString()))
-                .andExpect(jsonPath("$.followedId").value(followedId.toString()));
+                .andExpect(jsonPath("$").value(followId.toString()));
 
         verify(userFollowService).followUser(followerId, followedId);
     }

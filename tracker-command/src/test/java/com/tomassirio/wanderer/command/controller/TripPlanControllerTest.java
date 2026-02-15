@@ -21,11 +21,9 @@ import com.tomassirio.wanderer.command.service.TripPlanService;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
-import com.tomassirio.wanderer.commons.dto.TripPlanDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -71,24 +69,9 @@ class TripPlanControllerTest {
                 TestEntityFactory.createTripPlanCreationRequest("Europe Summer Trip 2025");
 
         UUID planId = UUID.randomUUID();
-        GeoLocation startLocation = TestEntityFactory.createGeoLocation(40.7128, -74.0060);
-        GeoLocation endLocation = TestEntityFactory.createGeoLocation(34.0522, -118.2437);
-
-        TripPlanDTO expectedResponse =
-                new TripPlanDTO(
-                        planId.toString(),
-                        USER_ID.toString(),
-                        "Europe Summer Trip 2025",
-                        TripPlanType.SIMPLE,
-                        request.startDate(),
-                        request.endDate(),
-                        startLocation,
-                        endLocation,
-                        List.of(),
-                        Instant.now());
 
         when(tripPlanService.createTripPlan(any(UUID.class), any(TripPlanCreationRequest.class)))
-                .thenReturn(expectedResponse);
+                .thenReturn(planId);
 
         // When & Then
         mockMvc.perform(
@@ -96,14 +79,7 @@ class TripPlanControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.id").value(planId.toString()))
-                .andExpect(jsonPath("$.name").value("Europe Summer Trip 2025"))
-                .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
-                .andExpect(jsonPath("$.planType").value(TripPlanType.SIMPLE.name()))
-                .andExpect(jsonPath("$.startLocation.lat").value(40.7128))
-                .andExpect(jsonPath("$.startLocation.lon").value(-74.0060))
-                .andExpect(jsonPath("$.endLocation.lat").value(34.0522))
-                .andExpect(jsonPath("$.endLocation.lon").value(-118.2437));
+                .andExpect(jsonPath("$").value(planId.toString()));
     }
 
     @Test
@@ -124,21 +100,9 @@ class TripPlanControllerTest {
                         TripPlanType.MULTI_DAY);
 
         UUID planId = UUID.randomUUID();
-        TripPlanDTO expectedResponse =
-                new TripPlanDTO(
-                        planId.toString(),
-                        USER_ID.toString(),
-                        "Multi-Day Adventure",
-                        TripPlanType.MULTI_DAY,
-                        startDate,
-                        endDate,
-                        startLocation,
-                        endLocation,
-                        List.of(),
-                        Instant.now());
 
         when(tripPlanService.createTripPlan(any(UUID.class), any(TripPlanCreationRequest.class)))
-                .thenReturn(expectedResponse);
+                .thenReturn(planId);
 
         // When & Then
         mockMvc.perform(
@@ -146,7 +110,7 @@ class TripPlanControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.planType").value(TripPlanType.MULTI_DAY.name()));
+                .andExpect(jsonPath("$").value(planId.toString()));
     }
 
     @Test
@@ -343,25 +307,9 @@ class TripPlanControllerTest {
         TripPlanUpdateRequest request =
                 TestEntityFactory.createTripPlanUpdateRequest("Updated Plan Name");
 
-        GeoLocation startLocation = TestEntityFactory.createGeoLocation(51.5074, -0.1278);
-        GeoLocation endLocation = TestEntityFactory.createGeoLocation(48.8566, 2.3522);
-
-        TripPlanDTO expectedResponse =
-                new TripPlanDTO(
-                        planId.toString(),
-                        USER_ID.toString(),
-                        "Updated Plan Name",
-                        TripPlanType.SIMPLE,
-                        request.startDate(),
-                        request.endDate(),
-                        startLocation,
-                        endLocation,
-                        List.of(),
-                        Instant.now());
-
         when(tripPlanService.updateTripPlan(
                         any(UUID.class), eq(planId), any(TripPlanUpdateRequest.class)))
-                .thenReturn(expectedResponse);
+                .thenReturn(planId);
 
         // When & Then
         mockMvc.perform(
@@ -369,9 +317,7 @@ class TripPlanControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.id").value(planId.toString()))
-                .andExpect(jsonPath("$.name").value("Updated Plan Name"))
-                .andExpect(jsonPath("$.userId").value(USER_ID.toString()));
+                .andExpect(jsonPath("$").value(planId.toString()));
     }
 
     @Test
@@ -386,22 +332,9 @@ class TripPlanControllerTest {
                 TestEntityFactory.createTripPlanUpdateRequest(
                         "Plan Name", newStartDate, newEndDate, location, location);
 
-        TripPlanDTO expectedResponse =
-                new TripPlanDTO(
-                        planId.toString(),
-                        USER_ID.toString(),
-                        "Plan Name",
-                        TripPlanType.SIMPLE,
-                        newStartDate,
-                        newEndDate,
-                        location,
-                        location,
-                        List.of(),
-                        Instant.now());
-
         when(tripPlanService.updateTripPlan(
                         any(UUID.class), eq(planId), any(TripPlanUpdateRequest.class)))
-                .thenReturn(expectedResponse);
+                .thenReturn(planId);
 
         // When & Then
         mockMvc.perform(
@@ -409,8 +342,7 @@ class TripPlanControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$.startDate").value(newStartDate.toString()))
-                .andExpect(jsonPath("$.endDate").value(newEndDate.toString()));
+                .andExpect(jsonPath("$").value(planId.toString()));
     }
 
     @Test

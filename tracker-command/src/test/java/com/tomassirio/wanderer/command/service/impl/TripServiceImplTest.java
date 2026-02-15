@@ -32,7 +32,6 @@ import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
-import com.tomassirio.wanderer.commons.dto.TripDTO;
 import com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
@@ -177,17 +176,10 @@ class TripServiceImplTest {
                         "Summer Road Trip", TripVisibility.PUBLIC);
 
         // When
-        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
+        UUID result = tripService.createTrip(USER_ID, request);
 
         // Then
-        assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.id()).isNotNull();
-        assertThat(createdTrip.name()).isEqualTo("Summer Road Trip");
-        assertThat(createdTrip.userId()).isNotNull();
-        assertThat(createdTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
-        assertThat(createdTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
-        assertThat(createdTrip.enabled()).isTrue();
-        assertThat(createdTrip.creationTimestamp()).isNotNull();
+        assertThat(result).isNotNull();
 
         verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
         verify(userRepository).findById(USER_ID);
@@ -200,13 +192,10 @@ class TripServiceImplTest {
                 TestEntityFactory.createTripCreationRequest("Private Trip", TripVisibility.PRIVATE);
 
         // When
-        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
+        UUID result = tripService.createTrip(USER_ID, request);
 
         // Then
-        assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.name()).isEqualTo("Private Trip");
-        assertThat(createdTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
-        assertThat(createdTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(result).isNotNull();
 
         verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
     }
@@ -218,14 +207,10 @@ class TripServiceImplTest {
                 TestEntityFactory.createTripCreationRequest("New Trip", TripVisibility.PUBLIC);
 
         // When
-        TripDTO createdTrip = tripService.createTrip(USER_ID, request);
+        UUID result = tripService.createTrip(USER_ID, request);
 
         // Then
-        assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.tripDetails().startTimestamp()).isNull();
-        assertThat(createdTrip.tripDetails().endTimestamp()).isNull();
-        assertThat(createdTrip.tripPlanId()).isNull();
-        assertThat(createdTrip.tripSettings().updateRefresh()).isNull();
+        assertThat(result).isNotNull();
 
         verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
     }
@@ -286,13 +271,11 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        TripDTO updatedTrip = tripService.updateTrip(USER_ID, tripId, request);
+        UUID result = tripService.updateTrip(USER_ID, tripId, request);
 
         // Then
-        assertThat(updatedTrip).isNotNull();
-        assertThat(updatedTrip.id()).isNotNull();
-        assertThat(updatedTrip.name()).isEqualTo("Updated Trip Name");
-        assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
 
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripMetadataUpdatedEvent.class));
@@ -353,11 +336,11 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        TripDTO updatedTrip = tripService.updateTrip(USER_ID, tripId, request);
+        UUID result = tripService.updateTrip(USER_ID, tripId, request);
 
         // Then
-        assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
-        assertThat(updatedTrip.name()).isEqualTo("Trip Name");
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
 
         verify(eventPublisher).publishEvent(any(TripMetadataUpdatedEvent.class));
     }
@@ -485,10 +468,11 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        TripDTO updatedTrip = tripService.changeVisibility(USER_ID, tripId, TripVisibility.PRIVATE);
+        UUID result = tripService.changeVisibility(USER_ID, tripId, TripVisibility.PRIVATE);
 
         // Then
-        assertThat(updatedTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripVisibilityChangedEvent.class));
     }
@@ -562,14 +546,11 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
+        UUID result = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
 
         // Then
-        assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
-        // In CQRS with eventual consistency, timestamps are set asynchronously by the persistence
-        // listener
-        // So the command returns null timestamps - they will be set later
-        assertThat(updatedTrip.tripDetails().startTimestamp()).isNull(); // Set async by persistence
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
@@ -642,13 +623,11 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.FINISHED);
+        UUID result = tripService.changeStatus(USER_ID, tripId, TripStatus.FINISHED);
 
         // Then
-        assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.FINISHED);
-        // In CQRS, timestamps from existing trip are returned but end timestamp is set async
-        assertThat(updatedTrip.tripDetails().startTimestamp()).isEqualTo(startTime);
-        assertThat(updatedTrip.tripDetails().endTimestamp()).isNull(); // Set async by persistence
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
@@ -687,13 +666,11 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
+        UUID result = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
 
         // Then
-        assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
-        // In CQRS with eventual consistency, start timestamp is set asynchronously
-        assertThat(updatedTrip.tripDetails().startTimestamp()).isNull(); // Set async by persistence
-        assertThat(updatedTrip.tripDetails().endTimestamp()).isNull();
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
@@ -733,13 +710,11 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        TripDTO updatedTrip = tripService.changeStatus(USER_ID, tripId, TripStatus.PAUSED);
+        UUID result = tripService.changeStatus(USER_ID, tripId, TripStatus.PAUSED);
 
         // Then
-        assertThat(updatedTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.PAUSED);
-        // In CQRS, existing timestamps are preserved in the returned DTO
-        assertThat(updatedTrip.tripDetails().startTimestamp()).isEqualTo(startTime);
-        assertThat(updatedTrip.tripDetails().endTimestamp()).isNull(); // Remains null for pause
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
@@ -799,25 +774,10 @@ class TripServiceImplTest {
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
 
         // When
-        TripDTO createdTrip =
-                tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PUBLIC);
+        UUID result = tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PUBLIC);
 
         // Then
-        assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.id()).isNotNull();
-        assertThat(createdTrip.name()).isEqualTo(tripPlan.getName());
-        assertThat(createdTrip.userId()).isNotNull();
-        assertThat(createdTrip.tripPlanId()).isEqualTo(tripPlanId.toString());
-        assertThat(createdTrip.tripSettings().tripStatus()).isEqualTo(TripStatus.CREATED);
-        assertThat(createdTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PUBLIC);
-        assertThat(createdTrip.tripDetails().startLocation())
-                .isEqualTo(tripPlan.getStartLocation());
-        assertThat(createdTrip.tripDetails().endLocation()).isEqualTo(tripPlan.getEndLocation());
-        assertThat(createdTrip.tripDetails().waypoints()).isEmpty();
-        assertThat(createdTrip.tripDetails().startTimestamp()).isNotNull();
-        assertThat(createdTrip.tripDetails().endTimestamp()).isNotNull();
-        assertThat(createdTrip.enabled()).isTrue();
-        assertThat(createdTrip.creationTimestamp()).isNotNull();
+        assertThat(result).isNotNull();
 
         verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
         verify(tripPlanRepository).findById(tripPlanId);
@@ -846,14 +806,10 @@ class TripServiceImplTest {
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
 
         // When
-        TripDTO createdTrip =
-                tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PRIVATE);
+        UUID result = tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PRIVATE);
 
         // Then
-        assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.name()).isEqualTo(tripPlan.getName());
-        assertThat(createdTrip.tripSettings().visibility()).isEqualTo(TripVisibility.PRIVATE);
-        assertThat(createdTrip.tripPlanId()).isEqualTo(tripPlanId.toString());
+        assertThat(result).isNotNull();
 
         verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
     }
@@ -957,17 +913,10 @@ class TripServiceImplTest {
         when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(tripPlan));
 
         // When
-        TripDTO createdTrip =
-                tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PUBLIC);
+        UUID result = tripService.createTripFromPlan(USER_ID, tripPlanId, TripVisibility.PUBLIC);
 
         // Then
-        assertThat(createdTrip).isNotNull();
-        assertThat(createdTrip.tripDetails().waypoints()).isNotNull();
-        assertThat(createdTrip.tripDetails().waypoints()).hasSize(2);
-        assertThat(createdTrip.tripDetails().waypoints().get(0).getLat()).isEqualTo(41.8781);
-        assertThat(createdTrip.tripDetails().waypoints().get(0).getLon()).isEqualTo(-87.6298);
-        assertThat(createdTrip.tripDetails().waypoints().get(1).getLat()).isEqualTo(39.7392);
-        assertThat(createdTrip.tripDetails().waypoints().get(1).getLon()).isEqualTo(-104.9903);
+        assertThat(result).isNotNull();
 
         verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
         verify(tripPlanRepository).findById(tripPlanId);
