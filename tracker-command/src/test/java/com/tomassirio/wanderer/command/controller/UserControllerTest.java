@@ -9,8 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.command.dto.UserCreationRequest;
-import com.tomassirio.wanderer.command.dto.UserResponse;
+import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import java.util.UUID;
@@ -50,17 +49,15 @@ class UserControllerTest {
     void createUser_whenValidRequest_shouldReturnCreated() throws Exception {
         UserCreationRequest req = new UserCreationRequest("johndoe", "john@example.com");
         UUID id = UUID.randomUUID();
-        UserResponse resp = new UserResponse(id, "johndoe");
 
-        doReturn(resp).when(userService).createUser(any(UserCreationRequest.class));
+        doReturn(id).when(userService).createUser(any(UserCreationRequest.class));
 
         mockMvc.perform(
                         post("/api/1/users")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(id.toString()))
-                .andExpect(jsonPath("$.username").value("johndoe"));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(id.toString()));
     }
 
     @Test

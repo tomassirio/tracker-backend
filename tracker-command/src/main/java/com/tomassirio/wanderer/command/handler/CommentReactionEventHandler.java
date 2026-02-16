@@ -1,0 +1,62 @@
+package com.tomassirio.wanderer.command.handler;
+
+import com.tomassirio.wanderer.command.event.CommentReactionEvent;
+import com.tomassirio.wanderer.commons.domain.Comment;
+import com.tomassirio.wanderer.commons.domain.ReactionType;
+import com.tomassirio.wanderer.commons.domain.Reactions;
+import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Event handler for persisting comment reaction events to the database.
+ *
+ * <p>This handler implements the CQRS write side by handling CommentReactionEvent and updating
+ * reaction counts in the database. Validation is performed in the service layer before the event is
+ * emitted. WebSocket broadcasting is handled centrally by {@link
+ * com.tomassirio.wanderer.command.websocket.BroadcastableEventListener}.
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class CommentReactionEventHandler implements EventHandler<CommentReactionEvent> {
+
+    private final EntityManager entityManager;
+
+    @Override
+    @EventListener
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void handle(CommentReactionEvent event) {
+        log.debug(
+                "Persisting CommentReactionEvent for comment: {}, reaction: {}, added: {}",
+                event.getCommentId(),
+                event.getReactionType(),
+                event.isAdded());
+
+        // Use entityManager.find() to load the actual entity for update
+        Comment comment = entityManager.find(Comment.class, event.getCommentId());
+
+        if (comment.getReactions() == null) {
+            comment.setReactions(new Reactions());
+        }
+
+        ReactionType reactionType = ReactionType.valueOf(event.getReactionType());
+
+        if (event.isAdded()) {
+            comment.getReactions().incrementReaction(reactionType);
+        } else {
+            comment.getReactions().decrementReaction(reactionType);
+        }
+
+        // No need to call save() - entity is managed and will be flushed automatically
+        log.info(
+                "Reaction {} {} for comment: {}",
+                event.getReactionType(),
+                event.isAdded() ? "added" : "removed",
+                event.getCommentId());
+    }
+}

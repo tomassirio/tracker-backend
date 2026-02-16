@@ -1,38 +1,37 @@
 package com.tomassirio.wanderer.command.service.impl;
 
-import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.CommentCreationRequest;
+import com.tomassirio.wanderer.command.event.CommentAddedEvent;
+import com.tomassirio.wanderer.command.event.CommentReactionEvent;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.CommentService;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
-import com.tomassirio.wanderer.commons.domain.Reactions;
-import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
-import com.tomassirio.wanderer.commons.dto.CommentDTO;
-import com.tomassirio.wanderer.commons.mapper.CommentMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
-    private final CommentMapper commentMapper = CommentMapper.INSTANCE;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional
-    public CommentDTO createComment(UUID userId, UUID tripId, CommentCreationRequest request) {
+    public UUID createComment(UUID userId, UUID tripId, CommentCreationRequest request) {
         log.info("Creating comment for trip {} by user {}", tripId, userId);
 
         User user =
@@ -40,15 +39,15 @@ public class CommentServiceImpl implements CommentService {
                         .findById(userId)
                         .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        Trip trip =
-                tripRepository
-                        .findById(tripId)
-                        .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+        // Validate trip exists
+        tripRepository
+                .findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
 
-        Comment parentComment = null;
+        // Validate parent comment if this is a reply
         if (request.parentCommentId() != null) {
             log.info("This is a reply to comment {}", request.parentCommentId());
-            parentComment =
+            Comment parentComment =
                     commentRepository
                             .findById(request.parentCommentId())
                             .orElseThrow(
@@ -61,27 +60,30 @@ public class CommentServiceImpl implements CommentService {
             }
         }
 
-        Comment comment =
-                Comment.builder()
-                        .user(user)
-                        .trip(trip)
-                        .parentComment(parentComment)
+        // Pre-generate ID and timestamp
+        UUID commentId = UUID.randomUUID();
+        Instant timestamp = Instant.now();
+
+        // Publish event - persistence handler will write to DB
+        eventPublisher.publishEvent(
+                CommentAddedEvent.builder()
+                        .commentId(commentId)
+                        .tripId(tripId)
+                        .userId(userId)
+                        .username(user.getUsername())
                         .message(request.message())
-                        .reactions(new Reactions())
-                        .timestamp(Instant.now())
-                        .build();
+                        .parentCommentId(request.parentCommentId())
+                        .timestamp(timestamp)
+                        .build());
 
-        Comment savedComment = commentRepository.save(comment);
+        String commentType = request.parentCommentId() != null ? "reply" : "comment";
+        log.info("Successfully created {} with ID: {}", commentType, commentId);
 
-        String commentType = savedComment.isReply() ? "reply" : "comment";
-        log.info("Successfully created {} with ID: {}", commentType, savedComment.getId());
-
-        return commentMapper.toDTO(savedComment);
+        return commentId;
     }
 
     @Override
-    @Transactional
-    public CommentDTO addReactionToComment(UUID userId, UUID commentId, ReactionType reactionType) {
+    public UUID addReactionToComment(UUID userId, UUID commentId, ReactionType reactionType) {
         log.info("Adding reaction {} to comment {} by user {}", reactionType, commentId, userId);
 
         Comment comment =
@@ -89,22 +91,23 @@ public class CommentServiceImpl implements CommentService {
                         .findById(commentId)
                         .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        if (comment.getReactions() == null) {
-            comment.setReactions(new Reactions());
-        }
-
-        comment.getReactions().incrementReaction(reactionType);
-        Comment savedComment = commentRepository.save(comment);
+        // Publish event - persistence handler will update DB
+        eventPublisher.publishEvent(
+                CommentReactionEvent.builder()
+                        .tripId(comment.getTrip().getId())
+                        .commentId(commentId)
+                        .reactionType(reactionType.name())
+                        .userId(userId)
+                        .added(true)
+                        .build());
 
         log.info("Successfully added reaction {} to comment {}", reactionType, commentId);
 
-        return commentMapper.toDTO(savedComment);
+        return commentId;
     }
 
     @Override
-    @Transactional
-    public CommentDTO removeReactionFromComment(
-            UUID userId, UUID commentId, ReactionType reactionType) {
+    public UUID removeReactionFromComment(UUID userId, UUID commentId, ReactionType reactionType) {
         log.info(
                 "Removing reaction {} from comment {} by user {}", reactionType, commentId, userId);
 
@@ -113,14 +116,18 @@ public class CommentServiceImpl implements CommentService {
                         .findById(commentId)
                         .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        if (comment.getReactions() != null) {
-            comment.getReactions().decrementReaction(reactionType);
-            Comment savedComment = commentRepository.save(comment);
-            log.info("Successfully removed reaction {} from comment {}", reactionType, commentId);
-            return commentMapper.toDTO(savedComment);
-        }
+        // Publish event - persistence handler will update DB
+        eventPublisher.publishEvent(
+                CommentReactionEvent.builder()
+                        .tripId(comment.getTrip().getId())
+                        .commentId(commentId)
+                        .reactionType(reactionType.name())
+                        .userId(userId)
+                        .added(false)
+                        .build());
 
-        log.warn("No reactions found on comment {}", commentId);
-        return commentMapper.toDTO(comment);
+        log.info("Successfully removed reaction {} from comment {}", reactionType, commentId);
+
+        return commentId;
     }
 }

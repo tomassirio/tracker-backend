@@ -1,10 +1,12 @@
 package com.tomassirio.wanderer.command.service.helper;
 
+import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -32,6 +34,31 @@ public class TripEmbeddedObjectsInitializer {
      */
     public TripDetails createTripDetails() {
         return createDefaultTripDetails();
+    }
+
+    /**
+     * Creates a new TripDetails from event data. Used when creating trip from plan.
+     *
+     * @param startLocation the start location
+     * @param endLocation the end location
+     * @param waypoints the waypoints
+     * @param startTimestamp the start timestamp
+     * @param endTimestamp the end timestamp
+     * @return a new TripDetails instance
+     */
+    public TripDetails createTripDetailsFromEvent(
+            GeoLocation startLocation,
+            GeoLocation endLocation,
+            List<GeoLocation> waypoints,
+            Instant startTimestamp,
+            Instant endTimestamp) {
+        return TripDetails.builder()
+                .startTimestamp(startTimestamp)
+                .endTimestamp(endTimestamp)
+                .startLocation(startLocation)
+                .endLocation(endLocation)
+                .waypoints(waypoints != null ? waypoints : List.of())
+                .build();
     }
 
     /**

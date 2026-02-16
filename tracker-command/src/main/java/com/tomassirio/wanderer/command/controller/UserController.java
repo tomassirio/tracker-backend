@@ -1,12 +1,12 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.dto.UserCreationRequest;
-import com.tomassirio.wanderer.command.dto.UserResponse;
+import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,12 +31,14 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    @Operation(summary = "Create a new user", description = "Registers a new user in the system")
-    public ResponseEntity<UserResponse> createUser(
-            @Valid @RequestBody UserCreationRequest request) {
+    @Operation(
+            summary = "Create a new user",
+            description =
+                    "Registers a new user in the system. Returns 202 Accepted with the user ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> createUser(@Valid @RequestBody UserCreationRequest request) {
         log.info("Received request to create user: {}", request.username());
-        UserResponse created = userService.createUser(request);
-        log.info("Successfully created user with ID: {}", created.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+        UUID userId = userService.createUser(request);
+        log.info("Accepted user creation request with ID: {}", userId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(userId);
     }
 }

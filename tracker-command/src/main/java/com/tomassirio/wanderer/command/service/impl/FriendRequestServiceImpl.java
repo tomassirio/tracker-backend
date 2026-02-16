@@ -1,30 +1,35 @@
 package com.tomassirio.wanderer.command.service.impl;
 
+import com.tomassirio.wanderer.command.event.FriendRequestAcceptedEvent;
+import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
+import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
+import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
 import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.command.service.FriendRequestService;
 import com.tomassirio.wanderer.command.service.FriendshipService;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
-import com.tomassirio.wanderer.commons.dto.FriendRequestResponse;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class FriendRequestServiceImpl implements FriendRequestService {
 
     private final FriendRequestRepository friendRequestRepository;
     private final FriendshipService friendshipService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    @Transactional
-    public FriendRequestResponse sendFriendRequest(UUID senderId, UUID receiverId) {
+    public UUID sendFriendRequest(UUID senderId, UUID receiverId) {
         log.info("Sending friend request from {} to {}", senderId, receiverId);
 
         if (senderId.equals(receiverId)) {
@@ -43,23 +48,27 @@ public class FriendRequestServiceImpl implements FriendRequestService {
             throw new IllegalArgumentException("Friend request already sent");
         }
 
-        FriendRequest request =
-                FriendRequest.builder()
+        // Pre-generate ID and timestamp
+        UUID requestId = UUID.randomUUID();
+        Instant createdAt = Instant.now();
+
+        // Publish event - persistence handler will write to DB
+        eventPublisher.publishEvent(
+                FriendRequestSentEvent.builder()
+                        .requestId(requestId)
                         .senderId(senderId)
                         .receiverId(receiverId)
-                        .status(FriendRequestStatus.PENDING)
-                        .createdAt(Instant.now())
-                        .build();
+                        .status(FriendRequestStatus.PENDING.name())
+                        .createdAt(createdAt)
+                        .build());
 
-        FriendRequest saved = friendRequestRepository.save(request);
-        log.info("Friend request created with ID: {}", saved.getId());
+        log.info("Friend request created with ID: {}", requestId);
 
-        return mapToResponse(saved);
+        return requestId;
     }
 
     @Override
-    @Transactional
-    public FriendRequestResponse acceptFriendRequest(UUID requestId, UUID userId) {
+    public UUID acceptFriendRequest(UUID requestId, UUID userId) {
         log.info("User {} accepting friend request {}", userId, requestId);
 
         FriendRequest request =
@@ -75,21 +84,28 @@ public class FriendRequestServiceImpl implements FriendRequestService {
             throw new IllegalArgumentException("Friend request is not pending");
         }
 
-        request.setStatus(FriendRequestStatus.ACCEPTED);
-        request.setUpdatedAt(Instant.now());
+        // Publish event - persistence handler will update DB
+        eventPublisher.publishEvent(
+                FriendRequestAcceptedEvent.builder()
+                        .requestId(requestId)
+                        .senderId(request.getSenderId())
+                        .receiverId(request.getReceiverId())
+                        .build());
 
-        FriendRequest updated = friendRequestRepository.save(request);
-
-        // Create bidirectional friendship
-        friendshipService.createFriendship(request.getSenderId(), request.getReceiverId());
+        // Create bidirectional friendship via event
+        eventPublisher.publishEvent(
+                FriendshipCreatedEvent.builder()
+                        .userId(request.getSenderId())
+                        .friendId(request.getReceiverId())
+                        .build());
 
         log.info("Friend request {} accepted", requestId);
-        return mapToResponse(updated);
+
+        return requestId;
     }
 
     @Override
-    @Transactional
-    public FriendRequestResponse declineFriendRequest(UUID requestId, UUID userId) {
+    public UUID declineFriendRequest(UUID requestId, UUID userId) {
         log.info("User {} declining friend request {}", userId, requestId);
 
         FriendRequest request =
@@ -105,22 +121,16 @@ public class FriendRequestServiceImpl implements FriendRequestService {
             throw new IllegalArgumentException("Friend request is not pending");
         }
 
-        request.setStatus(FriendRequestStatus.DECLINED);
-        request.setUpdatedAt(Instant.now());
-
-        FriendRequest updated = friendRequestRepository.save(request);
+        // Publish event - persistence handler will update DB
+        eventPublisher.publishEvent(
+                FriendRequestDeclinedEvent.builder()
+                        .requestId(requestId)
+                        .senderId(request.getSenderId())
+                        .receiverId(request.getReceiverId())
+                        .build());
 
         log.info("Friend request {} declined", requestId);
-        return mapToResponse(updated);
-    }
 
-    private FriendRequestResponse mapToResponse(FriendRequest request) {
-        return new FriendRequestResponse(
-                request.getId(),
-                request.getSenderId(),
-                request.getReceiverId(),
-                request.getStatus(),
-                request.getCreatedAt(),
-                request.getUpdatedAt());
+        return requestId;
     }
 }

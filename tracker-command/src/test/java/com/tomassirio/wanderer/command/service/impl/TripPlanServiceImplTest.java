@@ -9,8 +9,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.tomassirio.wanderer.command.dto.TripPlanCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripPlanUpdateRequest;
+import com.tomassirio.wanderer.command.controller.request.TripPlanCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripPlanUpdateRequest;
+import com.tomassirio.wanderer.command.event.TripPlanCreatedEvent;
+import com.tomassirio.wanderer.command.event.TripPlanDeletedEvent;
+import com.tomassirio.wanderer.command.event.TripPlanUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
@@ -18,8 +21,6 @@ import com.tomassirio.wanderer.command.service.validator.TripPlanValidator;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
-import com.tomassirio.wanderer.commons.dto.TripPlanDTO;
-import com.tomassirio.wanderer.commons.mapper.TripPlanMapper;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,11 +32,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,15 +45,13 @@ class TripPlanServiceImplTest {
 
     @Mock private TripPlanMetadataProcessor metadataProcessor;
 
-    @Spy private TripPlanMapper tripPlanMapper = TripPlanMapper.INSTANCE;
-
     @Mock private OwnershipValidator ownershipValidator;
 
     @Mock private TripPlanValidator tripPlanValidator;
 
-    @InjectMocks private TripPlanServiceImpl tripPlanService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
-    @Captor private ArgumentCaptor<TripPlan> tripPlanCaptor;
+    @InjectMocks private TripPlanServiceImpl tripPlanService;
 
     private UUID userId;
     private UUID planId;
@@ -75,7 +73,7 @@ class TripPlanServiceImplTest {
     // CREATE TRIP PLAN TESTS
 
     @Test
-    void createTripPlan_whenValidSimpleRequest_shouldCreateAndReturnPlan() {
+    void createTripPlan_whenValidSimpleRequest_shouldPublishEventAndReturnId() {
         // Given
         TripPlanCreationRequest request =
                 new TripPlanCreationRequest(
@@ -87,48 +85,31 @@ class TripPlanServiceImplTest {
                         List.of(),
                         TripPlanType.SIMPLE);
 
-        TripPlan savedPlan =
-                TripPlan.builder()
-                        .id(planId)
-                        .name(request.name())
-                        .planType(request.planType())
-                        .userId(userId)
-                        .createdTimestamp(Instant.now())
-                        .startDate(request.startDate())
-                        .endDate(request.endDate())
-                        .startLocation(request.startLocation())
-                        .endLocation(request.endLocation())
-                        .metadata(new HashMap<>())
-                        .build();
-
-        when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(savedPlan);
-
         // When
-        TripPlanDTO result = tripPlanService.createTripPlan(userId, request);
+        UUID result = tripPlanService.createTripPlan(userId, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(planId.toString());
-        assertThat(result.name()).isEqualTo("Europe Summer Trip");
-        assertThat(result.planType()).isEqualTo(TripPlanType.SIMPLE);
-        assertThat(result.userId()).isEqualTo(userId.toString());
-        assertThat(result.startDate()).isEqualTo(startDate);
-        assertThat(result.endDate()).isEqualTo(endDate);
-        assertThat(result.startLocation()).isEqualTo(startLocation);
-        assertThat(result.endLocation()).isEqualTo(endLocation);
 
-        verify(tripPlanRepository).save(tripPlanCaptor.capture());
-        TripPlan capturedPlan = tripPlanCaptor.getValue();
-        assertThat(capturedPlan.getName()).isEqualTo("Europe Summer Trip");
-        assertThat(capturedPlan.getUserId()).isEqualTo(userId);
-        assertThat(capturedPlan.getPlanType()).isEqualTo(TripPlanType.SIMPLE);
-        assertThat(capturedPlan.getMetadata()).isNotNull();
+        ArgumentCaptor<TripPlanCreatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TripPlanCreatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        TripPlanCreatedEvent event = eventCaptor.getValue();
+        assertThat(event.getTripPlanId()).isEqualTo(result);
+        assertThat(event.getName()).isEqualTo("Europe Summer Trip");
+        assertThat(event.getUserId()).isEqualTo(userId);
+        assertThat(event.getPlanType()).isEqualTo(TripPlanType.SIMPLE);
+        assertThat(event.getStartDate()).isEqualTo(startDate);
+        assertThat(event.getEndDate()).isEqualTo(endDate);
+        assertThat(event.getStartLocation()).isEqualTo(startLocation);
+        assertThat(event.getEndLocation()).isEqualTo(endLocation);
 
         verify(metadataProcessor).applyMetadata(any(TripPlan.class), any());
     }
 
     @Test
-    void createTripPlan_whenMultiDayRequest_shouldCreateMultiDayPlan() {
+    void createTripPlan_whenMultiDayRequest_shouldPublishEventWithMultiDayType() {
         // Given
         TripPlanCreationRequest request =
                 new TripPlanCreationRequest(
@@ -140,32 +121,17 @@ class TripPlanServiceImplTest {
                         List.of(),
                         TripPlanType.MULTI_DAY);
 
-        TripPlan savedPlan =
-                TripPlan.builder()
-                        .id(planId)
-                        .name(request.name())
-                        .planType(TripPlanType.MULTI_DAY)
-                        .userId(userId)
-                        .createdTimestamp(Instant.now())
-                        .startDate(request.startDate())
-                        .endDate(request.endDate())
-                        .startLocation(request.startLocation())
-                        .endLocation(request.endLocation())
-                        .metadata(new HashMap<>())
-                        .build();
-
-        when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(savedPlan);
-
         // When
-        TripPlanDTO result = tripPlanService.createTripPlan(userId, request);
+        UUID result = tripPlanService.createTripPlan(userId, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.planType()).isEqualTo(TripPlanType.MULTI_DAY);
-        assertThat(result.name()).isEqualTo("Multi-Day Adventure");
 
-        verify(tripPlanRepository).save(tripPlanCaptor.capture());
-        assertThat(tripPlanCaptor.getValue().getPlanType()).isEqualTo(TripPlanType.MULTI_DAY);
+        ArgumentCaptor<TripPlanCreatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TripPlanCreatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        assertThat(eventCaptor.getValue().getPlanType()).isEqualTo(TripPlanType.MULTI_DAY);
     }
 
     @Test
@@ -190,7 +156,7 @@ class TripPlanServiceImplTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("End date must be after start date");
 
-        verify(tripPlanRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(TripPlanCreatedEvent.class));
     }
 
     @Test
@@ -206,38 +172,24 @@ class TripPlanServiceImplTest {
                         List.of(),
                         TripPlanType.MULTI_DAY);
 
-        TripPlan savedPlan =
-                TripPlan.builder()
-                        .id(planId)
-                        .name(request.name())
-                        .planType(TripPlanType.MULTI_DAY)
-                        .userId(userId)
-                        .createdTimestamp(Instant.now())
-                        .startDate(request.startDate())
-                        .endDate(request.endDate())
-                        .startLocation(request.startLocation())
-                        .endLocation(request.endLocation())
-                        .metadata(new HashMap<>())
-                        .build();
-
-        when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(savedPlan);
-
         // When
-        TripPlanDTO result = tripPlanService.createTripPlan(userId, request);
+        UUID result = tripPlanService.createTripPlan(userId, request);
 
         // Then
-        verify(tripPlanRepository).save(tripPlanCaptor.capture());
-        TripPlan capturedPlan = tripPlanCaptor.getValue();
-        assertThat(capturedPlan.getMetadata()).isNotNull();
-        assertThat(capturedPlan.getMetadata()).isEmpty();
-
         verify(metadataProcessor).applyMetadata(any(TripPlan.class), any());
+
+        ArgumentCaptor<TripPlanCreatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TripPlanCreatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        TripPlanCreatedEvent event = eventCaptor.getValue();
+        assertThat(event.getMetadata()).isNotNull();
     }
 
     // UPDATE TRIP PLAN TESTS
 
     @Test
-    void updateTripPlan_whenValidRequest_shouldUpdateAndReturnPlan() {
+    void updateTripPlan_whenValidRequest_shouldPublishEventAndReturnId() {
         // Given
         TripPlanUpdateRequest request =
                 new TripPlanUpdateRequest(
@@ -262,37 +214,25 @@ class TripPlanServiceImplTest {
                         .metadata(new HashMap<>())
                         .build();
 
-        TripPlan updatedPlan =
-                TripPlan.builder()
-                        .id(planId)
-                        .name(request.name())
-                        .planType(TripPlanType.SIMPLE)
-                        .userId(userId)
-                        .createdTimestamp(existingPlan.getCreatedTimestamp())
-                        .startDate(request.startDate())
-                        .endDate(request.endDate())
-                        .startLocation(request.startLocation())
-                        .endLocation(request.endLocation())
-                        .metadata(new HashMap<>())
-                        .build();
-
         when(tripPlanRepository.findById(planId)).thenReturn(Optional.of(existingPlan));
-        when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(updatedPlan);
 
         // When
-        TripPlanDTO result = tripPlanService.updateTripPlan(userId, planId, request);
+        UUID result = tripPlanService.updateTripPlan(userId, planId, request);
 
         // Then
         assertThat(result).isNotNull();
-        assertThat(result.id()).isEqualTo(planId.toString());
-        assertThat(result.name()).isEqualTo("Updated Plan Name");
-        assertThat(result.startDate()).isEqualTo(startDate.plusDays(1));
-        assertThat(result.endDate()).isEqualTo(endDate.plusDays(1));
+        assertThat(result).isEqualTo(planId);
 
         verify(ownershipValidator)
                 .validateOwnership(eq(existingPlan), eq(userId), any(), any(), eq("trip plan"));
-        verify(metadataProcessor).applyMetadata(any(TripPlan.class), any());
-        verify(tripPlanRepository).save(existingPlan);
+
+        ArgumentCaptor<TripPlanUpdatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TripPlanUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        TripPlanUpdatedEvent event = eventCaptor.getValue();
+        assertThat(event.getTripPlanId()).isEqualTo(planId);
+        assertThat(event.getName()).isEqualTo("Updated Plan Name");
     }
 
     @Test
@@ -311,7 +251,7 @@ class TripPlanServiceImplTest {
 
         verify(tripPlanRepository).findById(planId);
         verify(ownershipValidator, never()).validateOwnership(any(), any(), any(), any(), any());
-        verify(tripPlanRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(TripPlanUpdatedEvent.class));
     }
 
     @Test
@@ -349,11 +289,11 @@ class TripPlanServiceImplTest {
         verify(tripPlanRepository).findById(planId);
         verify(ownershipValidator)
                 .validateOwnership(any(), eq(userId), any(), any(), eq("trip plan"));
-        verify(tripPlanRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(TripPlanUpdatedEvent.class));
     }
 
     @Test
-    void updateTripPlan_shouldUpdateAllFields() {
+    void updateTripPlan_shouldPublishEventWithAllUpdatedFields() {
         // Given
         GeoLocation newStartLocation = GeoLocation.builder().lat(51.5074).lon(-0.1278).build();
         GeoLocation newEndLocation = GeoLocation.builder().lat(48.8566).lon(2.3522).build();
@@ -384,56 +324,27 @@ class TripPlanServiceImplTest {
                         .build();
 
         when(tripPlanRepository.findById(planId)).thenReturn(Optional.of(existingPlan));
-        when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(existingPlan);
 
         // When
         tripPlanService.updateTripPlan(userId, planId, request);
 
         // Then
-        assertThat(existingPlan.getName()).isEqualTo("Completely Updated Plan");
-        assertThat(existingPlan.getStartDate()).isEqualTo(newStartDate);
-        assertThat(existingPlan.getEndDate()).isEqualTo(newEndDate);
-        assertThat(existingPlan.getStartLocation()).isEqualTo(newStartLocation);
-        assertThat(existingPlan.getEndLocation()).isEqualTo(newEndLocation);
+        ArgumentCaptor<TripPlanUpdatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TripPlanUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
 
-        verify(tripPlanRepository).save(existingPlan);
-    }
-
-    @Test
-    void updateTripPlan_shouldReapplyMetadata() {
-        // Given
-        TripPlanUpdateRequest request =
-                new TripPlanUpdateRequest(
-                        "Updated Plan", startDate, endDate, startLocation, endLocation, List.of());
-
-        TripPlan existingPlan =
-                TripPlan.builder()
-                        .id(planId)
-                        .name("Original Name")
-                        .planType(TripPlanType.MULTI_DAY)
-                        .userId(userId)
-                        .createdTimestamp(Instant.now())
-                        .startDate(startDate)
-                        .endDate(endDate)
-                        .startLocation(startLocation)
-                        .endLocation(endLocation)
-                        .metadata(new HashMap<>())
-                        .build();
-
-        when(tripPlanRepository.findById(planId)).thenReturn(Optional.of(existingPlan));
-        when(tripPlanRepository.save(any(TripPlan.class))).thenReturn(existingPlan);
-
-        // When
-        tripPlanService.updateTripPlan(userId, planId, request);
-
-        // Then
-        verify(metadataProcessor).applyMetadata(existingPlan, existingPlan.getMetadata());
+        TripPlanUpdatedEvent event = eventCaptor.getValue();
+        assertThat(event.getName()).isEqualTo("Completely Updated Plan");
+        assertThat(event.getStartDate()).isEqualTo(newStartDate);
+        assertThat(event.getEndDate()).isEqualTo(newEndDate);
+        assertThat(event.getStartLocation()).isEqualTo(newStartLocation);
+        assertThat(event.getEndLocation()).isEqualTo(newEndLocation);
     }
 
     // DELETE TRIP PLAN TESTS
 
     @Test
-    void deleteTripPlan_whenPlanExists_shouldDeletePlan() {
+    void deleteTripPlan_whenPlanExists_shouldPublishDeleteEvent() {
         // Given
         TripPlan existingPlan =
                 TripPlan.builder()
@@ -458,7 +369,14 @@ class TripPlanServiceImplTest {
         verify(tripPlanRepository).findById(planId);
         verify(ownershipValidator)
                 .validateOwnership(eq(existingPlan), eq(userId), any(), any(), eq("trip plan"));
-        verify(tripPlanRepository).deleteById(planId);
+
+        ArgumentCaptor<TripPlanDeletedEvent> eventCaptor =
+                ArgumentCaptor.forClass(TripPlanDeletedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        TripPlanDeletedEvent event = eventCaptor.getValue();
+        assertThat(event.getTripPlanId()).isEqualTo(planId);
+        assertThat(event.getUserId()).isEqualTo(userId);
     }
 
     @Test
@@ -473,7 +391,7 @@ class TripPlanServiceImplTest {
 
         verify(tripPlanRepository).findById(planId);
         verify(ownershipValidator, never()).validateOwnership(any(), any(), any(), any(), any());
-        verify(tripPlanRepository, never()).deleteById(any());
+        verify(eventPublisher, never()).publishEvent(any(TripPlanDeletedEvent.class));
     }
 
     @Test
@@ -507,6 +425,6 @@ class TripPlanServiceImplTest {
         verify(tripPlanRepository).findById(planId);
         verify(ownershipValidator)
                 .validateOwnership(any(), eq(userId), any(), any(), eq("trip plan"));
-        verify(tripPlanRepository, never()).deleteById(any());
+        verify(eventPublisher, never()).publishEvent(any(TripPlanDeletedEvent.class));
     }
 }

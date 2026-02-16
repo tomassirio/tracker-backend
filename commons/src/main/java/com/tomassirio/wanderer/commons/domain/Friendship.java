@@ -2,8 +2,6 @@ package com.tomassirio.wanderer.commons.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
@@ -22,9 +20,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Friendship {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Id private UUID id;
 
     @NotNull
     @Column(name = "user_id", nullable = false)

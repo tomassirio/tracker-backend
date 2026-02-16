@@ -1,6 +1,5 @@
 package com.tomassirio.wanderer.command.controller;
 
-import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USERNAME;
 import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -14,17 +13,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.tomassirio.wanderer.command.dto.CommentCreationRequest;
-import com.tomassirio.wanderer.command.dto.ReactionRequest;
+import com.tomassirio.wanderer.command.controller.request.CommentCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.ReactionRequest;
 import com.tomassirio.wanderer.command.service.CommentService;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
-import com.tomassirio.wanderer.commons.dto.CommentDTO;
-import com.tomassirio.wanderer.commons.dto.ReactionsDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
-import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,20 +62,8 @@ class CommentControllerTest {
     void createComment_whenValidTopLevelComment_shouldReturnCreatedComment() throws Exception {
         // Given
         CommentCreationRequest request = new CommentCreationRequest("Great trip!", null);
-        ReactionsDTO reactions = new ReactionsDTO(0, 0, 0, 0, 0);
-        CommentDTO expectedComment =
-                new CommentDTO(
-                        COMMENT_ID.toString(),
-                        USER_ID.toString(),
-                        USERNAME,
-                        TRIP_ID.toString(),
-                        null,
-                        "Great trip!",
-                        reactions,
-                        List.of(),
-                        Instant.now());
 
-        doReturn(expectedComment)
+        doReturn(COMMENT_ID)
                 .when(commentService)
                 .createComment(eq(USER_ID), eq(TRIP_ID), any(CommentCreationRequest.class));
 
@@ -89,13 +72,8 @@ class CommentControllerTest {
                         post(TRIPS_BASE_URL + "/{tripId}/comments", TRIP_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
-                .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
-                .andExpect(jsonPath("$.tripId").value(TRIP_ID.toString()))
-                .andExpect(jsonPath("$.parentCommentId").isEmpty())
-                .andExpect(jsonPath("$.message").value("Great trip!"))
-                .andExpect(jsonPath("$.reactions.heart").value(0));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(COMMENT_ID.toString()));
 
         verify(commentService)
                 .createComment(eq(USER_ID), eq(TRIP_ID), any(CommentCreationRequest.class));
@@ -105,20 +83,8 @@ class CommentControllerTest {
     void createComment_whenValidReply_shouldReturnCreatedReply() throws Exception {
         // Given
         CommentCreationRequest request = new CommentCreationRequest("Thanks!", PARENT_COMMENT_ID);
-        ReactionsDTO reactions = new ReactionsDTO(0, 0, 0, 0, 0);
-        CommentDTO expectedReply =
-                new CommentDTO(
-                        COMMENT_ID.toString(),
-                        USER_ID.toString(),
-                        USERNAME,
-                        TRIP_ID.toString(),
-                        PARENT_COMMENT_ID.toString(),
-                        "Thanks!",
-                        reactions,
-                        List.of(),
-                        Instant.now());
 
-        doReturn(expectedReply)
+        doReturn(COMMENT_ID)
                 .when(commentService)
                 .createComment(eq(USER_ID), eq(TRIP_ID), any(CommentCreationRequest.class));
 
@@ -127,13 +93,8 @@ class CommentControllerTest {
                         post(TRIPS_BASE_URL + "/{tripId}/comments", TRIP_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
-                .andExpect(jsonPath("$.userId").value(USER_ID.toString()))
-                .andExpect(jsonPath("$.tripId").value(TRIP_ID.toString()))
-                .andExpect(jsonPath("$.parentCommentId").value(PARENT_COMMENT_ID.toString()))
-                .andExpect(jsonPath("$.message").value("Thanks!"))
-                .andExpect(jsonPath("$.reactions.heart").value(0));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(COMMENT_ID.toString()));
 
         verify(commentService)
                 .createComment(eq(USER_ID), eq(TRIP_ID), any(CommentCreationRequest.class));
@@ -209,20 +170,8 @@ class CommentControllerTest {
     void addReactionToComment_whenValidRequest_shouldReturnUpdatedComment() throws Exception {
         // Given
         ReactionRequest request = new ReactionRequest(ReactionType.HEART);
-        ReactionsDTO reactions = new ReactionsDTO(1, 0, 0, 0, 0);
-        CommentDTO expectedComment =
-                new CommentDTO(
-                        COMMENT_ID.toString(),
-                        USER_ID.toString(),
-                        USERNAME,
-                        TRIP_ID.toString(),
-                        null,
-                        "Great trip!",
-                        reactions,
-                        List.of(),
-                        Instant.now());
 
-        doReturn(expectedComment)
+        doReturn(COMMENT_ID)
                 .when(commentService)
                 .addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
 
@@ -231,9 +180,8 @@ class CommentControllerTest {
                         post(COMMENTS_BASE_URL + "/{commentId}/reactions", COMMENT_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
-                .andExpect(jsonPath("$.reactions.heart").value(1));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(COMMENT_ID.toString()));
 
         verify(commentService).addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
     }
@@ -257,20 +205,8 @@ class CommentControllerTest {
     void removeReactionFromComment_whenValidRequest_shouldReturnUpdatedComment() throws Exception {
         // Given
         ReactionRequest request = new ReactionRequest(ReactionType.HEART);
-        ReactionsDTO reactions = new ReactionsDTO(0, 0, 0, 0, 0);
-        CommentDTO expectedComment =
-                new CommentDTO(
-                        COMMENT_ID.toString(),
-                        USER_ID.toString(),
-                        USERNAME,
-                        TRIP_ID.toString(),
-                        null,
-                        "Great trip!",
-                        reactions,
-                        List.of(),
-                        Instant.now());
 
-        doReturn(expectedComment)
+        doReturn(COMMENT_ID)
                 .when(commentService)
                 .removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
 
@@ -279,9 +215,8 @@ class CommentControllerTest {
                         delete(COMMENTS_BASE_URL + "/{commentId}/reactions", COMMENT_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
-                .andExpect(jsonPath("$.reactions.heart").value(0));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(COMMENT_ID.toString()));
 
         verify(commentService).removeReactionFromComment(USER_ID, COMMENT_ID, ReactionType.HEART);
     }
@@ -316,20 +251,8 @@ class CommentControllerTest {
 
         for (ReactionType reactionType : reactionTypes) {
             ReactionRequest request = new ReactionRequest(reactionType);
-            ReactionsDTO reactions = new ReactionsDTO(1, 1, 1, 1, 1);
-            CommentDTO expectedComment =
-                    new CommentDTO(
-                            COMMENT_ID.toString(),
-                            USER_ID.toString(),
-                            USERNAME,
-                            TRIP_ID.toString(),
-                            null,
-                            "Great trip!",
-                            reactions,
-                            List.of(),
-                            Instant.now());
 
-            doReturn(expectedComment)
+            doReturn(COMMENT_ID)
                     .when(commentService)
                     .addReactionToComment(USER_ID, COMMENT_ID, reactionType);
 
@@ -337,8 +260,8 @@ class CommentControllerTest {
                             post(COMMENTS_BASE_URL + "/{commentId}/reactions", COMMENT_ID)
                                     .contentType(MediaType.APPLICATION_JSON)
                                     .content(objectMapper.writeValueAsString(request)))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()));
+                    .andExpect(status().isAccepted())
+                    .andExpect(jsonPath("$").value(COMMENT_ID.toString()));
         }
     }
 
@@ -346,20 +269,8 @@ class CommentControllerTest {
     void addReactionToReply_shouldWorkSameAsTopLevelComment() throws Exception {
         // Given - Test that replies can have reactions too
         ReactionRequest request = new ReactionRequest(ReactionType.LAUGH);
-        ReactionsDTO reactions = new ReactionsDTO(0, 0, 0, 1, 0);
-        CommentDTO expectedReply =
-                new CommentDTO(
-                        COMMENT_ID.toString(),
-                        USER_ID.toString(),
-                        USERNAME,
-                        TRIP_ID.toString(),
-                        PARENT_COMMENT_ID.toString(),
-                        "Thanks!",
-                        reactions,
-                        List.of(),
-                        Instant.now());
 
-        doReturn(expectedReply)
+        doReturn(COMMENT_ID)
                 .when(commentService)
                 .addReactionToComment(USER_ID, COMMENT_ID, ReactionType.LAUGH);
 
@@ -368,10 +279,8 @@ class CommentControllerTest {
                         post(COMMENTS_BASE_URL + "/{commentId}/reactions", COMMENT_ID)
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(COMMENT_ID.toString()))
-                .andExpect(jsonPath("$.parentCommentId").value(PARENT_COMMENT_ID.toString()))
-                .andExpect(jsonPath("$.reactions.laugh").value(1));
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(COMMENT_ID.toString()));
 
         verify(commentService).addReactionToComment(USER_ID, COMMENT_ID, ReactionType.LAUGH);
     }

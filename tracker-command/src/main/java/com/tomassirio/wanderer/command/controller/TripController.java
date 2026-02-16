@@ -1,16 +1,14 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.dto.TripCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripFromPlanCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripStatusRequest;
-import com.tomassirio.wanderer.command.dto.TripUpdateCreationRequest;
-import com.tomassirio.wanderer.command.dto.TripUpdateRequest;
-import com.tomassirio.wanderer.command.dto.TripVisibilityRequest;
+import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripStatusRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
+import com.tomassirio.wanderer.command.controller.request.TripVisibilityRequest;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
-import com.tomassirio.wanderer.commons.dto.TripDTO;
-import com.tomassirio.wanderer.commons.dto.TripUpdateDTO;
+import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -51,17 +49,18 @@ public class TripController {
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Create a new trip",
-            description = "Creates a new trip with the provided details")
-    public ResponseEntity<TripDTO> createTrip(
+            description =
+                    "Creates a new trip with the provided details. Returns 202 Accepted with the trip ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> createTrip(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody TripCreationRequest request) {
 
         log.info("Received request to create trip: {} by user {}", request.name(), userId);
 
-        TripDTO createdTrip = tripService.createTrip(userId, request);
+        UUID tripId = tripService.createTrip(userId, request);
 
-        log.info("Successfully created trip with ID: {}", createdTrip.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);
+        log.info("Accepted trip creation request with ID: {}", tripId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
     @PostMapping(ApiConstants.TRIP_FROM_PLAN_ENDPOINT)
@@ -71,25 +70,28 @@ public class TripController {
             description =
                     "Creates a new trip based on an existing trip plan. The trip will inherit the"
                             + " plan's name, start/end locations, and dates. The trip can be modified"
-                            + " after creation.")
-    public ResponseEntity<TripDTO> createTripFromPlan(
+                            + " after creation. Returns 202 Accepted with the trip ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> createTripFromPlan(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Parameter(description = "ID of the trip plan to create a trip from") @PathVariable
                     UUID tripPlanId,
-            @Valid @RequestBody TripFromPlanCreationRequest request) {
+            @Valid @RequestBody TripVisibility visibility) {
 
         log.info("Received request to create trip from plan {} by user {}", tripPlanId, userId);
 
-        TripDTO createdTrip = tripService.createTripFromPlan(userId, tripPlanId, request);
+        UUID tripId = tripService.createTripFromPlan(userId, tripPlanId, visibility);
 
-        log.info("Successfully created trip with ID: {} from plan", createdTrip.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdTrip);
+        log.info("Accepted trip creation request with ID: {} from plan", tripId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
     @PutMapping(ApiConstants.TRIP_BY_ID_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Update a trip", description = "Updates an existing trip with new details")
-    public ResponseEntity<TripDTO> updateTrip(
+    @Operation(
+            summary = "Update a trip",
+            description =
+                    "Updates an existing trip with new details. Returns 202 Accepted with the trip ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> updateTrip(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID id,
             @Valid @RequestBody TripUpdateRequest request) {
@@ -99,35 +101,37 @@ public class TripController {
                 request.name(),
                 userId);
 
-        TripDTO updatedTrip = tripService.updateTrip(userId, id, request);
+        UUID tripId = tripService.updateTrip(userId, id, request);
 
-        log.info("Successfully updated trip with ID: {}", updatedTrip.id());
-        return ResponseEntity.ok(updatedTrip);
+        log.info("Accepted trip update request for ID: {}", tripId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
     @PatchMapping(ApiConstants.TRIP_VISIBILITY_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Change trip visibility",
-            description = "Updates the visibility setting of a trip (public/private)")
-    public ResponseEntity<TripDTO> changeVisibility(
+            description =
+                    "Updates the visibility setting of a trip (public/private). Returns 202 Accepted with the trip ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> changeVisibility(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID id,
             @Valid @RequestBody TripVisibilityRequest request) {
         log.info("Received request to change visibility for trip {} by user {}", id, userId);
 
-        TripDTO updatedTrip = tripService.changeVisibility(userId, id, request.visibility());
+        UUID tripId = tripService.changeVisibility(userId, id, request.visibility());
 
-        log.info("Successfully changed visibility for trip with ID: {}", updatedTrip.id());
-        return ResponseEntity.ok(updatedTrip);
+        log.info("Accepted visibility change request for trip ID: {}", tripId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
     @PatchMapping(ApiConstants.TRIP_STATUS_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Change trip status",
-            description = "Updates the status of a trip (planning/in_progress/completed/cancelled)")
-    public ResponseEntity<TripDTO> changeStatus(
+            description =
+                    "Updates the status of a trip (planning/in_progress/completed/cancelled). Returns 202 Accepted with the trip ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> changeStatus(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID id,
             @Valid @RequestBody TripStatusRequest request) {
@@ -137,23 +141,26 @@ public class TripController {
                 request.status(),
                 userId);
 
-        TripDTO updatedTrip = tripService.changeStatus(userId, id, request.status());
+        UUID tripId = tripService.changeStatus(userId, id, request.status());
 
-        log.info("Successfully changed status for trip with ID: {}", updatedTrip.id());
-        return ResponseEntity.ok(updatedTrip);
+        log.info("Accepted status change request for trip ID: {}", tripId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
     @DeleteMapping(ApiConstants.TRIP_BY_ID_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
-    @Operation(summary = "Delete a trip", description = "Deletes a trip and all associated data")
+    @Operation(
+            summary = "Delete a trip",
+            description =
+                    "Deletes a trip and all associated data. Returns 202 Accepted as the operation completes asynchronously.")
     public ResponseEntity<Void> deleteTrip(
             @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID id) {
         log.info("Received request to delete trip {} by user {}", id, userId);
 
         tripService.deleteTrip(userId, id);
 
-        log.info("Successfully deleted trip with ID: {}", id);
-        return ResponseEntity.noContent().build();
+        log.info("Accepted trip deletion request for ID: {}", id);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 
     @PostMapping(ApiConstants.TRIP_UPDATES_ENDPOINT)
@@ -161,16 +168,16 @@ public class TripController {
     @Operation(
             summary = "Create a trip update",
             description =
-                    "Adds a new update to a trip with location, battery, and optional message")
-    public ResponseEntity<TripUpdateDTO> createTripUpdate(
+                    "Adds a new update to a trip with location, battery, and optional message. Returns 202 Accepted with the trip update ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> createTripUpdate(
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID tripId,
             @Valid @RequestBody TripUpdateCreationRequest request) {
         log.info("Received request to create trip update for trip {} by user {}", tripId, userId);
 
-        TripUpdateDTO createdUpdate = tripUpdateService.createTripUpdate(userId, tripId, request);
+        UUID updateId = tripUpdateService.createTripUpdate(userId, tripId, request);
 
-        log.info("Successfully created trip update with ID: {}", createdUpdate.id());
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUpdate);
+        log.info("Accepted trip update creation request with ID: {}", updateId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(updateId);
     }
 }
