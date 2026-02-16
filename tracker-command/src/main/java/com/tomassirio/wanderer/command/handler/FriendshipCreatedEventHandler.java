@@ -3,11 +3,11 @@ package com.tomassirio.wanderer.command.handler;
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
 import com.tomassirio.wanderer.command.repository.FriendshipRepository;
 import com.tomassirio.wanderer.commons.domain.Friendship;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,10 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCreatedEvent> {
 
     private final FriendshipRepository friendshipRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -40,7 +40,7 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
                             .friendId(event.getFriendId())
                             .createdAt(now)
                             .build();
-            friendshipRepository.save(friendship1);
+            entityManager.persist(friendship1);
         }
 
         if (!friendshipRepository.existsByUserIdAndFriendId(
@@ -51,7 +51,7 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
                             .friendId(event.getUserId())
                             .createdAt(now)
                             .build();
-            friendshipRepository.save(friendship2);
+            entityManager.persist(friendship2);
         }
 
         log.info(

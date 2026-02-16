@@ -5,7 +5,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.TripCreatedEvent;
-import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -13,6 +12,7 @@ import com.tomassirio.wanderer.commons.domain.TripDetails;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -27,9 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TripCreatedEventHandlerTest {
 
-    @Mock private TripRepository tripRepository;
-
     @Mock private TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
+    @Mock private EntityManager entityManager;
 
     @InjectMocks private TripCreatedEventHandler handler;
 
@@ -64,7 +63,7 @@ class TripCreatedEventHandlerTest {
 
         // Then
         ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
-        verify(tripRepository).save(tripCaptor.capture());
+        verify(entityManager).persist(tripCaptor.capture());
 
         Trip savedTrip = tripCaptor.getValue();
         assertThat(savedTrip.getId()).isEqualTo(tripId);
@@ -109,7 +108,7 @@ class TripCreatedEventHandlerTest {
 
         // Then
         ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
-        verify(tripRepository).save(tripCaptor.capture());
+        verify(entityManager).persist(tripCaptor.capture());
 
         Trip savedTrip = tripCaptor.getValue();
         assertThat(savedTrip.getTripPlanId()).isEqualTo(tripPlanId);
@@ -166,7 +165,7 @@ class TripCreatedEventHandlerTest {
 
         // Then
         ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
-        verify(tripRepository).save(tripCaptor.capture());
+        verify(entityManager).persist(tripCaptor.capture());
 
         Trip savedTrip = tripCaptor.getValue();
         assertThat(savedTrip.getTripDetails()).isEqualTo(tripDetails);

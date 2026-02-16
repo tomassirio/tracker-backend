@@ -12,6 +12,7 @@ import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ class CommentAddedEventHandlerTest {
     @Mock private CommentRepository commentRepository;
     @Mock private TripRepository tripRepository;
     @Mock private UserRepository userRepository;
+    @Mock private EntityManager entityManager;
 
     @InjectMocks private CommentAddedEventHandler handler;
 
@@ -61,7 +63,7 @@ class CommentAddedEventHandlerTest {
 
         // Then
         ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
-        verify(commentRepository).save(commentCaptor.capture());
+        verify(entityManager).persist(commentCaptor.capture());
 
         Comment savedComment = commentCaptor.getValue();
         assertThat(savedComment.getId()).isEqualTo(commentId);
@@ -114,7 +116,7 @@ class CommentAddedEventHandlerTest {
 
         // Then
         ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
-        verify(commentRepository).save(commentCaptor.capture());
+        verify(entityManager).persist(commentCaptor.capture());
 
         Comment savedComment = commentCaptor.getValue();
         assertThat(savedComment.getParentComment()).isEqualTo(parentComment);

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
 import com.tomassirio.wanderer.command.repository.FriendshipRepository;
 import com.tomassirio.wanderer.commons.domain.Friendship;
+import jakarta.persistence.EntityManager;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FriendshipCreatedEventHandlerTest {
 
     @Mock private FriendshipRepository friendshipRepository;
+    @Mock private EntityManager entityManager;
 
     @InjectMocks private FriendshipCreatedEventHandler handler;
 
@@ -39,7 +41,7 @@ class FriendshipCreatedEventHandlerTest {
         handler.handle(event);
 
         // Then
-        verify(friendshipRepository, times(2)).save(any(Friendship.class));
+        verify(entityManager, times(2)).persist(any(Friendship.class));
     }
 
     @Test
@@ -58,7 +60,7 @@ class FriendshipCreatedEventHandlerTest {
         handler.handle(event);
 
         // Then
-        verify(friendshipRepository, never()).save(any(Friendship.class));
+        verify(entityManager, never()).persist(any(Friendship.class));
     }
 
     @Test
@@ -77,6 +79,6 @@ class FriendshipCreatedEventHandlerTest {
         handler.handle(event);
 
         // Then
-        verify(friendshipRepository, times(1)).save(any(Friendship.class));
+        verify(entityManager, times(1)).persist(any(Friendship.class));
     }
 }

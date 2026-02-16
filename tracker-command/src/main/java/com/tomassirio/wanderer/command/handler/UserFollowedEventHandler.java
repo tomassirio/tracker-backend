@@ -1,12 +1,11 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.UserFollowedEvent;
-import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,10 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class UserFollowedEventHandler implements EventHandler<UserFollowedEvent> {
 
-    private final UserFollowRepository userFollowRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -43,7 +41,7 @@ public class UserFollowedEventHandler implements EventHandler<UserFollowedEvent>
                         .createdAt(event.getCreatedAt())
                         .build();
 
-        userFollowRepository.save(follow);
+        entityManager.persist(follow);
         log.info(
                 "User follow created and persisted: {} follows {}",
                 event.getFollowerId(),

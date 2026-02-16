@@ -1,13 +1,12 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
-import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,10 +21,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class FriendRequestSentEventHandler implements EventHandler<FriendRequestSentEvent> {
 
-    private final FriendRequestRepository friendRequestRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -42,7 +40,7 @@ public class FriendRequestSentEventHandler implements EventHandler<FriendRequest
                         .createdAt(event.getCreatedAt())
                         .build();
 
-        friendRequestRepository.save(request);
+        entityManager.persist(request);
         log.info("Friend request created and persisted: {}", event.getRequestId());
     }
 }

@@ -4,9 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
-import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FriendRequestSentEventHandlerTest {
 
-    @Mock private FriendRequestRepository friendRequestRepository;
+    @Mock private EntityManager entityManager;
 
     @InjectMocks private FriendRequestSentEventHandler handler;
 
@@ -45,7 +45,7 @@ class FriendRequestSentEventHandlerTest {
 
         // Then
         ArgumentCaptor<FriendRequest> captor = ArgumentCaptor.forClass(FriendRequest.class);
-        verify(friendRequestRepository).save(captor.capture());
+        verify(entityManager).persist(captor.capture());
 
         FriendRequest saved = captor.getValue();
         assertThat(saved.getId()).isEqualTo(requestId);

@@ -5,7 +5,6 @@ import com.tomassirio.wanderer.command.repository.FriendshipRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class FriendshipRemovedEventHandler implements EventHandler<FriendshipRemovedEvent> {
 
     private final FriendshipRepository friendshipRepository;

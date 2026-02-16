@@ -2,13 +2,12 @@ package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
-import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,11 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
 
-    private final TripUpdateRepository tripUpdateRepository;
     private final TripRepository tripRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -49,7 +47,7 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
                         .timestamp(event.getTimestamp())
                         .build();
 
-        tripUpdateRepository.save(tripUpdate);
+        entityManager.persist(tripUpdate);
         log.info("Trip update created and persisted: {}", event.getTripUpdateId());
     }
 }

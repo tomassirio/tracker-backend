@@ -8,10 +8,10 @@ import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +27,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Order(1)
 public class CommentAddedEventHandler implements EventHandler<CommentAddedEvent> {
 
     private final CommentRepository commentRepository;
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -60,7 +60,7 @@ public class CommentAddedEventHandler implements EventHandler<CommentAddedEvent>
                         .timestamp(event.getTimestamp())
                         .build();
 
-        commentRepository.save(comment);
+        entityManager.persist(comment);
         log.info("Comment created and persisted: {}", event.getCommentId());
     }
 }
