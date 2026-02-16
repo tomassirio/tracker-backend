@@ -1,26 +1,37 @@
 package com.tomassirio.wanderer.commons.domain;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorColumn;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
+/**
+ * Abstract base class for achievement definitions.
+ *
+ * <p>Achievements can be either trip-based (TripAchievement) or user-based (UserAchievement). This
+ * class contains the common properties shared by all achievement types.
+ */
 @Entity
 @Table(name = "achievements")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "achievement_category")
 @Data
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
-public class Achievement {
+@SuperBuilder
+public abstract class BaseAchievement {
 
     @Id private UUID id;
 
@@ -43,6 +54,12 @@ public class Achievement {
 
     @NotNull
     @Column(name = "enabled", nullable = false)
-    @Builder.Default
     private Boolean enabled = true;
+
+    /**
+     * Returns the category of this achievement.
+     *
+     * @return the achievement category
+     */
+    public abstract AchievementCategory getCategory();
 }

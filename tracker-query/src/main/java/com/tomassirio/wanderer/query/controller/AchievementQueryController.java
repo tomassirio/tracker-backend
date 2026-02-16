@@ -2,7 +2,7 @@ package com.tomassirio.wanderer.query.controller;
 
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.dto.AchievementDTO;
-import com.tomassirio.wanderer.commons.dto.UserAchievementDTO;
+import com.tomassirio.wanderer.commons.dto.UnlockedAchievementDTO;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import com.tomassirio.wanderer.query.service.AchievementQueryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,7 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(ApiConstants.ACHIEVEMENTS_PATH)
 @RequiredArgsConstructor
-@Tag(name = "Achievement Queries", description = "Endpoints for retrieving achievement information")
+@Tag(
+        name = "BaseAchievement Queries",
+        description = "Endpoints for retrieving achievement information")
 public class AchievementQueryController {
 
     private final AchievementQueryService achievementQueryService;
@@ -42,7 +44,8 @@ public class AchievementQueryController {
             summary = "Get user achievements",
             description = "Retrieves all achievements unlocked by a specific user")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved user achievements")
-    public ResponseEntity<List<UserAchievementDTO>> getUserAchievements(@PathVariable UUID userId) {
+    public ResponseEntity<List<UnlockedAchievementDTO>> getUserAchievements(
+            @PathVariable UUID userId) {
         return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
     }
 
@@ -53,7 +56,7 @@ public class AchievementQueryController {
             description = "Retrieves all achievements unlocked by the currently authenticated user")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved user achievements")
     @ApiResponse(responseCode = "401", description = "Unauthorized")
-    public ResponseEntity<List<UserAchievementDTO>> getMyAchievements(
+    public ResponseEntity<List<UnlockedAchievementDTO>> getMyAchievements(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
         return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
     }
@@ -63,7 +66,7 @@ public class AchievementQueryController {
             summary = "Get user achievements for a trip",
             description = "Retrieves all achievements unlocked by a user for a specific trip")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved trip achievements")
-    public ResponseEntity<List<UserAchievementDTO>> getUserAchievementsByTrip(
+    public ResponseEntity<List<UnlockedAchievementDTO>> getUserAchievementsByTrip(
             @PathVariable UUID userId, @PathVariable UUID tripId) {
         return ResponseEntity.ok(achievementQueryService.getUserAchievementsByTrip(userId, tripId));
     }

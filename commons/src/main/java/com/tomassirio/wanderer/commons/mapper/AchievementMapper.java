@@ -1,6 +1,6 @@
 package com.tomassirio.wanderer.commons.mapper;
 
-import com.tomassirio.wanderer.commons.domain.Achievement;
+import com.tomassirio.wanderer.commons.domain.BaseAchievement;
 import com.tomassirio.wanderer.commons.dto.AchievementDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -15,12 +15,6 @@ public interface AchievementMapper {
             target = "id",
             expression =
                     "java(achievement.getId() != null ? achievement.getId().toString() : null)")
-    AchievementDTO toDTO(Achievement achievement);
-
-    @Mapping(
-            target = "id",
-            expression =
-                    "java(achievementDTO.id() != null ? java.util.UUID.fromString(achievementDTO.id()) : null)")
-    @Mapping(target = "enabled", ignore = true)
-    Achievement toEntity(AchievementDTO achievementDTO);
+    @Mapping(target = "category", expression = "java(achievement.getCategory())")
+    AchievementDTO toDTO(BaseAchievement achievement);
 }

@@ -4,12 +4,15 @@ import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
 import com.tomassirio.wanderer.command.repository.FriendshipRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
-import com.tomassirio.wanderer.command.repository.UserAchievementRepository;
+import com.tomassirio.wanderer.command.repository.UnlockedAchievementRepository;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
-import com.tomassirio.wanderer.commons.domain.Achievement;
+import com.tomassirio.wanderer.commons.domain.AchievementCategory;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
+import com.tomassirio.wanderer.commons.domain.BaseAchievement;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripAchievement;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
+import com.tomassirio.wanderer.commons.domain.UserAchievement;
 import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
@@ -34,7 +37,7 @@ public class AchievementCalculationService {
 
     private final TripRepository tripRepository;
     private final TripUpdateRepository tripUpdateRepository;
-    private final UserAchievementRepository userAchievementRepository;
+    private final UnlockedAchievementRepository unlockedAchievementRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserFollowRepository userFollowRepository;
     private final EntityManager entityManager;
@@ -237,7 +240,7 @@ public class AchievementCalculationService {
 
         if (exists) {
             log.debug(
-                    "Achievement {} already unlocked for user {} on trip {}",
+                    "BaseAchievement {} already unlocked for user {} on trip {}",
                     type,
                     trip.getUserId(),
                     trip.getId());
@@ -245,7 +248,7 @@ public class AchievementCalculationService {
         }
 
         // Get or create achievement
-        Achievement achievement = getOrCreateAchievement(type);
+        BaseAchievement achievement = getOrCreateAchievement(type);
 
         // Publish achievement unlocked event
         UUID userAchievementId = UUID.randomUUID();
@@ -262,7 +265,7 @@ public class AchievementCalculationService {
                         .build());
 
         log.info(
-                "Achievement {} unlocked for user {} on trip {}",
+                "BaseAchievement {} unlocked for user {} on trip {}",
                 type,
                 trip.getUserId(),
                 trip.getId());
@@ -275,7 +278,7 @@ public class AchievementCalculationService {
         boolean exists =
                 entityManager
                         .createQuery(
-                                "SELECT COUNT(ua) > 0 FROM UserAchievement ua JOIN ua.achievement a "
+                                "SELECT COUNT(ua) > 0 FROM UnlockedAchievement ua JOIN ua.achievement a "
                                         + "WHERE ua.user.id = :userId AND a.type = :type AND ua.trip IS NULL",
                                 Boolean.class)
                         .setParameter("userId", userId)
@@ -288,7 +291,7 @@ public class AchievementCalculationService {
         }
 
         // Get or create achievement
-        Achievement achievement = getOrCreateAchievement(type);
+        BaseAchievement achievement = getOrCreateAchievement(type);
 
         // Publish achievement unlocked event (with null tripId for social achievements)
         UUID userAchievementId = UUID.randomUUID();
@@ -307,27 +310,40 @@ public class AchievementCalculationService {
         log.info("Social achievement {} unlocked for user {}", type, userId);
     }
 
-    private Achievement getOrCreateAchievement(AchievementType type) {
+    private BaseAchievement getOrCreateAchievement(AchievementType type) {
         // Try to find existing achievement
         return entityManager
                 .createQuery(
-                        "SELECT a FROM Achievement a WHERE a.type = :type AND a.enabled = true",
-                        Achievement.class)
+                        "SELECT a FROM BaseAchievement a WHERE a.type = :type AND a.enabled = true",
+                        BaseAchievement.class)
                 .setParameter("type", type)
                 .getResultStream()
                 .findFirst()
                 .orElseGet(
                         () -> {
-                            // Create new achievement
-                            Achievement achievement =
-                                    Achievement.builder()
-                                            .id(UUID.randomUUID())
-                                            .type(type)
-                                            .name(type.getName())
-                                            .description(type.getDescription())
-                                            .thresholdValue(type.getThreshold())
-                                            .enabled(true)
-                                            .build();
+                            // Create new achievement based on category
+                            BaseAchievement achievement;
+                            if (type.getCategory() == AchievementCategory.TRIP) {
+                                achievement =
+                                        TripAchievement.builder()
+                                                .id(UUID.randomUUID())
+                                                .type(type)
+                                                .name(type.getName())
+                                                .description(type.getDescription())
+                                                .thresholdValue(type.getThreshold())
+                                                .enabled(true)
+                                                .build();
+                            } else {
+                                achievement =
+                                        UserAchievement.builder()
+                                                .id(UUID.randomUUID())
+                                                .type(type)
+                                                .name(type.getName())
+                                                .description(type.getDescription())
+                                                .thresholdValue(type.getThreshold())
+                                                .enabled(true)
+                                                .build();
+                            }
                             entityManager.persist(achievement);
                             return achievement;
                         });

@@ -10,20 +10,19 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 /**
- * User-wide achievement that is unlocked based on social activities.
+ * Trip-based achievement that is unlocked based on trip activities.
  *
- * <p>Examples: number of followers, number of friends. These achievements are not tied to a
- * specific trip.
+ * <p>Examples: distance walked, number of updates, trip duration.
  */
 @Entity
-@DiscriminatorValue("USER")
+@DiscriminatorValue("TRIP")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @SuperBuilder
-public class UserAchievement extends BaseAchievement {
+public class TripAchievement extends BaseAchievement {
 
     @Override
     public AchievementCategory getCategory() {
-        return AchievementCategory.USER;
+        return AchievementCategory.TRIP;
     }
 }

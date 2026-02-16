@@ -1,7 +1,7 @@
 package com.tomassirio.wanderer.query.service;
 
 import com.tomassirio.wanderer.commons.dto.AchievementDTO;
-import com.tomassirio.wanderer.commons.dto.UserAchievementDTO;
+import com.tomassirio.wanderer.commons.dto.UnlockedAchievementDTO;
 import java.util.List;
 import java.util.UUID;
 
@@ -24,7 +24,7 @@ public interface AchievementQueryService {
      * @param userId the user's unique identifier
      * @return list of user achievements
      */
-    List<UserAchievementDTO> getUserAchievements(UUID userId);
+    List<UnlockedAchievementDTO> getUserAchievements(UUID userId);
 
     /**
      * Retrieves all achievements unlocked by a user for a specific trip.
@@ -33,5 +33,5 @@ public interface AchievementQueryService {
      * @param tripId the trip's unique identifier
      * @return list of user achievements for the trip
      */
-    List<UserAchievementDTO> getUserAchievementsByTrip(UUID userId, UUID tripId);
+    List<UnlockedAchievementDTO> getUserAchievementsByTrip(UUID userId, UUID tripId);
 }

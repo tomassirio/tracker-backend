@@ -1,9 +1,9 @@
 package com.tomassirio.wanderer.query.service.impl;
 
 import com.tomassirio.wanderer.commons.dto.AchievementDTO;
-import com.tomassirio.wanderer.commons.dto.UserAchievementDTO;
+import com.tomassirio.wanderer.commons.dto.UnlockedAchievementDTO;
 import com.tomassirio.wanderer.commons.mapper.AchievementMapper;
-import com.tomassirio.wanderer.commons.mapper.UserAchievementMapper;
+import com.tomassirio.wanderer.commons.mapper.UnlockedAchievementMapper;
 import com.tomassirio.wanderer.query.repository.AchievementRepository;
 import com.tomassirio.wanderer.query.repository.UserAchievementRepository;
 import com.tomassirio.wanderer.query.service.AchievementQueryService;
@@ -31,16 +31,16 @@ public class AchievementQueryServiceImpl implements AchievementQueryService {
     }
 
     @Override
-    public List<UserAchievementDTO> getUserAchievements(UUID userId) {
+    public List<UnlockedAchievementDTO> getUserAchievements(UUID userId) {
         return userAchievementRepository.findByUserId(userId).stream()
-                .map(UserAchievementMapper.INSTANCE::toDTO)
+                .map(UnlockedAchievementMapper.INSTANCE::toDTO)
                 .toList();
     }
 
     @Override
-    public List<UserAchievementDTO> getUserAchievementsByTrip(UUID userId, UUID tripId) {
+    public List<UnlockedAchievementDTO> getUserAchievementsByTrip(UUID userId, UUID tripId) {
         return userAchievementRepository.findByUserIdAndTripId(userId, tripId).stream()
-                .map(UserAchievementMapper.INSTANCE::toDTO)
+                .map(UnlockedAchievementMapper.INSTANCE::toDTO)
                 .toList();
     }
 }
