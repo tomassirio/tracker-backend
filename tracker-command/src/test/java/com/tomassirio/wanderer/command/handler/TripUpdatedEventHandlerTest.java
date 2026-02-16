@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
@@ -22,6 +23,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TripUpdatedEventHandlerTest {
 
     @Mock private EntityManager entityManager;
+
+    @Mock private AchievementCalculationService achievementCalculationService;
 
     @InjectMocks private TripUpdatedEventHandler handler;
 
@@ -61,5 +64,8 @@ class TripUpdatedEventHandlerTest {
         assertThat(saved.getBattery()).isEqualTo(85);
         assertThat(saved.getMessage()).isEqualTo("Arrived at Santiago!");
         assertThat(saved.getTimestamp()).isEqualTo(timestamp);
+
+        // Verify achievement calculation was triggered
+        verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
     }
 }
