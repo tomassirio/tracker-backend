@@ -93,6 +93,12 @@
             <artifactId>lombok</artifactId>
         </dependency>
 
+        <!-- Google Maps Services for distance calculation -->
+        <dependency>
+            <groupId>com.google.maps</groupId>
+            <artifactId>google-maps-services</artifactId>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

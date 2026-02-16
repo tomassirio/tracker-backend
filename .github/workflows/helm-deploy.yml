@@ -39,6 +39,9 @@ on:
       JWT_SECRET:
         description: 'JWT signing secret'
         required: true
+      GOOGLE_MAPS_API_KEY:
+        description: 'Google Maps API key for distance calculation'
+        required: false
 
 env:
   ENV_SUFFIX: ${{ inputs.environment == 'dev' && '-dev' || '' }}
@@ -189,6 +192,12 @@ jobs:
             HELM_ARGS+=(
               "--set" "application.trackerCommandUrl=http://tracker-command${{ env.ENV_SUFFIX }}:8081"
               "--set" "application.trackerQueryUrl=http://tracker-query${{ env.ENV_SUFFIX }}:8082"
+            )
+          fi
+          
+          if [ "${{ matrix.service }}" == "tracker-command" ] && [ -n "${{ secrets.GOOGLE_MAPS_API_KEY }}" ]; then
+            HELM_ARGS+=(
+              "--set" "application.googleMaps.apiKey=${{ secrets.GOOGLE_MAPS_API_KEY }}"
             )
           fi
           

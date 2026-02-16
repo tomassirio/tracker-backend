@@ -2,7 +2,7 @@ package com.tomassirio.wanderer.commons.dto;
 
 import java.time.Instant;
 
-public record UnlockedAchievementDTO(
+public record UserAchievementDTO(
         String id,
         String userId,
         AchievementDTO achievement,

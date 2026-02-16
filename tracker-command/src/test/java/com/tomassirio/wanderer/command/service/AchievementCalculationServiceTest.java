@@ -12,8 +12,8 @@ import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.repository.UserAchievementRepository;
+import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
-import com.tomassirio.wanderer.commons.domain.BaseAchievement;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
@@ -48,7 +48,9 @@ class AchievementCalculationServiceTest {
 
     @Mock private ApplicationEventPublisher eventPublisher;
 
-    @Mock private TypedQuery<BaseAchievement> query;
+    @Mock private GoogleMapsDistanceService googleMapsDistanceService;
+
+    @Mock private TypedQuery<Achievement> query;
 
     @InjectMocks private AchievementCalculationService service;
 
@@ -65,8 +67,8 @@ class AchievementCalculationServiceTest {
                         userId, AchievementType.UPDATES_10, tripId))
                 .thenReturn(false);
 
-        BaseAchievement achievement =
-                BaseAchievement.builder()
+        Achievement achievement =
+                Achievement.builder()
                         .id(UUID.randomUUID())
                         .type(AchievementType.UPDATES_10)
                         .name("Getting Started")
@@ -75,7 +77,7 @@ class AchievementCalculationServiceTest {
                         .enabled(true)
                         .build();
 
-        when(entityManager.createQuery(anyString(), eq(BaseAchievement.class))).thenReturn(query);
+        when(entityManager.createQuery(anyString(), eq(Achievement.class))).thenReturn(query);
         when(query.setParameter(anyString(), any())).thenReturn(query);
         when(query.getResultStream()).thenReturn(Stream.of(achievement));
 
@@ -131,12 +133,14 @@ class AchievementCalculationServiceTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
         when(tripUpdateRepository.countByTripId(tripId)).thenReturn(5L);
         when(tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId)).thenReturn(updates);
+        when(googleMapsDistanceService.calculatePathDistance(any()))
+                .thenReturn(105.0); // Mock 105km
         when(unlockedAchievementRepository.existsByUserIdAndAchievementTypeAndTripId(
                         userId, AchievementType.DISTANCE_100KM, tripId))
                 .thenReturn(false);
 
-        BaseAchievement achievement =
-                BaseAchievement.builder()
+        Achievement achievement =
+                Achievement.builder()
                         .id(UUID.randomUUID())
                         .type(AchievementType.DISTANCE_100KM)
                         .name("First Century")
@@ -145,15 +149,17 @@ class AchievementCalculationServiceTest {
                         .enabled(true)
                         .build();
 
-        when(entityManager.createQuery(anyString(), eq(BaseAchievement.class))).thenReturn(query);
+        when(entityManager.createQuery(anyString(), eq(Achievement.class))).thenReturn(query);
         when(query.setParameter(anyString(), any())).thenReturn(query);
         when(query.getResultStream()).thenReturn(Stream.of(achievement));
 
         // When
         service.checkAndUnlockAchievements(tripId);
 
-        // Then - distance achievements may not unlock if calculated distance < 100km
-        // The test verifies the service runs without errors
+        // Then - verify achievement was unlocked
+        ArgumentCaptor<AchievementUnlockedEvent> captor =
+                ArgumentCaptor.forClass(AchievementUnlockedEvent.class);
+        verify(eventPublisher, times(1)).publishEvent(captor.capture());
     }
 
     @Test
@@ -181,8 +187,8 @@ class AchievementCalculationServiceTest {
                         userId, AchievementType.DURATION_7_DAYS, tripId))
                 .thenReturn(false);
 
-        BaseAchievement achievement =
-                BaseAchievement.builder()
+        Achievement achievement =
+                Achievement.builder()
                         .id(UUID.randomUUID())
                         .type(AchievementType.DURATION_7_DAYS)
                         .name("Week Warrior")
@@ -191,7 +197,7 @@ class AchievementCalculationServiceTest {
                         .enabled(true)
                         .build();
 
-        when(entityManager.createQuery(anyString(), eq(BaseAchievement.class))).thenReturn(query);
+        when(entityManager.createQuery(anyString(), eq(Achievement.class))).thenReturn(query);
         when(query.setParameter(anyString(), any())).thenReturn(query);
         when(query.getResultStream()).thenReturn(Stream.of(achievement));
 

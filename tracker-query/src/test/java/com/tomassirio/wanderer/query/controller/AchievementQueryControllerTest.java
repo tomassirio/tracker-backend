@@ -8,7 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import com.tomassirio.wanderer.commons.dto.AchievementDTO;
-import com.tomassirio.wanderer.commons.dto.UnlockedAchievementDTO;
+import com.tomassirio.wanderer.commons.dto.UserAchievementDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import com.tomassirio.wanderer.query.service.AchievementQueryService;
@@ -91,8 +91,8 @@ class AchievementQueryControllerTest {
                         "Walk 100km in a single trip",
                         100);
 
-        UnlockedAchievementDTO userAchievement =
-                new UnlockedAchievementDTO(
+        UserAchievementDTO userAchievement =
+                new UserAchievementDTO(
                         UUID.randomUUID().toString(),
                         userId.toString(),
                         achievementDTO,
@@ -125,8 +125,8 @@ class AchievementQueryControllerTest {
                         "Post 10 updates",
                         10);
 
-        UnlockedAchievementDTO userAchievement =
-                new UnlockedAchievementDTO(
+        UserAchievementDTO userAchievement =
+                new UserAchievementDTO(
                         UUID.randomUUID().toString(),
                         USER_ID.toString(),
                         achievementDTO,
@@ -160,8 +160,8 @@ class AchievementQueryControllerTest {
                         "Trip lasting 7 days",
                         7);
 
-        UnlockedAchievementDTO userAchievement =
-                new UnlockedAchievementDTO(
+        UserAchievementDTO userAchievement =
+                new UserAchievementDTO(
                         UUID.randomUUID().toString(),
                         userId.toString(),
                         achievementDTO,

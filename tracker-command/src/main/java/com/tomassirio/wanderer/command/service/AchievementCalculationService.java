@@ -4,15 +4,12 @@ import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
 import com.tomassirio.wanderer.command.repository.FriendshipRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
-import com.tomassirio.wanderer.command.repository.UnlockedAchievementRepository;
+import com.tomassirio.wanderer.command.repository.UserAchievementRepository;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
-import com.tomassirio.wanderer.commons.domain.AchievementCategory;
+import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
-import com.tomassirio.wanderer.commons.domain.BaseAchievement;
 import com.tomassirio.wanderer.commons.domain.Trip;
-import com.tomassirio.wanderer.commons.domain.TripAchievement;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
-import com.tomassirio.wanderer.commons.domain.UserAchievement;
 import jakarta.persistence.EntityManager;
 import java.time.Duration;
 import java.time.Instant;
@@ -37,9 +34,10 @@ public class AchievementCalculationService {
 
     private final TripRepository tripRepository;
     private final TripUpdateRepository tripUpdateRepository;
-    private final UnlockedAchievementRepository unlockedAchievementRepository;
+    private final UserAchievementRepository userAchievementRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserFollowRepository userFollowRepository;
+    private final GoogleMapsDistanceService googleMapsDistanceService;
     private final EntityManager entityManager;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -172,13 +170,13 @@ public class AchievementCalculationService {
     }
 
     /**
-     * Calculates approximate distance using Haversine formula between consecutive trip updates.
+     * Calculates distance using Google Maps Distance Matrix API or Haversine formula.
      *
-     * <p>This is a placeholder implementation. In production, this should use Google Maps Distance
-     * Matrix API to calculate the shortest path distance.
+     * <p>Uses Google Maps API for accurate walking distance along actual routes. Falls back to
+     * Haversine formula if API is unavailable.
      *
      * @param tripId the trip ID
-     * @return approximate distance in kilometers
+     * @return distance in kilometers
      */
     private double calculateApproximateDistance(UUID tripId) {
         List<TripUpdate> updates = tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId);
@@ -187,49 +185,23 @@ public class AchievementCalculationService {
             return 0.0;
         }
 
-        double totalDistance = 0.0;
-        for (int i = 0; i < updates.size() - 1; i++) {
-            TripUpdate current = updates.get(i);
-            TripUpdate next = updates.get(i + 1);
+        // Convert trip updates to LatLng coordinates
+        List<com.google.maps.model.LatLng> coordinates =
+                updates.stream()
+                        .filter(update -> update.getLocation() != null)
+                        .map(
+                                update ->
+                                        new com.google.maps.model.LatLng(
+                                                update.getLocation().getLat(),
+                                                update.getLocation().getLon()))
+                        .toList();
 
-            if (current.getLocation() != null && next.getLocation() != null) {
-                totalDistance +=
-                        haversineDistance(
-                                current.getLocation().getLat(),
-                                current.getLocation().getLon(),
-                                next.getLocation().getLat(),
-                                next.getLocation().getLon());
-            }
+        if (coordinates.size() < 2) {
+            return 0.0;
         }
 
-        return totalDistance;
-    }
-
-    /**
-     * Calculates distance between two coordinates using Haversine formula.
-     *
-     * @param lat1 latitude of first point
-     * @param lon1 longitude of first point
-     * @param lat2 latitude of second point
-     * @param lon2 longitude of second point
-     * @return distance in kilometers
-     */
-    private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
-        final double R = 6371.0; // Earth's radius in kilometers
-
-        double dLat = Math.toRadians(lat2 - lat1);
-        double dLon = Math.toRadians(lon2 - lon1);
-
-        double a =
-                Math.sin(dLat / 2) * Math.sin(dLat / 2)
-                        + Math.cos(Math.toRadians(lat1))
-                                * Math.cos(Math.toRadians(lat2))
-                                * Math.sin(dLon / 2)
-                                * Math.sin(dLon / 2);
-
-        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return R * c;
+        // Use Google Maps Distance Service (with Haversine fallback)
+        return googleMapsDistanceService.calculatePathDistance(coordinates);
     }
 
     private void unlockAchievementIfNotExists(Trip trip, AchievementType type, Double value) {
@@ -240,7 +212,7 @@ public class AchievementCalculationService {
 
         if (exists) {
             log.debug(
-                    "BaseAchievement {} already unlocked for user {} on trip {}",
+                    "Achievement {} already unlocked for user {} on trip {}",
                     type,
                     trip.getUserId(),
                     trip.getId());
@@ -248,7 +220,7 @@ public class AchievementCalculationService {
         }
 
         // Get or create achievement
-        BaseAchievement achievement = getOrCreateAchievement(type);
+        Achievement achievement = getOrCreateAchievement(type);
 
         // Publish achievement unlocked event
         UUID userAchievementId = UUID.randomUUID();
@@ -265,7 +237,7 @@ public class AchievementCalculationService {
                         .build());
 
         log.info(
-                "BaseAchievement {} unlocked for user {} on trip {}",
+                "Achievement {} unlocked for user {} on trip {}",
                 type,
                 trip.getUserId(),
                 trip.getId());
@@ -278,7 +250,7 @@ public class AchievementCalculationService {
         boolean exists =
                 entityManager
                         .createQuery(
-                                "SELECT COUNT(ua) > 0 FROM UnlockedAchievement ua JOIN ua.achievement a "
+                                "SELECT COUNT(ua) > 0 FROM UserAchievement ua JOIN ua.achievement a "
                                         + "WHERE ua.user.id = :userId AND a.type = :type AND ua.trip IS NULL",
                                 Boolean.class)
                         .setParameter("userId", userId)
@@ -291,7 +263,7 @@ public class AchievementCalculationService {
         }
 
         // Get or create achievement
-        BaseAchievement achievement = getOrCreateAchievement(type);
+        Achievement achievement = getOrCreateAchievement(type);
 
         // Publish achievement unlocked event (with null tripId for social achievements)
         UUID userAchievementId = UUID.randomUUID();
@@ -310,40 +282,27 @@ public class AchievementCalculationService {
         log.info("Social achievement {} unlocked for user {}", type, userId);
     }
 
-    private BaseAchievement getOrCreateAchievement(AchievementType type) {
+    private Achievement getOrCreateAchievement(AchievementType type) {
         // Try to find existing achievement
         return entityManager
                 .createQuery(
-                        "SELECT a FROM BaseAchievement a WHERE a.type = :type AND a.enabled = true",
-                        BaseAchievement.class)
+                        "SELECT a FROM Achievement a WHERE a.type = :type AND a.enabled = true",
+                        Achievement.class)
                 .setParameter("type", type)
                 .getResultStream()
                 .findFirst()
                 .orElseGet(
                         () -> {
-                            // Create new achievement based on category
-                            BaseAchievement achievement;
-                            if (type.getCategory() == AchievementCategory.TRIP) {
-                                achievement =
-                                        TripAchievement.builder()
-                                                .id(UUID.randomUUID())
-                                                .type(type)
-                                                .name(type.getName())
-                                                .description(type.getDescription())
-                                                .thresholdValue(type.getThreshold())
-                                                .enabled(true)
-                                                .build();
-                            } else {
-                                achievement =
-                                        UserAchievement.builder()
-                                                .id(UUID.randomUUID())
-                                                .type(type)
-                                                .name(type.getName())
-                                                .description(type.getDescription())
-                                                .thresholdValue(type.getThreshold())
-                                                .enabled(true)
-                                                .build();
-                            }
+                            // Create new achievement
+                            Achievement achievement =
+                                    Achievement.builder()
+                                            .id(UUID.randomUUID())
+                                            .type(type)
+                                            .name(type.getName())
+                                            .description(type.getDescription())
+                                            .thresholdValue(type.getThreshold())
+                                            .enabled(true)
+                                            .build();
                             entityManager.persist(achievement);
                             return achievement;
                         });

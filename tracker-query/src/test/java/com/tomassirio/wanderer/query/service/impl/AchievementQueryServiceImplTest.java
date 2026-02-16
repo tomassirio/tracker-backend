@@ -3,13 +3,13 @@ package com.tomassirio.wanderer.query.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
-import com.tomassirio.wanderer.commons.domain.BaseAchievement;
 import com.tomassirio.wanderer.commons.domain.Trip;
-import com.tomassirio.wanderer.commons.domain.UnlockedAchievement;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.domain.UserAchievement;
 import com.tomassirio.wanderer.commons.dto.AchievementDTO;
-import com.tomassirio.wanderer.commons.dto.UnlockedAchievementDTO;
+import com.tomassirio.wanderer.commons.dto.UserAchievementDTO;
 import com.tomassirio.wanderer.query.repository.AchievementRepository;
 import com.tomassirio.wanderer.query.repository.UserAchievementRepository;
 import java.time.Instant;
@@ -34,8 +34,8 @@ class AchievementQueryServiceImplTest {
     @Test
     void getAvailableAchievements_shouldReturnAllEnabledAchievements() {
         // Given
-        BaseAchievement achievement1 =
-                BaseAchievement.builder()
+        Achievement achievement1 =
+                Achievement.builder()
                         .id(UUID.randomUUID())
                         .type(AchievementType.DISTANCE_100KM)
                         .name("First Century")
@@ -44,8 +44,8 @@ class AchievementQueryServiceImplTest {
                         .enabled(true)
                         .build();
 
-        BaseAchievement achievement2 =
-                BaseAchievement.builder()
+        Achievement achievement2 =
+                Achievement.builder()
                         .id(UUID.randomUUID())
                         .type(AchievementType.UPDATES_10)
                         .name("Getting Started")
@@ -77,8 +77,8 @@ class AchievementQueryServiceImplTest {
 
         User user = User.builder().id(userId).username("testuser").build();
         Trip trip = Trip.builder().id(tripId).name("Camino").userId(userId).build();
-        BaseAchievement achievement =
-                BaseAchievement.builder()
+        Achievement achievement =
+                Achievement.builder()
                         .id(achievementId)
                         .type(AchievementType.DISTANCE_100KM)
                         .name("First Century")
@@ -87,8 +87,8 @@ class AchievementQueryServiceImplTest {
                         .enabled(true)
                         .build();
 
-        UnlockedAchievement userAchievement =
-                UnlockedAchievement.builder()
+        UserAchievement userAchievement =
+                UserAchievement.builder()
                         .id(UUID.randomUUID())
                         .user(user)
                         .achievement(achievement)
@@ -101,7 +101,7 @@ class AchievementQueryServiceImplTest {
                 .thenReturn(List.of(userAchievement));
 
         // When
-        List<UnlockedAchievementDTO> result = service.getUserAchievements(userId);
+        List<UserAchievementDTO> result = service.getUserAchievements(userId);
 
         // Then
         assertThat(result).hasSize(1);
@@ -119,8 +119,8 @@ class AchievementQueryServiceImplTest {
 
         User user = User.builder().id(userId).username("testuser").build();
         Trip trip = Trip.builder().id(tripId).name("Camino").userId(userId).build();
-        BaseAchievement achievement =
-                BaseAchievement.builder()
+        Achievement achievement =
+                Achievement.builder()
                         .id(UUID.randomUUID())
                         .type(AchievementType.DISTANCE_100KM)
                         .name("First Century")
@@ -129,8 +129,8 @@ class AchievementQueryServiceImplTest {
                         .enabled(true)
                         .build();
 
-        UnlockedAchievement userAchievement =
-                UnlockedAchievement.builder()
+        UserAchievement userAchievement =
+                UserAchievement.builder()
                         .id(UUID.randomUUID())
                         .user(user)
                         .achievement(achievement)
@@ -143,7 +143,7 @@ class AchievementQueryServiceImplTest {
                 .thenReturn(List.of(userAchievement));
 
         // When
-        List<UnlockedAchievementDTO> result = service.getUserAchievementsByTrip(userId, tripId);
+        List<UserAchievementDTO> result = service.getUserAchievementsByTrip(userId, tripId);
 
         // Then
         assertThat(result).hasSize(1);

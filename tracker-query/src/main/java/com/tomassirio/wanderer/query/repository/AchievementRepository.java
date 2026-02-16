@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.repository;
 
+import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import java.util.List;
 import java.util.Optional;

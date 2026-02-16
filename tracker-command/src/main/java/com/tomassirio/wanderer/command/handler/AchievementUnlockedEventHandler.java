@@ -1,10 +1,10 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
-import com.tomassirio.wanderer.commons.domain.BaseAchievement;
+import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.Trip;
-import com.tomassirio.wanderer.commons.domain.UnlockedAchievement;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.domain.UserAchievement;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,15 +38,15 @@ public class AchievementUnlockedEventHandler implements EventHandler<Achievement
 
         // Use entityManager.getReference() to create proxies without loading the entities
         User user = entityManager.getReference(User.class, event.getUserId());
-        BaseAchievement achievement =
-                entityManager.getReference(BaseAchievement.class, event.getAchievementId());
+        Achievement achievement =
+                entityManager.getReference(Achievement.class, event.getAchievementId());
         Trip trip =
                 event.getTripId() != null
                         ? entityManager.getReference(Trip.class, event.getTripId())
                         : null;
 
-        UnlockedAchievement unlockedAchievement =
-                UnlockedAchievement.builder()
+        UserAchievement unlockedAchievement =
+                UserAchievement.builder()
                         .id(event.getUserAchievementId())
                         .user(user)
                         .achievement(achievement)

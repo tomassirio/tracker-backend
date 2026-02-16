@@ -5,11 +5,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
+import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
-import com.tomassirio.wanderer.commons.domain.BaseAchievement;
 import com.tomassirio.wanderer.commons.domain.Trip;
-import com.tomassirio.wanderer.commons.domain.UnlockedAchievement;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.domain.UserAchievement;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
@@ -49,8 +49,8 @@ class AchievementUnlockedEventHandlerTest {
                         .build();
 
         User user = User.builder().id(userId).username("testuser").build();
-        BaseAchievement achievement =
-                BaseAchievement.builder()
+        Achievement achievement =
+                Achievement.builder()
                         .id(achievementId)
                         .type(AchievementType.DISTANCE_100KM)
                         .name("First Century")
@@ -61,19 +61,17 @@ class AchievementUnlockedEventHandlerTest {
         Trip trip = Trip.builder().id(tripId).name("Camino").userId(userId).build();
 
         when(entityManager.getReference(User.class, userId)).thenReturn(user);
-        when(entityManager.getReference(BaseAchievement.class, achievementId))
-                .thenReturn(achievement);
+        when(entityManager.getReference(Achievement.class, achievementId)).thenReturn(achievement);
         when(entityManager.getReference(Trip.class, tripId)).thenReturn(trip);
 
         // When
         handler.handle(event);
 
         // Then
-        ArgumentCaptor<UnlockedAchievement> captor =
-                ArgumentCaptor.forClass(UnlockedAchievement.class);
+        ArgumentCaptor<UserAchievement> captor = ArgumentCaptor.forClass(UserAchievement.class);
         verify(entityManager).persist(captor.capture());
 
-        UnlockedAchievement saved = captor.getValue();
+        UserAchievement saved = captor.getValue();
         assertThat(saved.getId()).isEqualTo(userAchievementId);
         assertThat(saved.getUser()).isEqualTo(user);
         assertThat(saved.getAchievement()).isEqualTo(achievement);

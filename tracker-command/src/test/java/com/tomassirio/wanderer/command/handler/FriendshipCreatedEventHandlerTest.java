@@ -70,7 +70,7 @@ class FriendshipCreatedEventHandlerTest {
 
         // Then
         verify(entityManager, never()).persist(any(Friendship.class));
-        // BaseAchievement calculation still triggered even if friendship exists
+        // Achievement calculation still triggered even if friendship exists
         verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
         verify(achievementCalculationService).checkAndUnlockSocialAchievements(friendId);
     }
@@ -93,7 +93,7 @@ class FriendshipCreatedEventHandlerTest {
 
         // Then
         verify(entityManager, times(1)).persist(any(Friendship.class));
-        // BaseAchievement calculation triggered for both users
+        // Achievement calculation triggered for both users
         verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
         verify(achievementCalculationService).checkAndUnlockSocialAchievements(friendId);
     }
