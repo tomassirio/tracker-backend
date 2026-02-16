@@ -1,7 +1,8 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripDeletedEvent;
-import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.commons.domain.Trip;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripDeletedEventHandler implements EventHandler<TripDeletedEvent> {
 
-    private final TripRepository tripRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -28,7 +29,10 @@ public class TripDeletedEventHandler implements EventHandler<TripDeletedEvent> {
     public void handle(TripDeletedEvent event) {
         log.debug("Persisting TripDeletedEvent for trip: {}", event.getTripId());
 
-        tripRepository.deleteById(event.getTripId());
+        Trip trip = entityManager.find(Trip.class, event.getTripId());
+        if (trip != null) {
+            entityManager.remove(trip);
+        }
         log.info("Trip deleted: {}", event.getTripId());
     }
 }

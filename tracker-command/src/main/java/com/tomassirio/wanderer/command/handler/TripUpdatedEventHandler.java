@@ -1,7 +1,6 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
-import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import jakarta.persistence.EntityManager;
@@ -25,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
 
-    private final TripRepository tripRepository;
     private final EntityManager entityManager;
 
     @Override
@@ -34,8 +32,8 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
     public void handle(TripUpdatedEvent event) {
         log.debug("Persisting TripUpdatedEvent for trip: {}", event.getTripId());
 
-        // Trip is validated in the service layer before event emission
-        Trip trip = tripRepository.getReferenceById(event.getTripId());
+        // Use entityManager.getReference() to ensure proxy is in the same persistence context
+        Trip trip = entityManager.getReference(Trip.class, event.getTripId());
 
         TripUpdate tripUpdate =
                 TripUpdate.builder()

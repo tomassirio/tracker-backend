@@ -1,22 +1,19 @@
 package com.tomassirio.wanderer.command.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
-import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import java.util.Optional;
+import jakarta.persistence.EntityManager;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -24,8 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TripVisibilityChangedEventHandlerTest {
 
-    @Mock private TripRepository tripRepository;
-
+    @Mock private EntityManager entityManager;
     @Mock private TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
 
     @InjectMocks private TripVisibilityChangedEventHandler handler;
@@ -48,7 +44,7 @@ class TripVisibilityChangedEventHandlerTest {
                         .build();
         Trip trip = Trip.builder().id(tripId).tripSettings(tripSettings).build();
 
-        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        when(entityManager.find(Trip.class, tripId)).thenReturn(trip);
 
         // When
         handler.handle(event);
@@ -56,11 +52,8 @@ class TripVisibilityChangedEventHandlerTest {
         // Then
         verify(embeddedObjectsInitializer).ensureTripSettings(trip, TripVisibility.PRIVATE);
 
-        ArgumentCaptor<Trip> tripCaptor = ArgumentCaptor.forClass(Trip.class);
-        verify(tripRepository).save(tripCaptor.capture());
-
-        Trip savedTrip = tripCaptor.getValue();
-        assertThat(savedTrip.getTripSettings().getVisibility()).isEqualTo(TripVisibility.PRIVATE);
+        // Entity is managed, no need to verify save
+        assertThat(trip.getTripSettings().getVisibility()).isEqualTo(TripVisibility.PRIVATE);
     }
 
     @Test
@@ -74,13 +67,13 @@ class TripVisibilityChangedEventHandlerTest {
                         .newVisibility("PRIVATE")
                         .build();
 
-        when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
+        when(entityManager.find(Trip.class, tripId)).thenReturn(null);
 
         // When
         handler.handle(event);
 
         // Then
-        verify(tripRepository).findById(tripId);
-        verify(tripRepository, org.mockito.Mockito.never()).save(any(Trip.class));
+        verify(entityManager).find(Trip.class, tripId);
+        // Handler should not call any methods on embeddedObjectsInitializer when trip is null
     }
 }

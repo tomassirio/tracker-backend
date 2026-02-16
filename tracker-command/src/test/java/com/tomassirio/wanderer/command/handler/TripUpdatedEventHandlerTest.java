@@ -5,7 +5,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
-import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
@@ -22,7 +21,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TripUpdatedEventHandlerTest {
 
-    @Mock private TripRepository tripRepository;
     @Mock private EntityManager entityManager;
 
     @InjectMocks private TripUpdatedEventHandler handler;
@@ -47,8 +45,7 @@ class TripUpdatedEventHandlerTest {
                         .timestamp(timestamp)
                         .build();
 
-        // Validation is done in service layer, handler uses getReferenceById
-        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+        when(entityManager.getReference(Trip.class, tripId)).thenReturn(trip);
 
         // When
         handler.handle(event);

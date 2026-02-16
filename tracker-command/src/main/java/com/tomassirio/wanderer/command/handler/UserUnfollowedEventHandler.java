@@ -1,7 +1,9 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.UserUnfollowedEvent;
-import com.tomassirio.wanderer.command.repository.UserFollowRepository;
+import com.tomassirio.wanderer.commons.domain.UserFollow;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -21,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserUnfollowedEventHandler implements EventHandler<UserUnfollowedEvent> {
 
-    private final UserFollowRepository userFollowRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -32,8 +34,13 @@ public class UserUnfollowedEventHandler implements EventHandler<UserUnfollowedEv
                 event.getFollowerId(),
                 event.getFollowedId());
 
-        userFollowRepository.deleteByFollowerIdAndFollowedId(
-                event.getFollowerId(), event.getFollowedId());
+        TypedQuery<UserFollow> query =
+                entityManager.createQuery(
+                        "SELECT uf FROM UserFollow uf WHERE uf.followerId = :followerId AND uf.followedId = :followedId",
+                        UserFollow.class);
+        query.setParameter("followerId", event.getFollowerId());
+        query.setParameter("followedId", event.getFollowedId());
+        query.getResultStream().findFirst().ifPresent(entityManager::remove);
 
         log.info(
                 "User unfollow persisted: {} unfollowed {}",

@@ -1,9 +1,9 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
-import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
+import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FriendRequestDeclinedEventHandler implements EventHandler<FriendRequestDeclinedEvent> {
 
-    private final FriendRequestRepository friendRequestRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -33,13 +33,13 @@ public class FriendRequestDeclinedEventHandler implements EventHandler<FriendReq
     public void handle(FriendRequestDeclinedEvent event) {
         log.debug("Persisting FriendRequestDeclinedEvent for request: {}", event.getRequestId());
 
-        // Friend request is validated in the service layer before event emission
-        FriendRequest request = friendRequestRepository.getReferenceById(event.getRequestId());
+        // Use entityManager.find() to load the actual entity for update
+        FriendRequest request = entityManager.find(FriendRequest.class, event.getRequestId());
 
         request.setStatus(FriendRequestStatus.DECLINED);
         request.setUpdatedAt(Instant.now());
 
-        friendRequestRepository.save(request);
+        // No need to call save() - entity is managed and will be flushed automatically
         log.info("Friend request declined and persisted: {}", event.getRequestId());
     }
 }

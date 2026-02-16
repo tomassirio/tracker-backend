@@ -1,9 +1,9 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripPlanUpdatedEvent;
-import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdatedEvent> {
 
-    private final TripPlanRepository tripPlanRepository;
+    private final EntityManager entityManager;
     private final TripPlanMetadataProcessor metadataProcessor;
 
     @Override
@@ -32,8 +32,8 @@ public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdated
     public void handle(TripPlanUpdatedEvent event) {
         log.debug("Persisting TripPlanUpdatedEvent for trip plan: {}", event.getTripPlanId());
 
-        // Trip plan is validated in the service layer before event emission
-        TripPlan tripPlan = tripPlanRepository.getReferenceById(event.getTripPlanId());
+        // Use entityManager.find() to load the actual entity for update
+        TripPlan tripPlan = entityManager.find(TripPlan.class, event.getTripPlanId());
 
         tripPlan.setName(event.getName());
         tripPlan.setStartDate(event.getStartDate());
@@ -45,7 +45,7 @@ public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdated
         // Re-validate metadata for the plan type
         metadataProcessor.applyMetadata(tripPlan, tripPlan.getMetadata());
 
-        tripPlanRepository.save(tripPlan);
+        // No need to call save() - entity is managed and will be flushed automatically
         log.info("Trip plan updated and persisted: {}", event.getTripPlanId());
     }
 }

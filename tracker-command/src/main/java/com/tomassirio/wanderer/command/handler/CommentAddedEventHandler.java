@@ -1,9 +1,6 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.CommentAddedEvent;
-import com.tomassirio.wanderer.command.repository.CommentRepository;
-import com.tomassirio.wanderer.command.repository.TripRepository;
-import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -29,9 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommentAddedEventHandler implements EventHandler<CommentAddedEvent> {
 
-    private final CommentRepository commentRepository;
-    private final TripRepository tripRepository;
-    private final UserRepository userRepository;
     private final EntityManager entityManager;
 
     @Override
@@ -40,13 +34,13 @@ public class CommentAddedEventHandler implements EventHandler<CommentAddedEvent>
     public void handle(CommentAddedEvent event) {
         log.debug("Persisting CommentAddedEvent for comment: {}", event.getCommentId());
 
-        // Entities are validated in the service layer before event emission
-        User user = userRepository.getReferenceById(event.getUserId());
-        Trip trip = tripRepository.getReferenceById(event.getTripId());
+        // Use entityManager.getReference() to ensure proxies are in the same persistence context
+        User user = entityManager.getReference(User.class, event.getUserId());
+        Trip trip = entityManager.getReference(Trip.class, event.getTripId());
 
         Comment parentComment = null;
         if (event.getParentCommentId() != null) {
-            parentComment = commentRepository.getReferenceById(event.getParentCommentId());
+            parentComment = entityManager.getReference(Comment.class, event.getParentCommentId());
         }
 
         Comment comment =

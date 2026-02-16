@@ -1,10 +1,10 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.CommentReactionEvent;
-import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommentReactionEventHandler implements EventHandler<CommentReactionEvent> {
 
-    private final CommentRepository commentRepository;
+    private final EntityManager entityManager;
 
     @Override
     @EventListener
@@ -37,8 +37,8 @@ public class CommentReactionEventHandler implements EventHandler<CommentReaction
                 event.getReactionType(),
                 event.isAdded());
 
-        // Comment is validated in the service layer before event emission
-        Comment comment = commentRepository.getReferenceById(event.getCommentId());
+        // Use entityManager.find() to load the actual entity for update
+        Comment comment = entityManager.find(Comment.class, event.getCommentId());
 
         if (comment.getReactions() == null) {
             comment.setReactions(new Reactions());
@@ -52,7 +52,7 @@ public class CommentReactionEventHandler implements EventHandler<CommentReaction
             comment.getReactions().decrementReaction(reactionType);
         }
 
-        commentRepository.save(comment);
+        // No need to call save() - entity is managed and will be flushed automatically
         log.info(
                 "Reaction {} {} for comment: {}",
                 event.getReactionType(),
