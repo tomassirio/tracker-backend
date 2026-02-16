@@ -86,16 +86,32 @@ public class AuthServiceImpl implements AuthService {
      * as a compensation step to avoid dangling accounts.
      */
     public LoginResponse register(RegisterRequest request) {
-        // 1) Create the domain user via the command service
+        // 1) Create the domain user via the command service (returns UUID)
         var payload = Map.of("username", request.username(), "email", request.email());
-        User createdUser;
+        UUID createdUserId;
         try {
-            createdUser = trackerCommandClient.createUser(payload);
+            createdUserId = trackerCommandClient.createUser(payload);
         } catch (FeignException e) {
             throw new IllegalStateException("Failed to create user in command service", e);
         }
 
-        // 2) Create credential in auth DB — wrap in try/catch and compensate on failure
+        // 2) Fetch the created user from query service to get full User object
+        User createdUser;
+        try {
+            createdUser = trackerQueryClient.getUserById(createdUserId);
+        } catch (FeignException e) {
+            // Attempt to delete the created user since we can't proceed
+            try {
+                trackerCommandClient.deleteUser(createdUserId);
+            } catch (FeignException ex) {
+                throw new IllegalStateException(
+                        "Failed to fetch created user and failed to rollback: " + ex.getMessage(),
+                        e);
+            }
+            throw new IllegalStateException("Failed to fetch created user from query service", e);
+        }
+
+        // 3) Create credential in auth DB — wrap in try/catch and compensate on failure
         try {
             if (credentialRepository.findById(createdUser.getId()).isPresent()) {
                 throw new IllegalArgumentException(
@@ -119,7 +135,7 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             // Attempt to delete the created domain user as compensation
             try {
-                trackerCommandClient.deleteUser(createdUser.getId());
+                trackerCommandClient.deleteUser(createdUserId);
             } catch (FeignException ex) {
                 // Log and swallow the delete failure — we'll still rethrow the original exception
                 // (Logging framework may be added; for now throw a composed exception)
@@ -132,7 +148,7 @@ public class AuthServiceImpl implements AuthService {
                     "Failed to create credentials, rolled back user creation", e);
         }
 
-        // 3) Issue JWT and refresh token
+        // 4) Issue JWT and refresh token
         String jti = UUID.randomUUID().toString();
         String accessToken = jwtService.generateTokenWithJti(createdUser, jti);
         String refreshToken = tokenService.createRefreshToken(createdUser.getId());
