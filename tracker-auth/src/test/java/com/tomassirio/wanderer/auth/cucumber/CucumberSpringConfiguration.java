@@ -26,9 +26,11 @@ public class CucumberSpringConfiguration extends BaseCucumberSpringConfiguration
     // Configure mocks
     @PostConstruct
     public void setupMocks() {
-        User dummyUser = User.builder().id(UUID.randomUUID()).username("testuser").build();
+        UUID userId = UUID.randomUUID();
+        User dummyUser = User.builder().id(userId).username("testuser").build();
 
-        Mockito.when(trackerCommandClient.createUser(Mockito.any(Map.class))).thenReturn(dummyUser);
+        Mockito.when(trackerCommandClient.createUser(Mockito.any(Map.class))).thenReturn(userId);
+        Mockito.when(trackerQueryClient.getUserById(userId)).thenReturn(dummyUser);
         Mockito.when(trackerQueryClient.getUserByUsername("testuser")).thenReturn(dummyUser);
         Mockito.when(trackerQueryClient.getUserByUsername("nonexistent")).thenReturn(null);
     }
