@@ -11,7 +11,7 @@
 
     <groupId>com.tomassirio.wanderer</groupId>
     <artifactId>tracker-backend</artifactId>
-    <version>0.4.19</version>
+    <version>0.4.20-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>tracker-backend</name>
     <description>Trip Tracker Backend - CQRS Multi-Module Project</description>
@@ -62,7 +62,7 @@
             <dependency>
                 <groupId>com.tomassirio.wanderer</groupId>
                 <artifactId>commons</artifactId>
-                <version>0.4.19</version>
+                <version>0.4.20-SNAPSHOT</version>
             </dependency>
 
             <!-- Lombok -->
