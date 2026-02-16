@@ -34,6 +34,7 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
         if (!existsFriendship(event.getUserId(), event.getFriendId())) {
             Friendship friendship1 =
                     Friendship.builder()
+                            .id(UUID.randomUUID())
                             .userId(event.getUserId())
                             .friendId(event.getFriendId())
                             .createdAt(now)
@@ -44,6 +45,7 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
         if (!existsFriendship(event.getFriendId(), event.getUserId())) {
             Friendship friendship2 =
                     Friendship.builder()
+                            .id(UUID.randomUUID())
                             .userId(event.getFriendId())
                             .friendId(event.getUserId())
                             .createdAt(now)
