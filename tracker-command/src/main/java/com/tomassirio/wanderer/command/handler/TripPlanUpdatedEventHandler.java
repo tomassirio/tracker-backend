@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Order(1)
 public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdatedEvent> {
 
     private final TripPlanRepository tripPlanRepository;

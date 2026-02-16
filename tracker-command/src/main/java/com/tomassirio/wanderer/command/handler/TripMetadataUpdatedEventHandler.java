@@ -6,11 +6,11 @@ import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitial
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Event handler for persisting trip metadata update events to the database.
@@ -22,13 +22,14 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Order(1)
 public class TripMetadataUpdatedEventHandler implements EventHandler<TripMetadataUpdatedEvent> {
 
     private final TripRepository tripRepository;
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
 
     @Override
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @EventListener
     @Transactional(propagation = Propagation.MANDATORY)
     public void handle(TripMetadataUpdatedEvent event) {
         log.debug("Persisting TripMetadataUpdatedEvent for trip: {}", event.getTripId());

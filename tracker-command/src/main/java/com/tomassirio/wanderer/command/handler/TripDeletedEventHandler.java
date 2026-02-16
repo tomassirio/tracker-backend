@@ -4,11 +4,11 @@ import com.tomassirio.wanderer.command.event.TripDeletedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.event.TransactionPhase;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Event handler for TripDeletedEvent that handles persistence.
@@ -19,12 +19,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Order(1)
 public class TripDeletedEventHandler implements EventHandler<TripDeletedEvent> {
 
     private final TripRepository tripRepository;
 
     @Override
-    @TransactionalEventListener(phase = TransactionPhase.BEFORE_COMMIT)
+    @EventListener
     @Transactional(propagation = Propagation.MANDATORY)
     public void handle(TripDeletedEvent event) {
         log.debug("Persisting TripDeletedEvent for trip: {}", event.getTripId());
