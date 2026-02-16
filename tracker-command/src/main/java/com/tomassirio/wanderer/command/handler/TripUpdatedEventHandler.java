@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import jakarta.persistence.EntityManager;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
 
     private final EntityManager entityManager;
+    private final AchievementCalculationService achievementCalculationService;
 
     @Override
     @EventListener
@@ -47,5 +49,8 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
 
         entityManager.persist(tripUpdate);
         log.info("Trip update created and persisted: {}", event.getTripUpdateId());
+
+        // Check and unlock achievements after persisting the update
+        achievementCalculationService.checkAndUnlockAchievements(event.getTripId());
     }
 }

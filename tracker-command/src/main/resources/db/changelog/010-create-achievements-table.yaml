@@ -1,0 +1,58 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-create-achievements-table
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: achievements
+      changes:
+        - createTable:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(50)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: name
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: threshold_value
+                  type: integer
+                  constraints:
+                    nullable: false
+              - column:
+                  name: enabled
+                  type: boolean
+                  constraints:
+                    nullable: false
+                  defaultValueBoolean: true
+        - createIndex:
+            tableName: achievements
+            indexName: idx_achievements_type
+            columns:
+              - column:
+                  name: type
+        - createIndex:
+            tableName: achievements
+            indexName: idx_achievements_enabled
+            columns:
+              - column:
+                  name: enabled
