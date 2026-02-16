@@ -119,6 +119,16 @@ public final class ApiConstants {
     public static final String COMMENT_REACTIONS_ENDPOINT = "/{commentId}/reactions";
 
     // ============================================================
+    // Achievement endpoints
+    // ============================================================
+
+    public static final String ACHIEVEMENTS_PATH = API_V1 + "/achievements";
+    public static final String USER_ACHIEVEMENTS_ENDPOINT = USERS_SEGMENT + "/achievements";
+    public static final String USER_ACHIEVEMENTS_ME_ENDPOINT = ME_SUFFIX + "/achievements";
+    public static final String TRIP_ACHIEVEMENTS_ENDPOINT =
+            USERS_SEGMENT + "/trips/{tripId}/achievements";
+
+    // ============================================================
     // Public endpoint patterns (for SecurityConfig)
     // ============================================================
 
