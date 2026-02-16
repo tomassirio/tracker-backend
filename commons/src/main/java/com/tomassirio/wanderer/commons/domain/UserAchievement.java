@@ -35,7 +35,7 @@ public class UserAchievement {
     private Achievement achievement;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "trip_id", nullable = false)
+    @JoinColumn(name = "trip_id", nullable = true)
     private Trip trip;
 
     @NotNull

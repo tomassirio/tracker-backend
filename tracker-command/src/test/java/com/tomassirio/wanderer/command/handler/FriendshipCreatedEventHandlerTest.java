@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.Friendship;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
@@ -24,6 +25,7 @@ class FriendshipCreatedEventHandlerTest {
 
     @Mock private EntityManager entityManager;
     @Mock private TypedQuery<Long> countQuery;
+    @Mock private AchievementCalculationService achievementCalculationService;
 
     @InjectMocks private FriendshipCreatedEventHandler handler;
 
@@ -45,6 +47,9 @@ class FriendshipCreatedEventHandlerTest {
 
         // Then
         verify(entityManager, times(2)).persist(any(Friendship.class));
+        // Verify achievement calculation was triggered for both users
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(friendId);
     }
 
     @Test
@@ -65,6 +70,9 @@ class FriendshipCreatedEventHandlerTest {
 
         // Then
         verify(entityManager, never()).persist(any(Friendship.class));
+        // Achievement calculation still triggered even if friendship exists
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(friendId);
     }
 
     @Test
@@ -85,5 +93,8 @@ class FriendshipCreatedEventHandlerTest {
 
         // Then
         verify(entityManager, times(1)).persist(any(Friendship.class));
+        // Achievement calculation triggered for both users
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(friendId);
     }
 }

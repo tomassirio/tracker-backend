@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.Friendship;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCreatedEvent> {
 
     private final EntityManager entityManager;
+    private final AchievementCalculationService achievementCalculationService;
 
     @Override
     @EventListener
@@ -57,6 +59,10 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
                 "Friendship created and persisted between {} and {}",
                 event.getUserId(),
                 event.getFriendId());
+
+        // Check friend achievements for both users
+        achievementCalculationService.checkAndUnlockSocialAchievements(event.getUserId());
+        achievementCalculationService.checkAndUnlockSocialAchievements(event.getFriendId());
     }
 
     private boolean existsFriendship(UUID userId, UUID friendId) {

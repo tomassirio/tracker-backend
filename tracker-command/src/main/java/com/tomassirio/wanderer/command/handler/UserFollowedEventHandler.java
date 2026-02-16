@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.UserFollowedEvent;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserFollowedEventHandler implements EventHandler<UserFollowedEvent> {
 
     private final EntityManager entityManager;
+    private final AchievementCalculationService achievementCalculationService;
 
     @Override
     @EventListener
@@ -46,5 +48,8 @@ public class UserFollowedEventHandler implements EventHandler<UserFollowedEvent>
                 "User follow created and persisted: {} follows {}",
                 event.getFollowerId(),
                 event.getFollowedId());
+
+        // Check follower achievements for the followed user
+        achievementCalculationService.checkAndUnlockSocialAchievements(event.getFollowedId());
     }
 }

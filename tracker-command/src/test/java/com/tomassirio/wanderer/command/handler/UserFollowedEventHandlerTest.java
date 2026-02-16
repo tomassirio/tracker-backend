@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import com.tomassirio.wanderer.command.event.UserFollowedEvent;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
 import jakarta.persistence.EntityManager;
 import java.time.Instant;
@@ -19,6 +20,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UserFollowedEventHandlerTest {
 
     @Mock private EntityManager entityManager;
+
+    @Mock private AchievementCalculationService achievementCalculationService;
 
     @InjectMocks private UserFollowedEventHandler handler;
 
@@ -50,5 +53,8 @@ class UserFollowedEventHandlerTest {
         assertThat(saved.getFollowerId()).isEqualTo(followerId);
         assertThat(saved.getFollowedId()).isEqualTo(followedId);
         assertThat(saved.getCreatedAt()).isEqualTo(createdAt);
+
+        // Verify achievement calculation was triggered
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(followedId);
     }
 }

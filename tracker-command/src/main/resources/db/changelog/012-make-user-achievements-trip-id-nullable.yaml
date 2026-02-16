@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-make-user-achievements-trip-id-nullable
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: user_achievements
+      changes:
+        - dropNotNullConstraint:
+            tableName: user_achievements
+            columnName: trip_id
+            columnDataType: uuid

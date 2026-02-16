@@ -1,9 +1,11 @@
 package com.tomassirio.wanderer.command.service;
 
 import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
+import com.tomassirio.wanderer.command.repository.FriendshipRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.repository.UserAchievementRepository;
+import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -33,6 +35,8 @@ public class AchievementCalculationService {
     private final TripRepository tripRepository;
     private final TripUpdateRepository tripUpdateRepository;
     private final UserAchievementRepository userAchievementRepository;
+    private final FriendshipRepository friendshipRepository;
+    private final UserFollowRepository userFollowRepository;
     private final EntityManager entityManager;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -58,6 +62,20 @@ public class AchievementCalculationService {
         checkDurationAchievements(trip);
     }
 
+    /**
+     * Checks and unlocks social achievements for a user (followers and friends).
+     *
+     * @param userId the user ID to check achievements for
+     */
+    @Transactional
+    public void checkAndUnlockSocialAchievements(UUID userId) {
+        // Check follower achievements
+        checkFollowerAchievements(userId);
+
+        // Check friend achievements
+        checkFriendAchievements(userId);
+    }
+
     private void checkUpdateCountAchievements(Trip trip) {
         long updateCount = tripUpdateRepository.countByTripId(trip.getId());
 
@@ -80,9 +98,12 @@ public class AchievementCalculationService {
         for (AchievementType type :
                 List.of(
                         AchievementType.DISTANCE_100KM,
+                        AchievementType.DISTANCE_200KM,
                         AchievementType.DISTANCE_500KM,
                         AchievementType.DISTANCE_800KM,
-                        AchievementType.DISTANCE_1000KM)) {
+                        AchievementType.DISTANCE_1000KM,
+                        AchievementType.DISTANCE_1600KM,
+                        AchievementType.DISTANCE_2200KM)) {
             if (distanceKm >= type.getThreshold()) {
                 unlockAchievementIfNotExists(trip, type, distanceKm);
             }
@@ -106,9 +127,43 @@ public class AchievementCalculationService {
                 List.of(
                         AchievementType.DURATION_7_DAYS,
                         AchievementType.DURATION_30_DAYS,
+                        AchievementType.DURATION_45_DAYS,
                         AchievementType.DURATION_60_DAYS)) {
             if (durationDays >= type.getThreshold()) {
                 unlockAchievementIfNotExists(trip, type, (double) durationDays);
+            }
+        }
+    }
+
+    private void checkFollowerAchievements(UUID userId) {
+        // Count followers (users who follow this user)
+        long followerCount =
+                userFollowRepository.findByFollowedId(userId).stream()
+                        .filter(follow -> follow.getFollowedId().equals(userId))
+                        .count();
+
+        for (AchievementType type :
+                List.of(
+                        AchievementType.FOLLOWERS_10,
+                        AchievementType.FOLLOWERS_50,
+                        AchievementType.FOLLOWERS_100)) {
+            if (followerCount >= type.getThreshold()) {
+                unlockSocialAchievementIfNotExists(userId, type, (double) followerCount);
+            }
+        }
+    }
+
+    private void checkFriendAchievements(UUID userId) {
+        // Count friends
+        long friendCount = friendshipRepository.findByUserId(userId).size();
+
+        for (AchievementType type :
+                List.of(
+                        AchievementType.FRIENDS_5,
+                        AchievementType.FRIENDS_20,
+                        AchievementType.FRIENDS_50)) {
+            if (friendCount >= type.getThreshold()) {
+                unlockSocialAchievementIfNotExists(userId, type, (double) friendCount);
             }
         }
     }
@@ -211,6 +266,45 @@ public class AchievementCalculationService {
                 type,
                 trip.getUserId(),
                 trip.getId());
+    }
+
+    private void unlockSocialAchievementIfNotExists(
+            UUID userId, AchievementType type, Double value) {
+        // Check if user already has this social achievement (trip_id is null for social
+        // achievements)
+        boolean exists =
+                entityManager
+                        .createQuery(
+                                "SELECT COUNT(ua) > 0 FROM UserAchievement ua JOIN ua.achievement a "
+                                        + "WHERE ua.user.id = :userId AND a.type = :type AND ua.trip IS NULL",
+                                Boolean.class)
+                        .setParameter("userId", userId)
+                        .setParameter("type", type)
+                        .getSingleResult();
+
+        if (exists) {
+            log.debug("Social achievement {} already unlocked for user {}", type, userId);
+            return;
+        }
+
+        // Get or create achievement
+        Achievement achievement = getOrCreateAchievement(type);
+
+        // Publish achievement unlocked event (with null tripId for social achievements)
+        UUID userAchievementId = UUID.randomUUID();
+        eventPublisher.publishEvent(
+                AchievementUnlockedEvent.builder()
+                        .userAchievementId(userAchievementId)
+                        .userId(userId)
+                        .achievementId(achievement.getId())
+                        .tripId(null) // Social achievements are not tied to a specific trip
+                        .achievementType(type)
+                        .achievementName(achievement.getName())
+                        .valueAchieved(value)
+                        .unlockedAt(Instant.now())
+                        .build());
+
+        log.info("Social achievement {} unlocked for user {}", type, userId);
     }
 
     private Achievement getOrCreateAchievement(AchievementType type) {

@@ -21,3 +21,5 @@ databaseChangeLog:
       file: db/changelog/010-create-achievements-table.yaml
   - include:
       file: db/changelog/011-create-user-achievements-table.yaml
+  - include:
+      file: db/changelog/012-make-user-achievements-trip-id-nullable.yaml
