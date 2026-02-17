@@ -4,10 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
+import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
-import jakarta.persistence.EntityManager;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FriendRequestDeclinedEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
+    @Mock private FriendRequestRepository friendRequestRepository;
 
     @InjectMocks private FriendRequestDeclinedEventHandler handler;
 
@@ -42,7 +43,7 @@ class FriendRequestDeclinedEventHandlerTest {
                         .receiverId(request.getReceiverId())
                         .build();
 
-        when(entityManager.find(FriendRequest.class, requestId)).thenReturn(request);
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(request));
 
         // When
         handler.handle(event);

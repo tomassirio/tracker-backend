@@ -4,10 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.CommentReactionEvent;
+import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
-import jakarta.persistence.EntityManager;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CommentReactionEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
+    @Mock private CommentRepository commentRepository;
 
     @InjectMocks private CommentReactionEventHandler handler;
 
@@ -37,7 +38,7 @@ class CommentReactionEventHandlerTest {
                         .added(true)
                         .build();
 
-        when(entityManager.find(Comment.class, commentId)).thenReturn(comment);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
         // When
         handler.handle(event);
@@ -60,7 +61,7 @@ class CommentReactionEventHandlerTest {
                         .added(false)
                         .build();
 
-        when(entityManager.find(Comment.class, commentId)).thenReturn(comment);
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
 
         // When
         handler.handle(event);

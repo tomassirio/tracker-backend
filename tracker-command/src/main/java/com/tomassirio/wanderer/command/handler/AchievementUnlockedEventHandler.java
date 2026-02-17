@@ -1,11 +1,14 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
+import com.tomassirio.wanderer.command.repository.AchievementRepository;
+import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.UserAchievementRepository;
+import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.domain.UserAchievement;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -25,7 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AchievementUnlockedEventHandler implements EventHandler<AchievementUnlockedEvent> {
 
-    private final EntityManager entityManager;
+    private final UserRepository userRepository;
+    private final AchievementRepository achievementRepository;
+    private final TripRepository tripRepository;
+    private final UserAchievementRepository userAchievementRepository;
 
     @Override
     @EventListener
@@ -36,13 +42,12 @@ public class AchievementUnlockedEventHandler implements EventHandler<Achievement
                 event.getUserId(),
                 event.getAchievementType());
 
-        // Use entityManager.getReference() to create proxies without loading the entities
-        User user = entityManager.getReference(User.class, event.getUserId());
-        Achievement achievement =
-                entityManager.getReference(Achievement.class, event.getAchievementId());
+        // Use repository.getReferenceById() to create proxies without loading the entities
+        User user = userRepository.getReferenceById(event.getUserId());
+        Achievement achievement = achievementRepository.getReferenceById(event.getAchievementId());
         Trip trip =
                 event.getTripId() != null
-                        ? entityManager.getReference(Trip.class, event.getTripId())
+                        ? tripRepository.getReferenceById(event.getTripId())
                         : null;
 
         UserAchievement unlockedAchievement =
@@ -55,7 +60,7 @@ public class AchievementUnlockedEventHandler implements EventHandler<Achievement
                         .valueAchieved(event.getValueAchieved())
                         .build();
 
-        entityManager.persist(unlockedAchievement);
+        userAchievementRepository.save(unlockedAchievement);
         log.info(
                 "Achievement unlocked and persisted: {} for user: {}",
                 event.getAchievementType(),

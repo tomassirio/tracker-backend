@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import com.tomassirio.wanderer.command.event.TripPlanCreatedEvent;
+import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
-import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -23,7 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TripPlanCreatedEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
+    @Mock private TripPlanRepository tripPlanRepository;
 
     @InjectMocks private TripPlanCreatedEventHandler handler;
 
@@ -58,7 +58,7 @@ class TripPlanCreatedEventHandlerTest {
 
         // Then
         ArgumentCaptor<TripPlan> captor = ArgumentCaptor.forClass(TripPlan.class);
-        verify(entityManager).persist(captor.capture());
+        verify(tripPlanRepository).save(captor.capture());
 
         TripPlan saved = captor.getValue();
         assertThat(saved.getId()).isEqualTo(tripPlanId);

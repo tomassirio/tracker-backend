@@ -1,10 +1,9 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
+import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
-import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -24,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripVisibilityChangedEventHandler implements EventHandler<TripVisibilityChangedEvent> {
 
-    private final EntityManager entityManager;
+    private final TripRepository tripRepository;
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
 
     @Override
@@ -33,13 +32,18 @@ public class TripVisibilityChangedEventHandler implements EventHandler<TripVisib
     public void handle(TripVisibilityChangedEvent event) {
         log.debug("Persisting TripVisibilityChangedEvent for trip: {}", event.getTripId());
 
-        Trip trip = entityManager.find(Trip.class, event.getTripId());
-        if (trip != null) {
-            embeddedObjectsInitializer.ensureTripSettings(
-                    trip, TripVisibility.valueOf(event.getNewVisibility()));
-            trip.getTripSettings().setVisibility(TripVisibility.valueOf(event.getNewVisibility()));
-            // No need to call save() - entity is managed and will be flushed automatically
-            log.info("Trip visibility changed: {}", event.getTripId());
-        }
+        tripRepository
+                .findById(event.getTripId())
+                .ifPresent(
+                        trip -> {
+                            embeddedObjectsInitializer.ensureTripSettings(
+                                    trip, TripVisibility.valueOf(event.getNewVisibility()));
+                            trip.getTripSettings()
+                                    .setVisibility(
+                                            TripVisibility.valueOf(event.getNewVisibility()));
+                            // No need to call save() - entity is managed and will be flushed
+                            // automatically
+                            log.info("Trip visibility changed: {}", event.getTripId());
+                        });
     }
 }

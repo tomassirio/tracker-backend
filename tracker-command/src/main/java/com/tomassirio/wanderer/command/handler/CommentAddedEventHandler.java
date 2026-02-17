@@ -1,11 +1,13 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.CommentAddedEvent;
+import com.tomassirio.wanderer.command.repository.CommentRepository;
+import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -26,7 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CommentAddedEventHandler implements EventHandler<CommentAddedEvent> {
 
-    private final EntityManager entityManager;
+    private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
+    private final TripRepository tripRepository;
 
     @Override
     @EventListener
@@ -34,13 +38,13 @@ public class CommentAddedEventHandler implements EventHandler<CommentAddedEvent>
     public void handle(CommentAddedEvent event) {
         log.debug("Persisting CommentAddedEvent for comment: {}", event.getCommentId());
 
-        // Use entityManager.getReference() to ensure proxies are in the same persistence context
-        User user = entityManager.getReference(User.class, event.getUserId());
-        Trip trip = entityManager.getReference(Trip.class, event.getTripId());
+        // Use repository.getReferenceById() to get proxies without loading the entities
+        User user = userRepository.getReferenceById(event.getUserId());
+        Trip trip = tripRepository.getReferenceById(event.getTripId());
 
         Comment parentComment = null;
         if (event.getParentCommentId() != null) {
-            parentComment = entityManager.getReference(Comment.class, event.getParentCommentId());
+            parentComment = commentRepository.getReferenceById(event.getParentCommentId());
         }
 
         Comment comment =
@@ -54,7 +58,7 @@ public class CommentAddedEventHandler implements EventHandler<CommentAddedEvent>
                         .timestamp(event.getTimestamp())
                         .build();
 
-        entityManager.persist(comment);
+        commentRepository.save(comment);
         log.info("Comment created and persisted: {}", event.getCommentId());
     }
 }

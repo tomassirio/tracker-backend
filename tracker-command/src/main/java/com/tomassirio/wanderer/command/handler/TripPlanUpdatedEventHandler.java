@@ -1,9 +1,8 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripPlanUpdatedEvent;
+import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
-import com.tomassirio.wanderer.commons.domain.TripPlan;
-import jakarta.persistence.EntityManager;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdatedEvent> {
 
-    private final EntityManager entityManager;
+    private final TripPlanRepository tripPlanRepository;
     private final TripPlanMetadataProcessor metadataProcessor;
 
     @Override
@@ -32,20 +31,26 @@ public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdated
     public void handle(TripPlanUpdatedEvent event) {
         log.debug("Persisting TripPlanUpdatedEvent for trip plan: {}", event.getTripPlanId());
 
-        // Use entityManager.find() to load the actual entity for update
-        TripPlan tripPlan = entityManager.find(TripPlan.class, event.getTripPlanId());
+        tripPlanRepository
+                .findById(event.getTripPlanId())
+                .ifPresent(
+                        tripPlan -> {
+                            tripPlan.setName(event.getName());
+                            tripPlan.setStartDate(event.getStartDate());
+                            tripPlan.setEndDate(event.getEndDate());
+                            tripPlan.setStartLocation(event.getStartLocation());
+                            tripPlan.setEndLocation(event.getEndLocation());
+                            tripPlan.setWaypoints(
+                                    event.getWaypoints() != null
+                                            ? event.getWaypoints()
+                                            : List.of());
 
-        tripPlan.setName(event.getName());
-        tripPlan.setStartDate(event.getStartDate());
-        tripPlan.setEndDate(event.getEndDate());
-        tripPlan.setStartLocation(event.getStartLocation());
-        tripPlan.setEndLocation(event.getEndLocation());
-        tripPlan.setWaypoints(event.getWaypoints() != null ? event.getWaypoints() : List.of());
+                            // Re-validate metadata for the plan type
+                            metadataProcessor.applyMetadata(tripPlan, tripPlan.getMetadata());
 
-        // Re-validate metadata for the plan type
-        metadataProcessor.applyMetadata(tripPlan, tripPlan.getMetadata());
-
-        // No need to call save() - entity is managed and will be flushed automatically
-        log.info("Trip plan updated and persisted: {}", event.getTripPlanId());
+                            // No need to call save() - entity is managed and will be flushed
+                            // automatically
+                            log.info("Trip plan updated and persisted: {}", event.getTripPlanId());
+                        });
     }
 }

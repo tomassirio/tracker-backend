@@ -5,11 +5,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.CommentAddedEvent;
+import com.tomassirio.wanderer.command.repository.CommentRepository;
+import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.Comment;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.User;
-import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -22,7 +24,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CommentAddedEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
+    @Mock private CommentRepository commentRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private TripRepository tripRepository;
 
     @InjectMocks private CommentAddedEventHandler handler;
 
@@ -48,15 +52,15 @@ class CommentAddedEventHandlerTest {
                         .timestamp(timestamp)
                         .build();
 
-        when(entityManager.getReference(User.class, userId)).thenReturn(user);
-        when(entityManager.getReference(Trip.class, tripId)).thenReturn(trip);
+        when(userRepository.getReferenceById(userId)).thenReturn(user);
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
 
         // When
         handler.handle(event);
 
         // Then
         ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
-        verify(entityManager).persist(commentCaptor.capture());
+        verify(commentRepository).save(commentCaptor.capture());
 
         Comment savedComment = commentCaptor.getValue();
         assertThat(savedComment.getId()).isEqualTo(commentId);
@@ -99,16 +103,16 @@ class CommentAddedEventHandlerTest {
                         .timestamp(timestamp)
                         .build();
 
-        when(entityManager.getReference(User.class, userId)).thenReturn(user);
-        when(entityManager.getReference(Trip.class, tripId)).thenReturn(trip);
-        when(entityManager.getReference(Comment.class, parentCommentId)).thenReturn(parentComment);
+        when(userRepository.getReferenceById(userId)).thenReturn(user);
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+        when(commentRepository.getReferenceById(parentCommentId)).thenReturn(parentComment);
 
         // When
         handler.handle(event);
 
         // Then
         ArgumentCaptor<Comment> commentCaptor = ArgumentCaptor.forClass(Comment.class);
-        verify(entityManager).persist(commentCaptor.capture());
+        verify(commentRepository).save(commentCaptor.capture());
 
         Comment savedComment = commentCaptor.getValue();
         assertThat(savedComment.getParentComment()).isEqualTo(parentComment);

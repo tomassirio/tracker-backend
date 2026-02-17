@@ -1,10 +1,10 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripCreatedEvent;
+import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TripCreatedEventHandler implements EventHandler<TripCreatedEvent> {
 
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
-    private final EntityManager entityManager;
+    private final TripRepository tripRepository;
 
     @Override
     @EventListener
@@ -55,7 +55,7 @@ public class TripCreatedEventHandler implements EventHandler<TripCreatedEvent> {
                         .enabled(true)
                         .build();
 
-        entityManager.persist(trip);
+        tripRepository.save(trip);
         log.info("Trip created and persisted: {}", event.getTripId());
     }
 }

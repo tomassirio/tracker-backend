@@ -1,10 +1,11 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
+import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -25,7 +26,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
 
-    private final EntityManager entityManager;
+    private final TripRepository tripRepository;
+    private final TripUpdateRepository tripUpdateRepository;
     private final AchievementCalculationService achievementCalculationService;
 
     @Override
@@ -34,8 +36,8 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
     public void handle(TripUpdatedEvent event) {
         log.debug("Persisting TripUpdatedEvent for trip: {}", event.getTripId());
 
-        // Use entityManager.getReference() to ensure proxy is in the same persistence context
-        Trip trip = entityManager.getReference(Trip.class, event.getTripId());
+        // Use repository.getReferenceById() to get a proxy without loading the entity
+        Trip trip = tripRepository.getReferenceById(event.getTripId());
 
         TripUpdate tripUpdate =
                 TripUpdate.builder()
@@ -47,7 +49,7 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
                         .timestamp(event.getTimestamp())
                         .build();
 
-        entityManager.persist(tripUpdate);
+        tripUpdateRepository.save(tripUpdate);
         log.info("Trip update created and persisted: {}", event.getTripUpdateId());
 
         // Check and unlock achievements after persisting the update

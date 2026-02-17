@@ -2,16 +2,18 @@ package com.tomassirio.wanderer.command.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
+import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import jakarta.persistence.EntityManager;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TripStatusChangedEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
+    @Mock private TripRepository tripRepository;
 
     @Mock private TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
 
@@ -48,7 +50,7 @@ class TripStatusChangedEventHandlerTest {
                         .build();
         Trip trip = Trip.builder().id(tripId).tripSettings(tripSettings).build();
 
-        when(entityManager.find(Trip.class, tripId)).thenReturn(trip);
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
 
         // When
         handler.handle(event);
@@ -82,7 +84,7 @@ class TripStatusChangedEventHandlerTest {
                         .build();
         Trip trip = Trip.builder().id(tripId).tripSettings(tripSettings).build();
 
-        when(entityManager.find(Trip.class, tripId)).thenReturn(trip);
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
 
         // When
         handler.handle(event);
@@ -102,13 +104,14 @@ class TripStatusChangedEventHandlerTest {
                         .newStatus("IN_PROGRESS")
                         .build();
 
-        when(entityManager.find(Trip.class, tripId)).thenReturn(null);
+        when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
 
         // When
         handler.handle(event);
 
         // Then
-        verify(entityManager).find(Trip.class, tripId);
-        // Handler should not call any methods on embeddedObjectsInitializer when trip is null
+        verify(tripRepository).findById(tripId);
+        // Handler should not call any methods on embeddedObjectsInitializer when trip is not found
+        verifyNoInteractions(embeddedObjectsInitializer);
     }
 }
