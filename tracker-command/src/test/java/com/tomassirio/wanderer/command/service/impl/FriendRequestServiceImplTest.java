@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.tomassirio.wanderer.command.event.FriendRequestAcceptedEvent;
+import com.tomassirio.wanderer.command.event.FriendRequestCancelledEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;

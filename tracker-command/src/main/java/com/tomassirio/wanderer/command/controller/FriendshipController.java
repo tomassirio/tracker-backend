@@ -55,4 +55,3 @@ public class FriendshipController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 }
-

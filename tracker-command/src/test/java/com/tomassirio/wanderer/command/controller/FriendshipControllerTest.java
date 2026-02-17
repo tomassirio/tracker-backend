@@ -56,8 +56,7 @@ class FriendshipControllerTest {
     void removeFriend_Success() throws Exception {
         doNothing().when(friendshipService).removeFriendship(eq(userId), eq(friendId));
 
-        mockMvc.perform(
-                        delete("/api/1/users/friends/" + friendId).header("Authorization", token))
+        mockMvc.perform(delete("/api/1/users/friends/" + friendId).header("Authorization", token))
                 .andExpect(status().isAccepted());
 
         verify(friendshipService).removeFriendship(userId, friendId);
@@ -69,11 +68,9 @@ class FriendshipControllerTest {
                 .when(friendshipService)
                 .removeFriendship(eq(userId), eq(friendId));
 
-        mockMvc.perform(
-                        delete("/api/1/users/friends/" + friendId).header("Authorization", token))
+        mockMvc.perform(delete("/api/1/users/friends/" + friendId).header("Authorization", token))
                 .andExpect(status().isBadRequest());
 
         verify(friendshipService).removeFriendship(userId, friendId);
     }
 }
-

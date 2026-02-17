@@ -76,6 +76,7 @@ public final class ApiConstants {
     public static final String FRIEND_REQUESTS_SENT_ENDPOINT = SENT_SUFFIX;
     public static final String FRIEND_REQUEST_ACCEPT_ENDPOINT = "/{requestId}/accept";
     public static final String FRIEND_REQUEST_DECLINE_ENDPOINT = "/{requestId}/decline";
+    public static final String FRIEND_REQUEST_CANCEL_ENDPOINT = "/{requestId}/cancel";
 
     // ============================================================
     // Follows endpoints
