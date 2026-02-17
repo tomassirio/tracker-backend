@@ -2,10 +2,10 @@
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen?logo=spring&logoColor=white)
-![Version](https://img.shields.io/badge/version-0.4.19-blue)
+![Version](https://img.shields.io/badge/version-0.4.20-blue)
 ![Build Status](https://img.shields.io/github/actions/workflow/status/tomassirio/tracker-backend/merge.yml?branch=main&label=build)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Coverage](https://img.shields.io/badge/coverage-50%25-orange)
+![Coverage](https://img.shields.io/badge/coverage-49%25-orange)
 
 ![PostgresSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-enabled-2496ED?logo=docker&logoColor=white)
