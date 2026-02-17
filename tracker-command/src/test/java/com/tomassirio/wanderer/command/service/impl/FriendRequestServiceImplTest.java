@@ -243,4 +243,64 @@ class FriendRequestServiceImplTest {
 
         verify(eventPublisher, never()).publishEvent(any(FriendRequestDeclinedEvent.class));
     }
+
+    @Test
+    void cancelFriendRequest_Success() {
+        // Given
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+
+        // When
+        UUID response = friendRequestService.cancelFriendRequest(requestId, senderId);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response).isEqualTo(requestId);
+
+        ArgumentCaptor<FriendRequestCancelledEvent> eventCaptor =
+                ArgumentCaptor.forClass(FriendRequestCancelledEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        FriendRequestCancelledEvent event = eventCaptor.getValue();
+        assertThat(event.getRequestId()).isEqualTo(requestId);
+        assertThat(event.getSenderId()).isEqualTo(senderId);
+        assertThat(event.getReceiverId()).isEqualTo(receiverId);
+    }
+
+    @Test
+    void cancelFriendRequest_NotSender_ThrowsException() {
+        // Given
+        UUID wrongUser = UUID.randomUUID();
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+
+        // When & Then
+        assertThatThrownBy(() -> friendRequestService.cancelFriendRequest(requestId, wrongUser))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(eventPublisher, never()).publishEvent(any(FriendRequestCancelledEvent.class));
+    }
+
+    @Test
+    void cancelFriendRequest_NotPending_ThrowsException() {
+        // Given
+        friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+
+        // When & Then
+        assertThatThrownBy(() -> friendRequestService.cancelFriendRequest(requestId, senderId))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(eventPublisher, never()).publishEvent(any(FriendRequestCancelledEvent.class));
+    }
+
+    @Test
+    void cancelFriendRequest_NotFound_ThrowsException() {
+        // Given
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> friendRequestService.cancelFriendRequest(requestId, senderId))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        verify(eventPublisher, never()).publishEvent(any(FriendRequestCancelledEvent.class));
+    }
 }

@@ -134,4 +134,34 @@ public class FriendRequestServiceImpl implements FriendRequestService {
 
         return requestId;
     }
+
+    @Override
+    public UUID cancelFriendRequest(UUID requestId, UUID userId) {
+        log.info("User {} cancelling friend request {}", userId, requestId);
+
+        FriendRequest request =
+                friendRequestRepository
+                        .findById(requestId)
+                        .orElseThrow(() -> new EntityNotFoundException("Friend request not found"));
+
+        if (!request.getSenderId().equals(userId)) {
+            throw new IllegalArgumentException("Only the sender can cancel the friend request");
+        }
+
+        if (request.getStatus() != FriendRequestStatus.PENDING) {
+            throw new IllegalArgumentException("Friend request is not pending");
+        }
+
+        // Publish event - persistence handler will delete from DB
+        eventPublisher.publishEvent(
+                FriendRequestCancelledEvent.builder()
+                        .requestId(requestId)
+                        .senderId(request.getSenderId())
+                        .receiverId(request.getReceiverId())
+                        .build());
+
+        log.info("Friend request {} cancelled", requestId);
+
+        return requestId;
+    }
 }

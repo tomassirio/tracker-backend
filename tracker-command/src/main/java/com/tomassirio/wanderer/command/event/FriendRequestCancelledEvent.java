@@ -51,4 +51,3 @@ public class FriendRequestCancelledEvent implements DomainEvent, Broadcastable {
                 .build();
     }
 }
-
