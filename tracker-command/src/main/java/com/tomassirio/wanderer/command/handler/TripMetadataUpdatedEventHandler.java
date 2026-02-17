@@ -1,10 +1,9 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;
+import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
-import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -24,7 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripMetadataUpdatedEventHandler implements EventHandler<TripMetadataUpdatedEvent> {
 
-    private final EntityManager entityManager;
+    private final TripRepository tripRepository;
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
 
     @Override
@@ -33,15 +32,19 @@ public class TripMetadataUpdatedEventHandler implements EventHandler<TripMetadat
     public void handle(TripMetadataUpdatedEvent event) {
         log.debug("Persisting TripMetadataUpdatedEvent for trip: {}", event.getTripId());
 
-        Trip trip = entityManager.find(Trip.class, event.getTripId());
-        if (trip != null) {
-            trip.setName(event.getTripName());
-            embeddedObjectsInitializer.ensureTripSettings(
-                    trip, TripVisibility.valueOf(event.getVisibility()));
-            trip.getTripSettings().setVisibility(TripVisibility.valueOf(event.getVisibility()));
-            embeddedObjectsInitializer.ensureTripDetails(trip);
-            // No need to call save() - entity is managed and will be flushed automatically
-            log.info("Trip metadata updated: {}", event.getTripId());
-        }
+        tripRepository
+                .findById(event.getTripId())
+                .ifPresent(
+                        trip -> {
+                            trip.setName(event.getTripName());
+                            embeddedObjectsInitializer.ensureTripSettings(
+                                    trip, TripVisibility.valueOf(event.getVisibility()));
+                            trip.getTripSettings()
+                                    .setVisibility(TripVisibility.valueOf(event.getVisibility()));
+                            embeddedObjectsInitializer.ensureTripDetails(trip);
+                            // No need to call save() - entity is managed and will be flushed
+                            // automatically
+                            log.info("Trip metadata updated: {}", event.getTripId());
+                        });
     }
 }

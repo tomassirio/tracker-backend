@@ -1,8 +1,9 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
+import com.tomassirio.wanderer.command.repository.FriendshipRepository;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.Friendship;
-import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCreatedEvent> {
 
-    private final EntityManager entityManager;
+    private final FriendshipRepository friendshipRepository;
+    private final AchievementCalculationService achievementCalculationService;
 
     @Override
     @EventListener
@@ -31,7 +33,8 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
         Instant now = Instant.now();
 
         // Create bidirectional friendship
-        if (!existsFriendship(event.getUserId(), event.getFriendId())) {
+        if (!friendshipRepository.existsByUserIdAndFriendId(
+                event.getUserId(), event.getFriendId())) {
             Friendship friendship1 =
                     Friendship.builder()
                             .id(UUID.randomUUID())
@@ -39,10 +42,11 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
                             .friendId(event.getFriendId())
                             .createdAt(now)
                             .build();
-            entityManager.persist(friendship1);
+            friendshipRepository.save(friendship1);
         }
 
-        if (!existsFriendship(event.getFriendId(), event.getUserId())) {
+        if (!friendshipRepository.existsByUserIdAndFriendId(
+                event.getFriendId(), event.getUserId())) {
             Friendship friendship2 =
                     Friendship.builder()
                             .id(UUID.randomUUID())
@@ -50,24 +54,16 @@ public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCre
                             .friendId(event.getUserId())
                             .createdAt(now)
                             .build();
-            entityManager.persist(friendship2);
+            friendshipRepository.save(friendship2);
         }
 
         log.info(
                 "Friendship created and persisted between {} and {}",
                 event.getUserId(),
                 event.getFriendId());
-    }
 
-    private boolean existsFriendship(UUID userId, UUID friendId) {
-        Long count =
-                entityManager
-                        .createQuery(
-                                "SELECT COUNT(f) FROM Friendship f WHERE f.userId = :userId AND f.friendId = :friendId",
-                                Long.class)
-                        .setParameter("userId", userId)
-                        .setParameter("friendId", friendId)
-                        .getSingleResult();
-        return count > 0;
+        // Check friend achievements for both users
+        achievementCalculationService.checkAndUnlockSocialAchievements(event.getUserId());
+        achievementCalculationService.checkAndUnlockSocialAchievements(event.getFriendId());
     }
 }

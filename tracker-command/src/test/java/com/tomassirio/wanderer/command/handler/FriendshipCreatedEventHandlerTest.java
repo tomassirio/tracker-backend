@@ -1,17 +1,15 @@
 package com.tomassirio.wanderer.command.handler;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
+import com.tomassirio.wanderer.command.repository.FriendshipRepository;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.Friendship;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,8 +20,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class FriendshipCreatedEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
-    @Mock private TypedQuery<Long> countQuery;
+    @Mock private FriendshipRepository friendshipRepository;
+    @Mock private AchievementCalculationService achievementCalculationService;
 
     @InjectMocks private FriendshipCreatedEventHandler handler;
 
@@ -36,15 +34,17 @@ class FriendshipCreatedEventHandlerTest {
         FriendshipCreatedEvent event =
                 FriendshipCreatedEvent.builder().userId(userId).friendId(friendId).build();
 
-        when(entityManager.createQuery(anyString(), eq(Long.class))).thenReturn(countQuery);
-        when(countQuery.setParameter(anyString(), any())).thenReturn(countQuery);
-        when(countQuery.getSingleResult()).thenReturn(0L);
+        when(friendshipRepository.existsByUserIdAndFriendId(userId, friendId)).thenReturn(false);
+        when(friendshipRepository.existsByUserIdAndFriendId(friendId, userId)).thenReturn(false);
 
         // When
         handler.handle(event);
 
         // Then
-        verify(entityManager, times(2)).persist(any(Friendship.class));
+        verify(friendshipRepository, times(2)).save(any(Friendship.class));
+        // Verify achievement calculation was triggered for both users
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(friendId);
     }
 
     @Test
@@ -56,15 +56,17 @@ class FriendshipCreatedEventHandlerTest {
         FriendshipCreatedEvent event =
                 FriendshipCreatedEvent.builder().userId(userId).friendId(friendId).build();
 
-        when(entityManager.createQuery(anyString(), eq(Long.class))).thenReturn(countQuery);
-        when(countQuery.setParameter(anyString(), any())).thenReturn(countQuery);
-        when(countQuery.getSingleResult()).thenReturn(1L);
+        when(friendshipRepository.existsByUserIdAndFriendId(userId, friendId)).thenReturn(true);
+        when(friendshipRepository.existsByUserIdAndFriendId(friendId, userId)).thenReturn(true);
 
         // When
         handler.handle(event);
 
         // Then
-        verify(entityManager, never()).persist(any(Friendship.class));
+        verify(friendshipRepository, never()).save(any(Friendship.class));
+        // Achievement calculation still triggered even if friendship exists
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(friendId);
     }
 
     @Test
@@ -76,14 +78,16 @@ class FriendshipCreatedEventHandlerTest {
         FriendshipCreatedEvent event =
                 FriendshipCreatedEvent.builder().userId(userId).friendId(friendId).build();
 
-        when(entityManager.createQuery(anyString(), eq(Long.class))).thenReturn(countQuery);
-        when(countQuery.setParameter(anyString(), any())).thenReturn(countQuery);
-        when(countQuery.getSingleResult()).thenReturn(1L, 0L);
+        when(friendshipRepository.existsByUserIdAndFriendId(userId, friendId)).thenReturn(true);
+        when(friendshipRepository.existsByUserIdAndFriendId(friendId, userId)).thenReturn(false);
 
         // When
         handler.handle(event);
 
         // Then
-        verify(entityManager, times(1)).persist(any(Friendship.class));
+        verify(friendshipRepository, times(1)).save(any(Friendship.class));
+        // Achievement calculation triggered for both users
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(friendId);
     }
 }

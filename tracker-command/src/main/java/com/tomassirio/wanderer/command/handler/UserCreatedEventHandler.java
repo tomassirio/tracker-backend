@@ -1,8 +1,8 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.UserCreatedEvent;
+import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.User;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserCreatedEventHandler implements EventHandler<UserCreatedEvent> {
 
-    private final EntityManager entityManager;
+    private final UserRepository userRepository;
 
     @Override
     @EventListener
@@ -25,7 +25,7 @@ public class UserCreatedEventHandler implements EventHandler<UserCreatedEvent> {
 
         User user = User.builder().id(event.getUserId()).username(event.getUsername()).build();
 
-        entityManager.persist(user);
+        userRepository.save(user);
         log.info("User created and persisted: {}", event.getUserId());
     }
 }

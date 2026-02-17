@@ -44,6 +44,9 @@ public final class WebSocketEventType {
     public static final String USER_FOLLOWED = "USER_FOLLOWED";
     public static final String USER_UNFOLLOWED = "USER_UNFOLLOWED";
 
+    // Achievement events
+    public static final String ACHIEVEMENT_UNLOCKED = "ACHIEVEMENT_UNLOCKED";
+
     // ==================== TOPIC PATTERNS ====================
 
     private static final String TOPIC_TRIPS_PREFIX = "/topic/trips/";

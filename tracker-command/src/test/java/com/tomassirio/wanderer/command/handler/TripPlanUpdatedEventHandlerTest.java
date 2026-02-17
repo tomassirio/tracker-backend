@@ -5,15 +5,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.TripPlanUpdatedEvent;
+import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
-import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TripPlanUpdatedEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
+    @Mock private TripPlanRepository tripPlanRepository;
     @Mock private TripPlanMetadataProcessor metadataProcessor;
 
     @InjectMocks private TripPlanUpdatedEventHandler handler;
@@ -61,7 +62,7 @@ class TripPlanUpdatedEventHandlerTest {
                         .waypoints(List.of())
                         .build();
 
-        when(entityManager.find(TripPlan.class, tripPlanId)).thenReturn(existingPlan);
+        when(tripPlanRepository.findById(tripPlanId)).thenReturn(Optional.of(existingPlan));
 
         // When
         handler.handle(event);

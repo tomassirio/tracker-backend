@@ -1,17 +1,13 @@
 package com.tomassirio.wanderer.command.handler;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.UserUnfollowedEvent;
+import com.tomassirio.wanderer.command.repository.UserFollowRepository;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.TypedQuery;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,8 +17,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class UserUnfollowedEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
-    @Mock private TypedQuery<UserFollow> userFollowQuery;
+    @Mock private UserFollowRepository userFollowRepository;
 
     @InjectMocks private UserUnfollowedEventHandler handler;
 
@@ -41,15 +36,13 @@ class UserUnfollowedEventHandlerTest {
         UserUnfollowedEvent event =
                 UserUnfollowedEvent.builder().followerId(followerId).followedId(followedId).build();
 
-        when(entityManager.createQuery(anyString(), eq(UserFollow.class)))
-                .thenReturn(userFollowQuery);
-        when(userFollowQuery.setParameter(anyString(), any())).thenReturn(userFollowQuery);
-        when(userFollowQuery.getResultStream()).thenReturn(Stream.of(userFollow));
+        when(userFollowRepository.findByFollowerIdAndFollowedId(followerId, followedId))
+                .thenReturn(Optional.of(userFollow));
 
         // When
         handler.handle(event);
 
         // Then
-        verify(entityManager).remove(userFollow);
+        verify(userFollowRepository).delete(userFollow);
     }
 }

@@ -1,11 +1,10 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
+import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.command.service.helper.TripStatusTransitionHandler;
-import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -25,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripStatusChangedEventHandler implements EventHandler<TripStatusChangedEvent> {
 
-    private final EntityManager entityManager;
+    private final TripRepository tripRepository;
     private final TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
     private final TripStatusTransitionHandler statusTransitionHandler;
 
@@ -35,21 +34,26 @@ public class TripStatusChangedEventHandler implements EventHandler<TripStatusCha
     public void handle(TripStatusChangedEvent event) {
         log.debug("Persisting TripStatusChangedEvent for trip: {}", event.getTripId());
 
-        Trip trip = entityManager.find(Trip.class, event.getTripId());
-        if (trip != null) {
-            TripStatus previousStatus =
-                    event.getPreviousStatus() != null
-                            ? TripStatus.valueOf(event.getPreviousStatus())
-                            : null;
-            TripStatus newStatus = TripStatus.valueOf(event.getNewStatus());
+        tripRepository
+                .findById(event.getTripId())
+                .ifPresent(
+                        trip -> {
+                            TripStatus previousStatus =
+                                    event.getPreviousStatus() != null
+                                            ? TripStatus.valueOf(event.getPreviousStatus())
+                                            : null;
+                            TripStatus newStatus = TripStatus.valueOf(event.getNewStatus());
 
-            embeddedObjectsInitializer.ensureTripSettingsAndGetPreviousStatus(trip, newStatus);
-            trip.getTripSettings().setTripStatus(newStatus);
-            embeddedObjectsInitializer.ensureTripDetails(trip);
-            statusTransitionHandler.handleStatusTransition(trip, previousStatus, newStatus);
+                            embeddedObjectsInitializer.ensureTripSettingsAndGetPreviousStatus(
+                                    trip, newStatus);
+                            trip.getTripSettings().setTripStatus(newStatus);
+                            embeddedObjectsInitializer.ensureTripDetails(trip);
+                            statusTransitionHandler.handleStatusTransition(
+                                    trip, previousStatus, newStatus);
 
-            // No need to call save() - entity is managed and will be flushed automatically
-            log.info("Trip status changed: {}", event.getTripId());
-        }
+                            // No need to call save() - entity is managed and will be flushed
+                            // automatically
+                            log.info("Trip status changed: {}", event.getTripId());
+                        });
     }
 }

@@ -1,8 +1,8 @@
 package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripPlanCreatedEvent;
+import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripPlanCreatedEventHandler implements EventHandler<TripPlanCreatedEvent> {
 
-    private final EntityManager entityManager;
+    private final TripPlanRepository tripPlanRepository;
 
     @Override
     @EventListener
@@ -38,7 +38,7 @@ public class TripPlanCreatedEventHandler implements EventHandler<TripPlanCreated
                         .metadata(event.getMetadata())
                         .build();
 
-        entityManager.persist(tripPlan);
+        tripPlanRepository.save(tripPlan);
         log.info("Trip plan created and persisted: {}", event.getTripPlanId());
     }
 }

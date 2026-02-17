@@ -5,10 +5,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
+import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
+import com.tomassirio.wanderer.command.service.AchievementCalculationService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
-import jakarta.persistence.EntityManager;
 import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -21,7 +23,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class TripUpdatedEventHandlerTest {
 
-    @Mock private EntityManager entityManager;
+    @Mock private TripRepository tripRepository;
+
+    @Mock private TripUpdateRepository tripUpdateRepository;
+
+    @Mock private AchievementCalculationService achievementCalculationService;
 
     @InjectMocks private TripUpdatedEventHandler handler;
 
@@ -45,14 +51,14 @@ class TripUpdatedEventHandlerTest {
                         .timestamp(timestamp)
                         .build();
 
-        when(entityManager.getReference(Trip.class, tripId)).thenReturn(trip);
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
 
         // When
         handler.handle(event);
 
         // Then
         ArgumentCaptor<TripUpdate> captor = ArgumentCaptor.forClass(TripUpdate.class);
-        verify(entityManager).persist(captor.capture());
+        verify(tripUpdateRepository).save(captor.capture());
 
         TripUpdate saved = captor.getValue();
         assertThat(saved.getId()).isEqualTo(tripUpdateId);
@@ -61,5 +67,8 @@ class TripUpdatedEventHandlerTest {
         assertThat(saved.getBattery()).isEqualTo(85);
         assertThat(saved.getMessage()).isEqualTo("Arrived at Santiago!");
         assertThat(saved.getTimestamp()).isEqualTo(timestamp);
+
+        // Verify achievement calculation was triggered
+        verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
     }
 }

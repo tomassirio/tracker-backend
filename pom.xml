@@ -38,6 +38,7 @@
         <jjwt.version>0.11.5</jjwt.version>
         <cucumber.version>7.23.0</cucumber.version>
         <maven-failsafe-plugin.version>3.1.2</maven-failsafe-plugin.version>
+        <google-maps-services.version>2.2.0</google-maps-services.version>
      </properties>
 
     <modules>
@@ -142,6 +143,13 @@
                 <artifactId>junit-platform-suite-api</artifactId>
                 <version>${junit-platform.version}</version>
                 <scope>test</scope>
+            </dependency>
+
+            <!-- Google Maps Services for distance calculation -->
+            <dependency>
+                <groupId>com.google.maps</groupId>
+                <artifactId>google-maps-services</artifactId>
+                <version>${google-maps-services.version}</version>
             </dependency>
          </dependencies>
      </dependencyManagement>
