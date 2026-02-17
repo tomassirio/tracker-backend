@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
@@ -88,7 +89,10 @@ class FriendshipServiceImplTest {
     }
 
     @Test
-    void removeFriendship_PublishesFriendshipRemovedEvent() {
+    void removeFriendship_WhenFriendsExist_PublishesFriendshipRemovedEvent() {
+        // Given
+        when(friendshipRepository.existsByUserIdAndFriendId(userId, friendId)).thenReturn(true);
+
         // When
         friendshipService.removeFriendship(userId, friendId);
 
@@ -100,5 +104,19 @@ class FriendshipServiceImplTest {
         FriendshipRemovedEvent event = eventCaptor.getValue();
         assertThat(event.getUserId()).isEqualTo(userId);
         assertThat(event.getFriendId()).isEqualTo(friendId);
+    }
+
+    @Test
+    void removeFriendship_WhenNotFriends_ThrowsIllegalArgumentException() {
+        // Given
+        when(friendshipRepository.existsByUserIdAndFriendId(userId, friendId)).thenReturn(false);
+        when(friendshipRepository.existsByUserIdAndFriendId(friendId, userId)).thenReturn(false);
+
+        // When/Then
+        assertThatThrownBy(() -> friendshipService.removeFriendship(userId, friendId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Users are not friends");
+
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }

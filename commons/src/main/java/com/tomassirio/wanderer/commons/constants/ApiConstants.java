@@ -65,6 +65,7 @@ public final class ApiConstants {
     // ============================================================
 
     public static final String FRIENDS_PATH = USERS_PATH + "/friends";
+    public static final String FRIEND_BY_ID_ENDPOINT = "/{friendId}";
 
     // Friend requests
     public static final String FRIEND_REQUESTS_PATH = FRIENDS_PATH + REQUESTS_SUFFIX;
