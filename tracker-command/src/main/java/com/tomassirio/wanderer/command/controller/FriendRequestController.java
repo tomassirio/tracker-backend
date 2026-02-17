@@ -80,4 +80,20 @@ public class FriendRequestController {
         log.info("Accepted friend request {} declination", requestId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(declinedRequestId);
     }
+
+    @PostMapping(ApiConstants.FRIEND_REQUEST_CANCEL_ENDPOINT)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Cancel a friend request",
+            description =
+                    "Cancel a pending friend request sent by the current user. "
+                            + "Only the sender can cancel their own request. "
+                            + "Returns 202 Accepted with the friend request ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> cancelFriendRequest(
+            @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID requestId) {
+        log.info("Received request to cancel friend request {} by user {}", requestId, userId);
+        UUID cancelledRequestId = friendRequestService.cancelFriendRequest(requestId, userId);
+        log.info("Accepted friend request {} cancellation", requestId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(cancelledRequestId);
+    }
 }

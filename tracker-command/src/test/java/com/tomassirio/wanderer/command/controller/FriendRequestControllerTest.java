@@ -108,4 +108,19 @@ class FriendRequestControllerTest {
 
         verify(friendRequestService).declineFriendRequest(requestId, senderId);
     }
+
+    @Test
+    void cancelFriendRequest_Success() throws Exception {
+        doReturn(requestId)
+                .when(friendRequestService)
+                .cancelFriendRequest(eq(requestId), eq(senderId));
+
+        mockMvc.perform(
+                        post("/api/1/users/friends/requests/" + requestId + "/cancel")
+                                .header("Authorization", token))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(requestId.toString()));
+
+        verify(friendRequestService).cancelFriendRequest(requestId, senderId);
+    }
 }

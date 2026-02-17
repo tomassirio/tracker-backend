@@ -42,4 +42,15 @@ public interface FriendRequestService {
      * @throws IllegalArgumentException if user is not the receiver or request is not pending
      */
     UUID declineFriendRequest(UUID requestId, UUID userId);
+
+    /**
+     * Cancel a friend request (by the sender).
+     *
+     * @param requestId the ID of the friend request
+     * @param userId the ID of the user cancelling the request (must be the sender)
+     * @return the UUID of the friend request
+     * @throws jakarta.persistence.EntityNotFoundException if request not found
+     * @throws IllegalArgumentException if user is not the sender or request is not pending
+     */
+    UUID cancelFriendRequest(UUID requestId, UUID userId);
 }
