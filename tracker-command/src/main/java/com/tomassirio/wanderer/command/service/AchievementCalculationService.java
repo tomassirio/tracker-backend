@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.service;
 
+import com.google.maps.model.LatLng;
 import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
 import com.tomassirio.wanderer.command.repository.FriendshipRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
@@ -186,12 +187,12 @@ public class AchievementCalculationService {
         }
 
         // Convert trip updates to LatLng coordinates
-        List<com.google.maps.model.LatLng> coordinates =
+        List<LatLng> coordinates =
                 updates.stream()
                         .filter(update -> update.getLocation() != null)
                         .map(
                                 update ->
-                                        new com.google.maps.model.LatLng(
+                                        new LatLng(
                                                 update.getLocation().getLat(),
                                                 update.getLocation().getLon()))
                         .toList();
