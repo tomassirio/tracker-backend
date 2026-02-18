@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-create-active-trips-table
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: active_trips
+      changes:
+        - createTable:
+            tableName: active_trips
+            columns:
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: trip_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: active_trips
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_active_trips_user_id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: active_trips
+            baseColumnNames: trip_id
+            referencedTableName: trips
+            referencedColumnNames: id
+            constraintName: fk_active_trips_trip_id
+            onDelete: CASCADE

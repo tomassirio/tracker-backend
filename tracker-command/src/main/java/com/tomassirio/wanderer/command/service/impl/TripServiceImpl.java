@@ -7,6 +7,7 @@ import com.tomassirio.wanderer.command.event.TripDeletedEvent;
 import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
 import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
+import com.tomassirio.wanderer.command.repository.ActiveTripRepository;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
@@ -34,6 +35,7 @@ public class TripServiceImpl implements TripService {
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
     private final TripPlanRepository tripPlanRepository;
+    private final ActiveTripRepository activeTripRepository;
     private final OwnershipValidator ownershipValidator;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -134,6 +136,19 @@ public class TripServiceImpl implements TripService {
 
         TripStatus previousStatus =
                 trip.getTripSettings() != null ? trip.getTripSettings().getTripStatus() : null;
+
+        // Validate that user doesn't have another trip in progress
+        if (status == TripStatus.IN_PROGRESS) {
+            activeTripRepository
+                    .findById(userId)
+                    .ifPresent(
+                            activeTrip -> {
+                                if (!activeTrip.getTripId().equals(id)) {
+                                    throw new IllegalStateException(
+                                            "User already has a trip in progress. Only one trip can be in progress at a time.");
+                                }
+                            });
+        }
 
         // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
