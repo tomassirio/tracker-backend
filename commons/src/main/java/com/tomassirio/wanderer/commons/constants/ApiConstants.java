@@ -25,8 +25,6 @@ public final class ApiConstants {
     public static final String REQUESTS_SUFFIX = "/requests";
     public static final String RECEIVED_SUFFIX = "/received";
     public static final String SENT_SUFFIX = "/sent";
-    public static final String FOLLOWING_SUFFIX = "/following";
-    public static final String FOLLOWERS_SUFFIX = "/followers";
 
     // Common path segments
     public static final String USERNAME_SEGMENT = "/username/{username}";
