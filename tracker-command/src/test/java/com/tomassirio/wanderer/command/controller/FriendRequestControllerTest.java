@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.controller;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -95,17 +96,16 @@ class FriendRequestControllerTest {
     }
 
     @Test
-    void declineFriendRequest_Success() throws Exception {
+    void deleteFriendRequest_Success() throws Exception {
         doReturn(requestId)
                 .when(friendRequestService)
-                .declineFriendRequest(eq(requestId), eq(senderId));
+                .deleteFriendRequest(eq(requestId), eq(senderId));
 
         mockMvc.perform(
-                        post("/api/1/users/friends/requests/" + requestId + "/decline")
+                        delete("/api/1/users/friends/requests/" + requestId)
                                 .header("Authorization", token))
-                .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$").value(requestId.toString()));
+                .andExpect(status().isAccepted());
 
-        verify(friendRequestService).declineFriendRequest(requestId, senderId);
+        verify(friendRequestService).deleteFriendRequest(requestId, senderId);
     }
 }

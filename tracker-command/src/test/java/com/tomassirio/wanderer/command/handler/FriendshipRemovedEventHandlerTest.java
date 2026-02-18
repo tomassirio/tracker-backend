@@ -7,7 +7,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.FriendshipRemovedEvent;
+import com.tomassirio.wanderer.command.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.command.repository.FriendshipRepository;
+import com.tomassirio.wanderer.commons.domain.FriendRequest;
+import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
 import com.tomassirio.wanderer.commons.domain.Friendship;
 import java.time.Instant;
 import java.util.Optional;
@@ -22,6 +25,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FriendshipRemovedEventHandlerTest {
 
     @Mock private FriendshipRepository friendshipRepository;
+
+    @Mock private FriendRequestRepository friendRequestRepository;
 
     @InjectMocks private FriendshipRemovedEventHandler handler;
 
@@ -53,6 +58,12 @@ class FriendshipRemovedEventHandlerTest {
                 .thenReturn(Optional.of(friendship1));
         when(friendshipRepository.findByUserIdAndFriendId(friendId, userId))
                 .thenReturn(Optional.of(friendship2));
+        when(friendRequestRepository.findBySenderIdAndReceiverIdAndStatus(
+                        userId, friendId, FriendRequestStatus.ACCEPTED))
+                .thenReturn(Optional.empty());
+        when(friendRequestRepository.findBySenderIdAndReceiverIdAndStatus(
+                        friendId, userId, FriendRequestStatus.ACCEPTED))
+                .thenReturn(Optional.empty());
 
         // When
         handler.handle(event);
@@ -74,11 +85,89 @@ class FriendshipRemovedEventHandlerTest {
                 .thenReturn(Optional.empty());
         when(friendshipRepository.findByUserIdAndFriendId(friendId, userId))
                 .thenReturn(Optional.empty());
+        when(friendRequestRepository.findBySenderIdAndReceiverIdAndStatus(
+                        userId, friendId, FriendRequestStatus.ACCEPTED))
+                .thenReturn(Optional.empty());
+        when(friendRequestRepository.findBySenderIdAndReceiverIdAndStatus(
+                        friendId, userId, FriendRequestStatus.ACCEPTED))
+                .thenReturn(Optional.empty());
 
         // When
         handler.handle(event);
 
         // Then
         verify(friendshipRepository, never()).delete(any(Friendship.class));
+    }
+
+    @Test
+    void handle_shouldDeleteAcceptedFriendRequest() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID friendId = UUID.randomUUID();
+
+        FriendRequest acceptedRequest =
+                FriendRequest.builder()
+                        .id(UUID.randomUUID())
+                        .senderId(userId)
+                        .receiverId(friendId)
+                        .status(FriendRequestStatus.ACCEPTED)
+                        .createdAt(Instant.now())
+                        .build();
+
+        FriendshipRemovedEvent event =
+                FriendshipRemovedEvent.builder().userId(userId).friendId(friendId).build();
+
+        when(friendshipRepository.findByUserIdAndFriendId(userId, friendId))
+                .thenReturn(Optional.empty());
+        when(friendshipRepository.findByUserIdAndFriendId(friendId, userId))
+                .thenReturn(Optional.empty());
+        when(friendRequestRepository.findBySenderIdAndReceiverIdAndStatus(
+                        userId, friendId, FriendRequestStatus.ACCEPTED))
+                .thenReturn(Optional.of(acceptedRequest));
+        when(friendRequestRepository.findBySenderIdAndReceiverIdAndStatus(
+                        friendId, userId, FriendRequestStatus.ACCEPTED))
+                .thenReturn(Optional.empty());
+
+        // When
+        handler.handle(event);
+
+        // Then
+        verify(friendRequestRepository).delete(acceptedRequest);
+    }
+
+    @Test
+    void handle_shouldDeleteAcceptedFriendRequest_whenReverseDirection() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID friendId = UUID.randomUUID();
+
+        FriendRequest acceptedRequest =
+                FriendRequest.builder()
+                        .id(UUID.randomUUID())
+                        .senderId(friendId)
+                        .receiverId(userId)
+                        .status(FriendRequestStatus.ACCEPTED)
+                        .createdAt(Instant.now())
+                        .build();
+
+        FriendshipRemovedEvent event =
+                FriendshipRemovedEvent.builder().userId(userId).friendId(friendId).build();
+
+        when(friendshipRepository.findByUserIdAndFriendId(userId, friendId))
+                .thenReturn(Optional.empty());
+        when(friendshipRepository.findByUserIdAndFriendId(friendId, userId))
+                .thenReturn(Optional.empty());
+        when(friendRequestRepository.findBySenderIdAndReceiverIdAndStatus(
+                        userId, friendId, FriendRequestStatus.ACCEPTED))
+                .thenReturn(Optional.empty());
+        when(friendRequestRepository.findBySenderIdAndReceiverIdAndStatus(
+                        friendId, userId, FriendRequestStatus.ACCEPTED))
+                .thenReturn(Optional.of(acceptedRequest));
+
+        // When
+        handler.handle(event);
+
+        // Then
+        verify(friendRequestRepository).delete(acceptedRequest);
     }
 }

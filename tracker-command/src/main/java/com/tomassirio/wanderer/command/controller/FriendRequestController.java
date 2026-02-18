@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -67,17 +68,19 @@ public class FriendRequestController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(acceptedRequestId);
     }
 
-    @PostMapping(ApiConstants.FRIEND_REQUEST_DECLINE_ENDPOINT)
+    @DeleteMapping(ApiConstants.FRIEND_REQUEST_BY_ID_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
-            summary = "Decline a friend request",
+            summary = "Delete a friend request",
             description =
-                    "Decline a pending friend request. Returns 202 Accepted with the friend request ID as the operation completes asynchronously.")
-    public ResponseEntity<UUID> declineFriendRequest(
+                    "Delete a pending friend request. If the user is the sender, it cancels the request. "
+                            + "If the user is the receiver, it declines the request. "
+                            + "Returns 202 Accepted as the operation completes asynchronously.")
+    public ResponseEntity<Void> deleteFriendRequest(
             @Parameter(hidden = true) @CurrentUserId UUID userId, @PathVariable UUID requestId) {
-        log.info("Received request to decline friend request {} by user {}", requestId, userId);
-        UUID declinedRequestId = friendRequestService.declineFriendRequest(requestId, userId);
-        log.info("Accepted friend request {} declination", requestId);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(declinedRequestId);
+        log.info("Received request to delete friend request {} by user {}", requestId, userId);
+        friendRequestService.deleteFriendRequest(requestId, userId);
+        log.info("Accepted friend request {} deletion", requestId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 }

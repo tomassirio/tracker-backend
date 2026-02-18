@@ -25,8 +25,6 @@ public final class ApiConstants {
     public static final String REQUESTS_SUFFIX = "/requests";
     public static final String RECEIVED_SUFFIX = "/received";
     public static final String SENT_SUFFIX = "/sent";
-    public static final String FOLLOWING_SUFFIX = "/following";
-    public static final String FOLLOWERS_SUFFIX = "/followers";
 
     // Common path segments
     public static final String USERNAME_SEGMENT = "/username/{username}";
@@ -65,6 +63,7 @@ public final class ApiConstants {
     // ============================================================
 
     public static final String FRIENDS_PATH = USERS_PATH + "/friends";
+    public static final String FRIEND_BY_ID_ENDPOINT = "/{friendId}";
 
     // Friend requests
     public static final String FRIEND_REQUESTS_PATH = FRIENDS_PATH + REQUESTS_SUFFIX;
@@ -73,8 +72,8 @@ public final class ApiConstants {
     public static final String FRIEND_REQUESTS_SENT_PATH = FRIEND_REQUESTS_PATH + SENT_SUFFIX;
     public static final String FRIEND_REQUESTS_RECEIVED_ENDPOINT = RECEIVED_SUFFIX;
     public static final String FRIEND_REQUESTS_SENT_ENDPOINT = SENT_SUFFIX;
+    public static final String FRIEND_REQUEST_BY_ID_ENDPOINT = "/{requestId}";
     public static final String FRIEND_REQUEST_ACCEPT_ENDPOINT = "/{requestId}/accept";
-    public static final String FRIEND_REQUEST_DECLINE_ENDPOINT = "/{requestId}/decline";
 
     // ============================================================
     // Follows endpoints
@@ -83,8 +82,6 @@ public final class ApiConstants {
     public static final String FOLLOWS_PATH = USERS_PATH + "/follows";
     public static final String FOLLOWING_PATH = USERS_PATH + "/following";
     public static final String FOLLOWERS_PATH = USERS_PATH + "/followers";
-    public static final String FOLLOWS_FOLLOWING_ENDPOINT = FOLLOWING_SUFFIX;
-    public static final String FOLLOWS_FOLLOWERS_ENDPOINT = FOLLOWERS_SUFFIX;
     public static final String FOLLOW_BY_ID_ENDPOINT = "/{followedId}";
 
     // ============================================================

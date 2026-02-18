@@ -41,6 +41,10 @@ public class FriendshipServiceImpl implements FriendshipService {
     public void removeFriendship(UUID userId, UUID friendId) {
         log.info("Removing friendship between {} and {}", userId, friendId);
 
+        if (!areFriends(userId, friendId)) {
+            throw new IllegalArgumentException("Users are not friends");
+        }
+
         // Publish event - persistence handler will delete from DB
         eventPublisher.publishEvent(
                 FriendshipRemovedEvent.builder().userId(userId).friendId(friendId).build());

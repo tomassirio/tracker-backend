@@ -39,6 +39,7 @@ public final class WebSocketEventType {
     public static final String FRIEND_REQUEST_RECEIVED = "FRIEND_REQUEST_RECEIVED";
     public static final String FRIEND_REQUEST_ACCEPTED = "FRIEND_REQUEST_ACCEPTED";
     public static final String FRIEND_REQUEST_DECLINED = "FRIEND_REQUEST_DECLINED";
+    public static final String FRIEND_REQUEST_CANCELLED = "FRIEND_REQUEST_CANCELLED";
 
     // User follow events
     public static final String USER_FOLLOWED = "USER_FOLLOWED";

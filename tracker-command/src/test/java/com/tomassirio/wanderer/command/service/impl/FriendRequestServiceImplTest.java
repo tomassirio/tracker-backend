@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.tomassirio.wanderer.command.event.FriendRequestAcceptedEvent;
+import com.tomassirio.wanderer.command.event.FriendRequestCancelledEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
@@ -196,12 +197,34 @@ class FriendRequestServiceImplTest {
     }
 
     @Test
-    void declineFriendRequest_Success() {
+    void deleteFriendRequest_AsSender_PublishesCancelledEvent() {
         // Given
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
 
         // When
-        UUID response = friendRequestService.declineFriendRequest(requestId, receiverId);
+        UUID response = friendRequestService.deleteFriendRequest(requestId, senderId);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response).isEqualTo(requestId);
+
+        ArgumentCaptor<FriendRequestCancelledEvent> eventCaptor =
+                ArgumentCaptor.forClass(FriendRequestCancelledEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        FriendRequestCancelledEvent event = eventCaptor.getValue();
+        assertThat(event.getRequestId()).isEqualTo(requestId);
+        assertThat(event.getSenderId()).isEqualTo(senderId);
+        assertThat(event.getReceiverId()).isEqualTo(receiverId);
+    }
+
+    @Test
+    void deleteFriendRequest_AsReceiver_PublishesDeclinedEvent() {
+        // Given
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+
+        // When
+        UUID response = friendRequestService.deleteFriendRequest(requestId, receiverId);
 
         // Then
         assertThat(response).isNotNull();
@@ -218,28 +241,40 @@ class FriendRequestServiceImplTest {
     }
 
     @Test
-    void declineFriendRequest_NotReceiver_ThrowsException() {
+    void deleteFriendRequest_NotSenderOrReceiver_ThrowsException() {
         // Given
         UUID wrongUser = UUID.randomUUID();
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
 
         // When & Then
-        assertThatThrownBy(() -> friendRequestService.declineFriendRequest(requestId, wrongUser))
+        assertThatThrownBy(() -> friendRequestService.deleteFriendRequest(requestId, wrongUser))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        verify(eventPublisher, never()).publishEvent(any(FriendRequestDeclinedEvent.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void declineFriendRequest_NotPending_ThrowsException() {
+    void deleteFriendRequest_NotPending_ThrowsException() {
         // Given
-        friendRequest.setStatus(FriendRequestStatus.DECLINED);
+        friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
 
         // When & Then
-        assertThatThrownBy(() -> friendRequestService.declineFriendRequest(requestId, receiverId))
+        assertThatThrownBy(() -> friendRequestService.deleteFriendRequest(requestId, senderId))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        verify(eventPublisher, never()).publishEvent(any(FriendRequestDeclinedEvent.class));
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void deleteFriendRequest_NotFound_ThrowsException() {
+        // Given
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> friendRequestService.deleteFriendRequest(requestId, senderId))
+                .isInstanceOf(EntityNotFoundException.class);
+
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }
