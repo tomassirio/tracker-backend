@@ -6,6 +6,7 @@ import com.tomassirio.wanderer.command.controller.request.TripStatusRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
 import com.tomassirio.wanderer.command.controller.request.TripVisibilityRequest;
+import com.tomassirio.wanderer.command.service.PromotedTripService;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
@@ -45,6 +46,7 @@ public class TripController {
 
     private final TripService tripService;
     private final TripUpdateService tripUpdateService;
+    private final PromotedTripService promotedTripService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
@@ -195,7 +197,7 @@ public class TripController {
         log.info("Received request to promote trip {} by admin {}", id, adminId);
 
         UUID promotedTripId =
-                tripService.promoteTrip(
+                promotedTripService.promoteTrip(
                         adminId, id, request != null ? request.donationLink() : null);
 
         log.info("Accepted trip promotion request with ID: {}", promotedTripId);
@@ -212,7 +214,7 @@ public class TripController {
             @Parameter(hidden = true) @CurrentUserId UUID adminId, @PathVariable UUID id) {
         log.info("Received request to unpromote trip {} by admin {}", id, adminId);
 
-        tripService.unpromoteTrip(adminId, id);
+        promotedTripService.unpromoteTrip(adminId, id);
 
         log.info("Accepted trip unpromotion request for ID: {}", id);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
@@ -231,7 +233,7 @@ public class TripController {
         log.info("Received request to update donation link for trip {} by admin {}", id, adminId);
 
         UUID promotedTripId =
-                tripService.updatePromotedTripDonationLink(
+                promotedTripService.updatePromotedTripDonationLink(
                         adminId, id, request != null ? request.donationLink() : null);
 
         log.info("Accepted donation link update request with ID: {}", promotedTripId);

@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
+import com.tomassirio.wanderer.command.service.PromotedTripService;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
@@ -45,6 +46,8 @@ class TripControllerTest {
     private ObjectMapper objectMapper;
 
     @Mock private TripService tripService;
+
+    @Mock private PromotedTripService promotedTripService;
 
     @InjectMocks private TripController tripController;
 
@@ -398,7 +401,7 @@ class TripControllerTest {
 
         String requestBody = String.format("{\"donationLink\":\"%s\"}", donationLink);
 
-        when(tripService.promoteTrip(any(UUID.class), eq(tripId), eq(donationLink)))
+        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), eq(donationLink)))
                 .thenReturn(promotedTripId);
 
         // When & Then
@@ -418,7 +421,7 @@ class TripControllerTest {
 
         String requestBody = "{}";
 
-        when(tripService.promoteTrip(any(UUID.class), eq(tripId), eq(null)))
+        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), eq(null)))
                 .thenReturn(promotedTripId);
 
         // When & Then
@@ -436,7 +439,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         String requestBody = "{\"donationLink\":\"https://example.com/donate\"}";
 
-        when(tripService.promoteTrip(any(UUID.class), eq(tripId), any()))
+        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), any()))
                 .thenThrow(new EntityNotFoundException("Trip not found"));
 
         // When & Then
@@ -453,7 +456,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         String requestBody = "{\"donationLink\":\"https://example.com/donate\"}";
 
-        when(tripService.promoteTrip(any(UUID.class), eq(tripId), any()))
+        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), any()))
                 .thenThrow(new IllegalStateException("Trip is already promoted"));
 
         // When & Then
