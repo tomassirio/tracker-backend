@@ -95,10 +95,21 @@ public final class ApiConstants {
     public static final String TRIP_BY_ID_ENDPOINT = UUID_PATH_VARIABLE;
     public static final String TRIP_VISIBILITY_ENDPOINT = "/{id}/visibility";
     public static final String TRIP_STATUS_ENDPOINT = "/{id}/status";
+    public static final String TRIP_PROMOTE_ENDPOINT = "/{id}/promote";
+    public static final String TRIP_UNPROMOTE_ENDPOINT = "/{id}/promote";
+    public static final String TRIP_UPDATE_DONATION_LINK_ENDPOINT = "/{id}/promote";
+    public static final String TRIP_PROMOTION_INFO_ENDPOINT = "/{id}/promotion";
     public static final String TRIP_UPDATES_ENDPOINT = "/{tripId}/updates";
     public static final String TRIP_COMMENTS_ENDPOINT = "/{tripId}/comments";
     public static final String TRIPS_AVAILABLE_ENDPOINT = ME_SUFFIX + "/available";
     public static final String TRIP_FROM_PLAN_ENDPOINT = "/from-plan/{tripPlanId}";
+
+    // ============================================================
+    // Promoted Trips endpoints
+    // ============================================================
+
+    public static final String PROMOTED_TRIPS_PATH = API_V1 + "/promoted-trips";
+    public static final String ALL_PROMOTED_TRIPS_ENDPOINT = "";
 
     // ============================================================
     // Trip Plan endpoints

@@ -1,0 +1,52 @@
+databaseChangeLog:
+  - changeSet:
+      id: 014-create-promoted-trips-table
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: promoted_trips
+      changes:
+        - createTable:
+            tableName: promoted_trips
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: trip_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: donation_link
+                  type: varchar(500)
+              - column:
+                  name: promoted_by
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: promoted_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: promoted_trips
+            baseColumnNames: trip_id
+            referencedTableName: trips
+            referencedColumnNames: id
+            constraintName: fk_promoted_trips_trip_id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: promoted_trips
+            baseColumnNames: promoted_by
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_promoted_trips_promoted_by
+            onDelete: CASCADE
