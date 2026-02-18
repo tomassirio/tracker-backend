@@ -113,9 +113,11 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         FriendRequest request =
                 friendRequestRepository
                         .findById(requestId)
-                        .filter(r -> r.getStatus() == FriendRequestStatus.PENDING)
-                        .orElseThrow(
-                                () -> new EntityNotFoundException("Friend request not found"));
+                        .orElseThrow(() -> new EntityNotFoundException("Friend request not found"));
+
+        if (request.getStatus() != FriendRequestStatus.PENDING) {
+            throw new IllegalArgumentException("Only pending friend requests can be deleted");
+        }
 
         boolean isSender = request.getSenderId().equals(userId);
         boolean isReceiver = request.getReceiverId().equals(userId);
