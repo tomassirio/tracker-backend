@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.service.impl;
 
+import com.tomassirio.wanderer.command.event.DomainEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestAcceptedEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestCancelledEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestDeclinedEvent;
@@ -106,61 +107,45 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     }
 
     @Override
-    public UUID declineFriendRequest(UUID requestId, UUID userId) {
-        log.info("User {} declining friend request {}", userId, requestId);
+    public UUID deleteFriendRequest(UUID requestId, UUID userId) {
+        log.info("User {} deleting friend request {}", userId, requestId);
 
         FriendRequest request =
                 friendRequestRepository
                         .findById(requestId)
-                        .orElseThrow(() -> new EntityNotFoundException("Friend request not found"));
+                        .filter(r -> r.getStatus() == FriendRequestStatus.PENDING)
+                        .orElseThrow(
+                                () -> new EntityNotFoundException("Friend request not found"));
 
-        if (!request.getReceiverId().equals(userId)) {
-            throw new IllegalArgumentException("Only the receiver can decline the friend request");
+        boolean isSender = request.getSenderId().equals(userId);
+        boolean isReceiver = request.getReceiverId().equals(userId);
+
+        DomainEvent event =
+                isSender
+                        ? FriendRequestCancelledEvent.builder()
+                                .requestId(requestId)
+                                .senderId(request.getSenderId())
+                                .receiverId(request.getReceiverId())
+                                .build()
+                        : isReceiver
+                                ? FriendRequestDeclinedEvent.builder()
+                                        .requestId(requestId)
+                                        .senderId(request.getSenderId())
+                                        .receiverId(request.getReceiverId())
+                                        .build()
+                                : null;
+
+        if (event == null) {
+            throw new IllegalArgumentException(
+                    "Only the sender or receiver can delete the friend request");
         }
 
-        if (request.getStatus() != FriendRequestStatus.PENDING) {
-            throw new IllegalArgumentException("Friend request is not pending");
-        }
-
-        // Publish event - persistence handler will update DB
-        eventPublisher.publishEvent(
-                FriendRequestDeclinedEvent.builder()
-                        .requestId(requestId)
-                        .senderId(request.getSenderId())
-                        .receiverId(request.getReceiverId())
-                        .build());
-
-        log.info("Friend request {} declined", requestId);
-
-        return requestId;
-    }
-
-    @Override
-    public UUID cancelFriendRequest(UUID requestId, UUID userId) {
-        log.info("User {} cancelling friend request {}", userId, requestId);
-
-        FriendRequest request =
-                friendRequestRepository
-                        .findById(requestId)
-                        .orElseThrow(() -> new EntityNotFoundException("Friend request not found"));
-
-        if (!request.getSenderId().equals(userId)) {
-            throw new IllegalArgumentException("Only the sender can cancel the friend request");
-        }
-
-        if (request.getStatus() != FriendRequestStatus.PENDING) {
-            throw new IllegalArgumentException("Friend request is not pending");
-        }
-
-        // Publish event - persistence handler will delete from DB
-        eventPublisher.publishEvent(
-                FriendRequestCancelledEvent.builder()
-                        .requestId(requestId)
-                        .senderId(request.getSenderId())
-                        .receiverId(request.getReceiverId())
-                        .build());
-
-        log.info("Friend request {} cancelled", requestId);
+        eventPublisher.publishEvent(event);
+        log.info(
+                "Friend request {} {} by {}",
+                requestId,
+                isSender ? "cancelled" : "declined",
+                isSender ? "sender" : "receiver");
 
         return requestId;
     }

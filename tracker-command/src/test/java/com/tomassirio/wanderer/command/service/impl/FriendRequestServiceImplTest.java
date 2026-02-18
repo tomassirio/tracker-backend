@@ -197,60 +197,12 @@ class FriendRequestServiceImplTest {
     }
 
     @Test
-    void declineFriendRequest_Success() {
+    void deleteFriendRequest_AsSender_PublishesCancelledEvent() {
         // Given
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
 
         // When
-        UUID response = friendRequestService.declineFriendRequest(requestId, receiverId);
-
-        // Then
-        assertThat(response).isNotNull();
-        assertThat(response).isEqualTo(requestId);
-
-        ArgumentCaptor<FriendRequestDeclinedEvent> eventCaptor =
-                ArgumentCaptor.forClass(FriendRequestDeclinedEvent.class);
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-
-        FriendRequestDeclinedEvent event = eventCaptor.getValue();
-        assertThat(event.getRequestId()).isEqualTo(requestId);
-        assertThat(event.getSenderId()).isEqualTo(senderId);
-        assertThat(event.getReceiverId()).isEqualTo(receiverId);
-    }
-
-    @Test
-    void declineFriendRequest_NotReceiver_ThrowsException() {
-        // Given
-        UUID wrongUser = UUID.randomUUID();
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
-
-        // When & Then
-        assertThatThrownBy(() -> friendRequestService.declineFriendRequest(requestId, wrongUser))
-                .isInstanceOf(IllegalArgumentException.class);
-
-        verify(eventPublisher, never()).publishEvent(any(FriendRequestDeclinedEvent.class));
-    }
-
-    @Test
-    void declineFriendRequest_NotPending_ThrowsException() {
-        // Given
-        friendRequest.setStatus(FriendRequestStatus.DECLINED);
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
-
-        // When & Then
-        assertThatThrownBy(() -> friendRequestService.declineFriendRequest(requestId, receiverId))
-                .isInstanceOf(IllegalArgumentException.class);
-
-        verify(eventPublisher, never()).publishEvent(any(FriendRequestDeclinedEvent.class));
-    }
-
-    @Test
-    void cancelFriendRequest_Success() {
-        // Given
-        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
-
-        // When
-        UUID response = friendRequestService.cancelFriendRequest(requestId, senderId);
+        UUID response = friendRequestService.deleteFriendRequest(requestId, senderId);
 
         // Then
         assertThat(response).isNotNull();
@@ -267,40 +219,62 @@ class FriendRequestServiceImplTest {
     }
 
     @Test
-    void cancelFriendRequest_NotSender_ThrowsException() {
+    void deleteFriendRequest_AsReceiver_PublishesDeclinedEvent() {
+        // Given
+        when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
+
+        // When
+        UUID response = friendRequestService.deleteFriendRequest(requestId, receiverId);
+
+        // Then
+        assertThat(response).isNotNull();
+        assertThat(response).isEqualTo(requestId);
+
+        ArgumentCaptor<FriendRequestDeclinedEvent> eventCaptor =
+                ArgumentCaptor.forClass(FriendRequestDeclinedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        FriendRequestDeclinedEvent event = eventCaptor.getValue();
+        assertThat(event.getRequestId()).isEqualTo(requestId);
+        assertThat(event.getSenderId()).isEqualTo(senderId);
+        assertThat(event.getReceiverId()).isEqualTo(receiverId);
+    }
+
+    @Test
+    void deleteFriendRequest_NotSenderOrReceiver_ThrowsException() {
         // Given
         UUID wrongUser = UUID.randomUUID();
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
 
         // When & Then
-        assertThatThrownBy(() -> friendRequestService.cancelFriendRequest(requestId, wrongUser))
+        assertThatThrownBy(() -> friendRequestService.deleteFriendRequest(requestId, wrongUser))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        verify(eventPublisher, never()).publishEvent(any(FriendRequestCancelledEvent.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void cancelFriendRequest_NotPending_ThrowsException() {
+    void deleteFriendRequest_NotPending_ThrowsException() {
         // Given
         friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.of(friendRequest));
 
         // When & Then
-        assertThatThrownBy(() -> friendRequestService.cancelFriendRequest(requestId, senderId))
+        assertThatThrownBy(() -> friendRequestService.deleteFriendRequest(requestId, senderId))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        verify(eventPublisher, never()).publishEvent(any(FriendRequestCancelledEvent.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    void cancelFriendRequest_NotFound_ThrowsException() {
+    void deleteFriendRequest_NotFound_ThrowsException() {
         // Given
         when(friendRequestRepository.findById(requestId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> friendRequestService.cancelFriendRequest(requestId, senderId))
+        assertThatThrownBy(() -> friendRequestService.deleteFriendRequest(requestId, senderId))
                 .isInstanceOf(EntityNotFoundException.class);
 
-        verify(eventPublisher, never()).publishEvent(any(FriendRequestCancelledEvent.class));
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }
