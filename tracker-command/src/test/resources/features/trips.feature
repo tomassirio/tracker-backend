@@ -120,3 +120,31 @@ Feature: Trips
     And I have a valid token for that user with roles "USER"
     When I add a trip update with message "Bob's update" using that token
     Then the response status should be 403
+
+  Scenario: User cannot have two trips in progress simultaneously
+    Given a user exists with username "alice" and email "alice@example.com"
+    And I have a valid token for that user with roles "USER"
+    And I create a trip with name "First Trip" using that token
+    And I change that trip status to "IN_PROGRESS" using that token
+    And I create a trip with name "Second Trip" using that token
+    When I change that trip status to "IN_PROGRESS" using that token
+    Then the response status should be 409
+
+  Scenario: User can change another trip to in progress after pausing the first
+    Given a user exists with username "alice" and email "alice@example.com"
+    And I have a valid token for that user with roles "USER"
+    And I create a trip with name "First Trip" using that token
+    And I change that trip status to "IN_PROGRESS" using that token
+    And I change that trip status to "PAUSED" using that token
+    And I create a trip with name "Second Trip" using that token
+    When I change that trip status to "IN_PROGRESS" using that token
+    Then the response status should be 200
+
+  Scenario: User can resume a paused trip that was previously in progress
+    Given a user exists with username "alice" and email "alice@example.com"
+    And I have a valid token for that user with roles "USER"
+    And I create a trip with name "My Trip" using that token
+    And I change that trip status to "IN_PROGRESS" using that token
+    And I change that trip status to "PAUSED" using that token
+    When I change that trip status to "IN_PROGRESS" using that token
+    Then the response status should be 200

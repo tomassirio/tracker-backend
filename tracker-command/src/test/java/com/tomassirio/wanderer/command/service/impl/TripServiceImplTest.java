@@ -58,6 +58,9 @@ class TripServiceImplTest {
 
     @Mock private TripPlanRepository tripPlanRepository;
 
+    @Mock
+    private com.tomassirio.wanderer.command.repository.ActiveTripRepository activeTripRepository;
+
     @Mock private TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
 
     @Mock private TripStatusTransitionHandler statusTransitionHandler;
@@ -544,6 +547,7 @@ class TripServiceImplTest {
                         .build();
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+        when(activeTripRepository.findById(USER_ID)).thenReturn(Optional.empty());
 
         // When
         UUID result = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
@@ -552,6 +556,7 @@ class TripServiceImplTest {
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(tripId);
         verify(tripRepository).findById(tripId);
+        verify(activeTripRepository).findById(USER_ID);
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
 
@@ -920,5 +925,93 @@ class TripServiceImplTest {
 
         verify(eventPublisher).publishEvent(any(TripCreatedEvent.class));
         verify(tripPlanRepository).findById(tripPlanId);
+    }
+
+    @Test
+    void changeStatus_whenUserHasAnotherTripInProgress_shouldThrowIllegalStateException() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID otherTripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .build();
+
+        Trip existingTrip =
+                Trip.builder().id(tripId).userId(USER_ID).tripSettings(existingSettings).build();
+
+        com.tomassirio.wanderer.commons.domain.ActiveTrip activeTrip =
+                com.tomassirio.wanderer.commons.domain.ActiveTrip.builder()
+                        .userId(USER_ID)
+                        .tripId(otherTripId)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+        when(activeTripRepository.findById(USER_ID)).thenReturn(Optional.of(activeTrip));
+
+        // When & Then
+        assertThatThrownBy(() -> tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("User already has a trip in progress");
+
+        verify(eventPublisher, never()).publishEvent(any(TripStatusChangedEvent.class));
+    }
+
+    @Test
+    void changeStatus_whenSameTripAlreadyInProgress_shouldAllowChange() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.PAUSED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .build();
+
+        Trip existingTrip =
+                Trip.builder().id(tripId).userId(USER_ID).tripSettings(existingSettings).build();
+
+        com.tomassirio.wanderer.commons.domain.ActiveTrip activeTrip =
+                com.tomassirio.wanderer.commons.domain.ActiveTrip.builder()
+                        .userId(USER_ID)
+                        .tripId(tripId)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+        when(activeTripRepository.findById(USER_ID)).thenReturn(Optional.of(activeTrip));
+
+        // When
+        UUID result = tripService.changeStatus(USER_ID, tripId, TripStatus.IN_PROGRESS);
+
+        // Then
+        assertThat(result).isEqualTo(tripId);
+        verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
+    }
+
+    @Test
+    void changeStatus_whenChangingToNonInProgressStatus_shouldNotCheckActiveTrips() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.IN_PROGRESS)
+                        .visibility(TripVisibility.PUBLIC)
+                        .build();
+
+        Trip existingTrip =
+                Trip.builder().id(tripId).userId(USER_ID).tripSettings(existingSettings).build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+
+        // When
+        UUID result = tripService.changeStatus(USER_ID, tripId, TripStatus.PAUSED);
+
+        // Then
+        assertThat(result).isEqualTo(tripId);
+        verify(activeTripRepository, never()).findById(any());
+        verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
     }
 }
