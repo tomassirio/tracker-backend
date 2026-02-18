@@ -5,9 +5,11 @@ import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
 import com.tomassirio.wanderer.command.event.TripCreatedEvent;
 import com.tomassirio.wanderer.command.event.TripDeletedEvent;
 import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;
+import com.tomassirio.wanderer.command.event.TripPromotedEvent;
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
 import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
 import com.tomassirio.wanderer.command.repository.ActiveTripRepository;
+import com.tomassirio.wanderer.command.repository.PromotedTripRepository;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
@@ -36,6 +38,7 @@ public class TripServiceImpl implements TripService {
     private final UserRepository userRepository;
     private final TripPlanRepository tripPlanRepository;
     private final ActiveTripRepository activeTripRepository;
+    private final PromotedTripRepository promotedTripRepository;
     private final OwnershipValidator ownershipValidator;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -203,5 +206,34 @@ public class TripServiceImpl implements TripService {
                         .build());
 
         return tripId;
+    }
+
+    @Override
+    public UUID promoteTrip(UUID adminId, UUID tripId, String donationLink) {
+        // Validate trip exists
+        tripRepository
+                .findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+
+        // Check if trip is already promoted
+        if (promotedTripRepository.existsByTripId(tripId)) {
+            throw new IllegalStateException("Trip is already promoted");
+        }
+
+        // Pre-generate ID and timestamp for promoted trip
+        UUID promotedTripId = UUID.randomUUID();
+        Instant promotedAt = Instant.now();
+
+        // Publish event - persistence handler will write to DB
+        eventPublisher.publishEvent(
+                TripPromotedEvent.builder()
+                        .id(promotedTripId)
+                        .tripId(tripId)
+                        .donationLink(donationLink)
+                        .promotedBy(adminId)
+                        .promotedAt(promotedAt)
+                        .build());
+
+        return promotedTripId;
     }
 }

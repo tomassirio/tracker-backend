@@ -25,3 +25,5 @@ databaseChangeLog:
       file: db/changelog/012-make-user-achievements-trip-id-nullable.yaml
   - include:
       file: db/changelog/013-create-active-trips-table.yaml
+  - include:
+      file: db/changelog/014-create-promoted-trips-table.yaml

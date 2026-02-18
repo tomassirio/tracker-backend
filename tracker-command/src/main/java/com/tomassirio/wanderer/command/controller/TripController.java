@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.controller;
 
+import com.tomassirio.wanderer.command.controller.request.PromoteTripRequest;
 import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripStatusRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
@@ -179,5 +180,24 @@ public class TripController {
 
         log.info("Accepted trip update creation request with ID: {}", updateId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(updateId);
+    }
+
+    @PostMapping(ApiConstants.TRIP_PROMOTE_ENDPOINT)
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Promote a trip",
+            description =
+                    "Promotes a trip (admin only). Optionally includes a donation link. Returns 202 Accepted with the promoted trip ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> promoteTrip(
+            @Parameter(hidden = true) @CurrentUserId UUID adminId,
+            @PathVariable UUID id,
+            @Valid @RequestBody PromoteTripRequest request) {
+        log.info("Received request to promote trip {} by admin {}", id, adminId);
+
+        UUID promotedTripId =
+                tripService.promoteTrip(adminId, id, request != null ? request.donationLink() : null);
+
+        log.info("Accepted trip promotion request with ID: {}", promotedTripId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(promotedTripId);
     }
 }
