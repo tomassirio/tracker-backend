@@ -2,11 +2,13 @@ package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
+import com.tomassirio.wanderer.command.event.DonationLinkUpdatedEvent;
 import com.tomassirio.wanderer.command.event.TripCreatedEvent;
 import com.tomassirio.wanderer.command.event.TripDeletedEvent;
 import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;
 import com.tomassirio.wanderer.command.event.TripPromotedEvent;
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
+import com.tomassirio.wanderer.command.event.TripUnpromotedEvent;
 import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
 import com.tomassirio.wanderer.command.repository.ActiveTripRepository;
 import com.tomassirio.wanderer.command.repository.PromotedTripRepository;
@@ -15,6 +17,7 @@ import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
+import com.tomassirio.wanderer.commons.domain.PromotedTrip;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
@@ -235,5 +238,47 @@ public class TripServiceImpl implements TripService {
                         .build());
 
         return promotedTripId;
+    }
+
+    @Override
+    public void unpromoteTrip(UUID adminId, UUID tripId) {
+        // Validate trip exists
+        tripRepository
+                .findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+
+        // Check if trip is promoted
+        if (!promotedTripRepository.existsByTripId(tripId)) {
+            throw new EntityNotFoundException("Trip is not promoted");
+        }
+
+        // Publish event - persistence handler will delete from DB
+        eventPublisher.publishEvent(
+                TripUnpromotedEvent.builder().tripId(tripId).unpromotedBy(adminId).build());
+    }
+
+    @Override
+    public UUID updatePromotedTripDonationLink(UUID adminId, UUID tripId, String donationLink) {
+        // Validate trip exists
+        tripRepository
+                .findById(tripId)
+                .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+
+        // Get the promoted trip
+        PromotedTrip promotedTrip =
+                promotedTripRepository
+                        .findByTripId(tripId)
+                        .orElseThrow(() -> new EntityNotFoundException("Trip is not promoted"));
+
+        // Publish event - persistence handler will update in DB
+        eventPublisher.publishEvent(
+                DonationLinkUpdatedEvent.builder()
+                        .promotedTripId(promotedTrip.getId())
+                        .tripId(tripId)
+                        .donationLink(donationLink)
+                        .updatedBy(adminId)
+                        .build());
+
+        return promotedTrip.getId();
     }
 }

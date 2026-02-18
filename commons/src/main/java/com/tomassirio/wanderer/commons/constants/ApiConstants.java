@@ -96,6 +96,8 @@ public final class ApiConstants {
     public static final String TRIP_VISIBILITY_ENDPOINT = "/{id}/visibility";
     public static final String TRIP_STATUS_ENDPOINT = "/{id}/status";
     public static final String TRIP_PROMOTE_ENDPOINT = "/{id}/promote";
+    public static final String TRIP_UNPROMOTE_ENDPOINT = "/{id}/promote";
+    public static final String TRIP_UPDATE_DONATION_LINK_ENDPOINT = "/{id}/promote";
     public static final String TRIP_UPDATES_ENDPOINT = "/{tripId}/updates";
     public static final String TRIP_COMMENTS_ENDPOINT = "/{tripId}/comments";
     public static final String TRIPS_AVAILABLE_ENDPOINT = ME_SUFFIX + "/available";

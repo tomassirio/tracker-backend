@@ -33,4 +33,11 @@ public interface PromotedTripRepository extends JpaRepository<PromotedTrip, UUID
      * @return true if the trip is promoted, false otherwise
      */
     boolean existsByTripId(UUID tripId);
+
+    /**
+     * Deletes a promoted trip by its trip ID.
+     *
+     * @param tripId the UUID of the trip
+     */
+    void deleteByTripId(UUID tripId);
 }
