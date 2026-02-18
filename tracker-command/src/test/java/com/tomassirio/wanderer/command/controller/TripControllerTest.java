@@ -388,4 +388,79 @@ class TripControllerTest {
                                 .content(objectMapper.writeValueAsString(visibility)))
                 .andExpect(status().isForbidden());
     }
+
+    @Test
+    void promoteTrip_whenAdminPromotesWithDonationLink_shouldReturnAccepted() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID promotedTripId = UUID.randomUUID();
+        String donationLink = "https://example.com/donate";
+
+        String requestBody = String.format("{\"donationLink\":\"%s\"}", donationLink);
+
+        when(tripService.promoteTrip(any(UUID.class), eq(tripId), eq(donationLink)))
+                .thenReturn(promotedTripId);
+
+        // When & Then
+        mockMvc.perform(
+                        post(TRIPS_BASE_URL + "/{id}/promote", tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(promotedTripId.toString()));
+    }
+
+    @Test
+    void promoteTrip_whenAdminPromotesWithoutDonationLink_shouldReturnAccepted() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID promotedTripId = UUID.randomUUID();
+
+        String requestBody = "{}";
+
+        when(tripService.promoteTrip(any(UUID.class), eq(tripId), eq(null)))
+                .thenReturn(promotedTripId);
+
+        // When & Then
+        mockMvc.perform(
+                        post(TRIPS_BASE_URL + "/{id}/promote", tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(promotedTripId.toString()));
+    }
+
+    @Test
+    void promoteTrip_whenTripNotFound_shouldReturnNotFound() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        String requestBody = "{\"donationLink\":\"https://example.com/donate\"}";
+
+        when(tripService.promoteTrip(any(UUID.class), eq(tripId), any()))
+                .thenThrow(new EntityNotFoundException("Trip not found"));
+
+        // When & Then
+        mockMvc.perform(
+                        post(TRIPS_BASE_URL + "/{id}/promote", tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void promoteTrip_whenTripAlreadyPromoted_shouldReturnConflict() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        String requestBody = "{\"donationLink\":\"https://example.com/donate\"}";
+
+        when(tripService.promoteTrip(any(UUID.class), eq(tripId), any()))
+                .thenThrow(new IllegalStateException("Trip is already promoted"));
+
+        // When & Then
+        mockMvc.perform(
+                        post(TRIPS_BASE_URL + "/{id}/promote", tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andExpect(status().isConflict());
+    }
 }

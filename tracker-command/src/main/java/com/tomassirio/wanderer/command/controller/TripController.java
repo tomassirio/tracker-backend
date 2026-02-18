@@ -195,7 +195,8 @@ public class TripController {
         log.info("Received request to promote trip {} by admin {}", id, adminId);
 
         UUID promotedTripId =
-                tripService.promoteTrip(adminId, id, request != null ? request.donationLink() : null);
+                tripService.promoteTrip(
+                        adminId, id, request != null ? request.donationLink() : null);
 
         log.info("Accepted trip promotion request with ID: {}", promotedTripId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(promotedTripId);

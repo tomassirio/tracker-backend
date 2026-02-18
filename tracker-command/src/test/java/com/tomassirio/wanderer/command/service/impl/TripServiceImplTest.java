@@ -61,6 +61,10 @@ class TripServiceImplTest {
     @Mock
     private com.tomassirio.wanderer.command.repository.ActiveTripRepository activeTripRepository;
 
+    @Mock
+    private com.tomassirio.wanderer.command.repository.PromotedTripRepository
+            promotedTripRepository;
+
     @Mock private TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
 
     @Mock private TripStatusTransitionHandler statusTransitionHandler;
@@ -1013,5 +1017,129 @@ class TripServiceImplTest {
         assertThat(result).isEqualTo(tripId);
         verify(activeTripRepository, never()).findById(any());
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
+    }
+
+    @Test
+    void promoteTrip_whenTripExists_shouldPublishEventAndReturnId() {
+        // Given
+        UUID adminId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        String donationLink = "https://example.com/donate";
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("Trip Name")
+                        .userId(USER_ID)
+                        .tripSettings(
+                                TripSettings.builder()
+                                        .tripStatus(TripStatus.IN_PROGRESS)
+                                        .visibility(TripVisibility.PUBLIC)
+                                        .build())
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+        when(promotedTripRepository.existsByTripId(tripId)).thenReturn(false);
+
+        // When
+        UUID result = tripService.promoteTrip(adminId, tripId, donationLink);
+
+        // Then
+        assertThat(result).isNotNull();
+        verify(tripRepository).findById(tripId);
+        verify(promotedTripRepository).existsByTripId(tripId);
+        verify(eventPublisher)
+                .publishEvent(any(com.tomassirio.wanderer.command.event.TripPromotedEvent.class));
+    }
+
+    @Test
+    void promoteTrip_whenTripNotFound_shouldThrowEntityNotFoundException() {
+        // Given
+        UUID adminId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        String donationLink = "https://example.com/donate";
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> tripService.promoteTrip(adminId, tripId, donationLink))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("Trip not found");
+
+        verify(tripRepository).findById(tripId);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void promoteTrip_whenTripAlreadyPromoted_shouldThrowIllegalStateException() {
+        // Given
+        UUID adminId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        String donationLink = "https://example.com/donate";
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("Trip Name")
+                        .userId(USER_ID)
+                        .tripSettings(
+                                TripSettings.builder()
+                                        .tripStatus(TripStatus.IN_PROGRESS)
+                                        .visibility(TripVisibility.PUBLIC)
+                                        .build())
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+        when(promotedTripRepository.existsByTripId(tripId)).thenReturn(true);
+
+        // When & Then
+        assertThatThrownBy(() -> tripService.promoteTrip(adminId, tripId, donationLink))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Trip is already promoted");
+
+        verify(tripRepository).findById(tripId);
+        verify(promotedTripRepository).existsByTripId(tripId);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void promoteTrip_withoutDonationLink_shouldPublishEventAndReturnId() {
+        // Given
+        UUID adminId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("Trip Name")
+                        .userId(USER_ID)
+                        .tripSettings(
+                                TripSettings.builder()
+                                        .tripStatus(TripStatus.IN_PROGRESS)
+                                        .visibility(TripVisibility.PUBLIC)
+                                        .build())
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+        when(promotedTripRepository.existsByTripId(tripId)).thenReturn(false);
+
+        // When
+        UUID result = tripService.promoteTrip(adminId, tripId, null);
+
+        // Then
+        assertThat(result).isNotNull();
+        verify(tripRepository).findById(tripId);
+        verify(promotedTripRepository).existsByTripId(tripId);
+        verify(eventPublisher)
+                .publishEvent(any(com.tomassirio.wanderer.command.event.TripPromotedEvent.class));
     }
 }

@@ -14,7 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
  * Event handler for TripPromotedEvent that handles persistence.
  *
  * <p>This handler persists the promoted trip during the transaction. WebSocket broadcasting is
- * handled centrally by {@link com.tomassirio.wanderer.command.websocket.BroadcastableEventListener}.
+ * handled centrally by {@link
+ * com.tomassirio.wanderer.command.websocket.BroadcastableEventListener}.
  */
 @Slf4j
 @Component
