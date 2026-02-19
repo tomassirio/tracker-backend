@@ -65,6 +65,10 @@ public final class ApiConstants {
     public static final String FRIENDS_PATH = USERS_PATH + "/friends";
     public static final String FRIEND_BY_ID_ENDPOINT = "/{friendId}";
 
+    // Friends /me and /{userId} endpoints
+    public static final String FRIENDS_ME_ENDPOINT = ME_SUFFIX + "/friends";
+    public static final String FRIENDS_BY_USER_ENDPOINT = "/{userId}/friends";
+
     // Friend requests
     public static final String FRIEND_REQUESTS_PATH = FRIENDS_PATH + REQUESTS_SUFFIX;
     public static final String FRIEND_REQUESTS_RECEIVED_PATH =
@@ -83,6 +87,14 @@ public final class ApiConstants {
     public static final String FOLLOWING_PATH = USERS_PATH + "/following";
     public static final String FOLLOWERS_PATH = USERS_PATH + "/followers";
     public static final String FOLLOW_BY_ID_ENDPOINT = "/{followedId}";
+
+    // Following /me and /{userId} endpoints
+    public static final String FOLLOWING_ME_ENDPOINT = ME_SUFFIX + "/following";
+    public static final String FOLLOWING_BY_USER_ENDPOINT = "/{userId}/following";
+
+    // Followers /me and /{userId} endpoints
+    public static final String FOLLOWERS_ME_ENDPOINT = ME_SUFFIX + "/followers";
+    public static final String FOLLOWERS_BY_USER_ENDPOINT = "/{userId}/followers";
 
     // ============================================================
     // Trip endpoints

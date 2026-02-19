@@ -24,6 +24,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 @ExtendWith(MockitoExtension.class)
 class FriendshipQueryControllerTest {
 
+    private static final String MY_FRIENDS_URL = "/api/1/users/me/friends";
+
     private MockMvc mockMvc;
 
     @Mock private FriendshipQueryService friendshipQueryService;
@@ -47,17 +49,18 @@ class FriendshipQueryControllerTest {
                         .setControllerAdvice(new GlobalExceptionHandler())
                         .setCustomArgumentResolvers(new CurrentUserIdArgumentResolver(jwtUtils))
                         .build();
-
-        when(jwtUtils.getUserIdFromAuthorizationHeader(token)).thenReturn(userId);
     }
 
+    // ============ GET MY FRIENDS TESTS ============
+
     @Test
-    void getFriends_Success() throws Exception {
+    void getMyFriends_Success() throws Exception {
+        when(jwtUtils.getUserIdFromAuthorizationHeader(token)).thenReturn(userId);
         FriendshipResponse response = new FriendshipResponse(userId, friendId);
 
         when(friendshipQueryService.getFriends(userId)).thenReturn(List.of(response));
 
-        mockMvc.perform(get("/api/1/users/friends").header("Authorization", token))
+        mockMvc.perform(get(MY_FRIENDS_URL).header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$[0].userId").value(userId.toString()))
@@ -67,14 +70,71 @@ class FriendshipQueryControllerTest {
     }
 
     @Test
-    void getFriends_EmptyList() throws Exception {
+    void getMyFriends_EmptyList() throws Exception {
+        when(jwtUtils.getUserIdFromAuthorizationHeader(token)).thenReturn(userId);
         when(friendshipQueryService.getFriends(userId)).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/1/users/friends").header("Authorization", token))
+        mockMvc.perform(get(MY_FRIENDS_URL).header("Authorization", token))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$").isEmpty());
 
         verify(friendshipQueryService).getFriends(userId);
+    }
+
+    // ============ GET FRIENDS BY USER ID TESTS ============
+
+    @Test
+    void getFriendsByUserId_Success() throws Exception {
+        UUID targetUserId = UUID.randomUUID();
+        UUID targetFriendId = UUID.randomUUID();
+        FriendshipResponse response = new FriendshipResponse(targetUserId, targetFriendId);
+
+        when(friendshipQueryService.getFriends(targetUserId)).thenReturn(List.of(response));
+
+        mockMvc.perform(get("/api/1/users/{userId}/friends", targetUserId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].userId").value(targetUserId.toString()))
+                .andExpect(jsonPath("$[0].friendId").value(targetFriendId.toString()));
+
+        verify(friendshipQueryService).getFriends(targetUserId);
+    }
+
+    @Test
+    void getFriendsByUserId_EmptyList() throws Exception {
+        UUID targetUserId = UUID.randomUUID();
+
+        when(friendshipQueryService.getFriends(targetUserId)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/1/users/{userId}/friends", targetUserId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$").isEmpty());
+
+        verify(friendshipQueryService).getFriends(targetUserId);
+    }
+
+    @Test
+    void getFriendsByUserId_MultipleFriends() throws Exception {
+        UUID targetUserId = UUID.randomUUID();
+        UUID friendId1 = UUID.randomUUID();
+        UUID friendId2 = UUID.randomUUID();
+        FriendshipResponse response1 = new FriendshipResponse(targetUserId, friendId1);
+        FriendshipResponse response2 = new FriendshipResponse(targetUserId, friendId2);
+
+        when(friendshipQueryService.getFriends(targetUserId))
+                .thenReturn(List.of(response1, response2));
+
+        mockMvc.perform(get("/api/1/users/{userId}/friends", targetUserId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].userId").value(targetUserId.toString()))
+                .andExpect(jsonPath("$[0].friendId").value(friendId1.toString()))
+                .andExpect(jsonPath("$[1].userId").value(targetUserId.toString()))
+                .andExpect(jsonPath("$[1].friendId").value(friendId2.toString()));
+
+        verify(friendshipQueryService).getFriends(targetUserId);
     }
 }
