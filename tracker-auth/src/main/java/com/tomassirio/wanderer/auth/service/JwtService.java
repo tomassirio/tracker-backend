@@ -1,7 +1,9 @@
 package com.tomassirio.wanderer.auth.service;
 
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.security.Role;
 import io.jsonwebtoken.Claims;
+import java.util.Set;
 
 /**
  * Service interface for JWT token operations. Provides methods for generating and parsing JWT
@@ -16,18 +18,20 @@ public interface JwtService {
      * roles as claims.
      *
      * @param user the user for whom the token is generated
+     * @param roles the roles to include in the token
      * @return the generated JWT token as a String
      */
-    String generateToken(User user);
+    String generateToken(User user, Set<Role> roles);
 
     /**
      * Generates a JWT token with a custom JTI for the given user.
      *
      * @param user the user for whom the token is generated
      * @param jti the JWT ID to include in the token
+     * @param roles the roles to include in the token
      * @return the generated JWT token as a String
      */
-    String generateTokenWithJti(User user, String jti);
+    String generateTokenWithJti(User user, String jti, Set<Role> roles);
 
     /**
      * Parses the given JWT token and returns the claims.

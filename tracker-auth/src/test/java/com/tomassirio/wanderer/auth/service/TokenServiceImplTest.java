@@ -15,17 +15,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.auth.client.TrackerQueryClient;
+import com.tomassirio.wanderer.auth.domain.Credential;
 import com.tomassirio.wanderer.auth.domain.PasswordResetToken;
 import com.tomassirio.wanderer.auth.domain.RefreshToken;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
+import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.repository.PasswordResetTokenRepository;
 import com.tomassirio.wanderer.auth.repository.RefreshTokenRepository;
 import com.tomassirio.wanderer.auth.service.impl.TokenServiceImpl;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.security.Role;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +46,8 @@ class TokenServiceImplTest {
     @Mock private RefreshTokenRepository refreshTokenRepository;
 
     @Mock private PasswordResetTokenRepository passwordResetTokenRepository;
+
+    @Mock private CredentialRepository credentialRepository;
 
     @Mock private JwtService jwtService;
 
@@ -86,7 +92,12 @@ class TokenServiceImplTest {
         when(refreshTokenRepository.findByTokenHash(anyString()))
                 .thenReturn(Optional.of(storedToken));
         when(trackerQueryClient.getUserById(testUserId)).thenReturn(testUser);
-        when(jwtService.generateTokenWithJti(any(User.class), anyString()))
+
+        Credential testCredential =
+                Credential.builder().userId(testUserId).roles(Set.of(Role.USER)).build();
+        when(credentialRepository.findById(testUserId)).thenReturn(Optional.of(testCredential));
+
+        when(jwtService.generateTokenWithJti(any(User.class), anyString(), any()))
                 .thenReturn("newAccessToken");
         when(jwtService.getRefreshExpirationMs()).thenReturn(604800000L);
         when(jwtService.getExpirationMs()).thenReturn(3600000L);

@@ -1,14 +1,17 @@
 package com.tomassirio.wanderer.auth.service.impl;
 
 import com.tomassirio.wanderer.auth.client.TrackerQueryClient;
+import com.tomassirio.wanderer.auth.domain.Credential;
 import com.tomassirio.wanderer.auth.domain.PasswordResetToken;
 import com.tomassirio.wanderer.auth.domain.RefreshToken;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
+import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.repository.PasswordResetTokenRepository;
 import com.tomassirio.wanderer.auth.repository.RefreshTokenRepository;
 import com.tomassirio.wanderer.auth.service.JwtService;
 import com.tomassirio.wanderer.auth.service.TokenService;
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.security.Role;
 import feign.FeignException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -17,6 +20,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -32,6 +36,7 @@ public class TokenServiceImpl implements TokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final CredentialRepository credentialRepository;
     private final JwtService jwtService;
     private final TrackerQueryClient trackerQueryClient;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -96,9 +101,13 @@ public class TokenServiceImpl implements TokenService {
             throw new IllegalStateException("Failed to fetch user information", e);
         }
 
-        // Generate new access token with JTI
+        // Get user roles from credentials
+        Optional<Credential> maybeCred = credentialRepository.findById(user.getId());
+        Set<Role> roles = maybeCred.map(Credential::getRoles).orElse(Set.of(Role.USER));
+
+        // Generate new access token with JTI and roles
         String jti = UUID.randomUUID().toString();
-        String newAccessToken = jwtService.generateTokenWithJti(user, jti);
+        String newAccessToken = jwtService.generateTokenWithJti(user, jti, roles);
 
         // Generate new refresh token (token rotation)
         String newRefreshToken = createRefreshToken(user.getId());

@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,14 +37,14 @@ public class JwtServiceImpl implements JwtService {
     private long refreshExpirationMs;
 
     @Override
-    public String generateToken(User user) {
+    public String generateToken(User user, Set<Role> roles) {
         Key key = getSigningKey();
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
         return Jwts.builder()
                 .setSubject(user.getId().toString())
                 .claim("username", user.getUsername())
-                .claim("roles", List.of(Role.USER))
+                .claim("roles", List.copyOf(roles))
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -51,7 +52,7 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateTokenWithJti(User user, String jti) {
+    public String generateTokenWithJti(User user, String jti, Set<Role> roles) {
         Key key = getSigningKey();
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expirationMs);
@@ -59,7 +60,7 @@ public class JwtServiceImpl implements JwtService {
                 .setSubject(user.getId().toString())
                 .setId(jti)
                 .claim("username", user.getUsername())
-                .claim("roles", List.of(Role.USER))
+                .claim("roles", List.copyOf(roles))
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(key, SignatureAlgorithm.HS256)
