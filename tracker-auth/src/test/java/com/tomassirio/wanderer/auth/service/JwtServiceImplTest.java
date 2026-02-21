@@ -18,6 +18,7 @@ import io.jsonwebtoken.security.SignatureException;
 import java.lang.reflect.Field;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +55,7 @@ class JwtServiceImplTest {
 
     @Test
     void generateToken_shouldReturnValidToken() {
-        String token = jwtService.generateToken(testUser);
+        String token = jwtService.generateToken(testUser, Set.of(Role.USER));
 
         assertNotNull(token);
         assertFalse(token.isEmpty());
@@ -62,7 +63,7 @@ class JwtServiceImplTest {
 
     @Test
     void generateToken_shouldContainCorrectClaims() {
-        String token = jwtService.generateToken(testUser);
+        String token = jwtService.generateToken(testUser, Set.of(Role.USER));
         Claims claims = jwtService.parseToken(token);
 
         assertEquals(testUser.getId().toString(), claims.getSubject());
@@ -77,7 +78,7 @@ class JwtServiceImplTest {
 
     @Test
     void generateToken_shouldSetIssuedAtAndExpiration() {
-        String token = jwtService.generateToken(testUser);
+        String token = jwtService.generateToken(testUser, Set.of(Role.USER));
         Claims claims = jwtService.parseToken(token);
 
         assertNotNull(claims.getIssuedAt());
@@ -95,7 +96,7 @@ class JwtServiceImplTest {
     @Test
     void generateTokenWithJti_shouldReturnValidTokenWithJti() {
         String jti = UUID.randomUUID().toString();
-        String token = jwtService.generateTokenWithJti(testUser, jti);
+        String token = jwtService.generateTokenWithJti(testUser, jti, Set.of(Role.USER));
 
         assertNotNull(token);
         assertFalse(token.isEmpty());
@@ -107,7 +108,7 @@ class JwtServiceImplTest {
     @Test
     void generateTokenWithJti_shouldContainCorrectClaims() {
         String jti = UUID.randomUUID().toString();
-        String token = jwtService.generateTokenWithJti(testUser, jti);
+        String token = jwtService.generateTokenWithJti(testUser, jti, Set.of(Role.USER));
         Claims claims = jwtService.parseToken(token);
 
         assertEquals(testUser.getId().toString(), claims.getSubject());
@@ -120,7 +121,7 @@ class JwtServiceImplTest {
     @Test
     void generateTokenWithJti_shouldSetIssuedAtAndExpiration() {
         String jti = UUID.randomUUID().toString();
-        String token = jwtService.generateTokenWithJti(testUser, jti);
+        String token = jwtService.generateTokenWithJti(testUser, jti, Set.of(Role.USER));
         Claims claims = jwtService.parseToken(token);
 
         assertNotNull(claims.getIssuedAt());
@@ -137,7 +138,7 @@ class JwtServiceImplTest {
 
     @Test
     void parseToken_shouldReturnClaimsWithCorrectSubject() {
-        String token = jwtService.generateToken(testUser);
+        String token = jwtService.generateToken(testUser, Set.of(Role.USER));
 
         Claims claims = jwtService.parseToken(token);
 
@@ -156,7 +157,7 @@ class JwtServiceImplTest {
     @Test
     void parseToken_shouldThrowExceptionForTokenWithWrongSignature() throws Exception {
         // Generate token with one secret
-        String token = jwtService.generateToken(testUser);
+        String token = jwtService.generateToken(testUser, Set.of(Role.USER));
 
         // Create a new instance with a different secret (must be at least 32 bytes for HS256)
         JwtServiceImpl differentJwtService = new JwtServiceImpl();
@@ -175,7 +176,7 @@ class JwtServiceImplTest {
         expirationField.setAccessible(true);
         expirationField.set(jwtService, -1L);
 
-        String token = jwtService.generateToken(testUser);
+        String token = jwtService.generateToken(testUser, Set.of(Role.USER));
 
         // Wait a tiny bit to ensure token is definitely expired
         Thread.sleep(10);
@@ -214,8 +215,8 @@ class JwtServiceImplTest {
         User user1 = User.builder().id(UUID.randomUUID()).username("user1").build();
         User user2 = User.builder().id(UUID.randomUUID()).username("user2").build();
 
-        String token1 = jwtService.generateToken(user1);
-        String token2 = jwtService.generateToken(user2);
+        String token1 = jwtService.generateToken(user1, Set.of(Role.USER));
+        String token2 = jwtService.generateToken(user2, Set.of(Role.USER));
 
         assertNotNull(token1);
         assertNotNull(token2);
@@ -227,8 +228,8 @@ class JwtServiceImplTest {
         String jti1 = UUID.randomUUID().toString();
         String jti2 = UUID.randomUUID().toString();
 
-        String token1 = jwtService.generateTokenWithJti(testUser, jti1);
-        String token2 = jwtService.generateTokenWithJti(testUser, jti2);
+        String token1 = jwtService.generateTokenWithJti(testUser, jti1, Set.of(Role.USER));
+        String token2 = jwtService.generateTokenWithJti(testUser, jti2, Set.of(Role.USER));
 
         assertNotNull(token1);
         assertNotNull(token2);
@@ -243,7 +244,7 @@ class JwtServiceImplTest {
 
     @Test
     void generateToken_shouldBeValidForEntireExpirationPeriod() {
-        String token = jwtService.generateToken(testUser);
+        String token = jwtService.generateToken(testUser, Set.of(Role.USER));
         Claims claims = jwtService.parseToken(token);
 
         // Token should be valid now

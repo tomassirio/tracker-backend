@@ -74,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
 
         // Generate tokens
         String jti = UUID.randomUUID().toString();
-        String accessToken = jwtService.generateTokenWithJti(user, jti);
+        String accessToken = jwtService.generateTokenWithJti(user, jti, cred.getRoles());
         String refreshToken = tokenService.createRefreshToken(user.getId());
 
         return new LoginResponse(accessToken, refreshToken, "Bearer", jwtService.getExpirationMs());
@@ -150,7 +150,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 4) Issue JWT and refresh token
         String jti = UUID.randomUUID().toString();
-        String accessToken = jwtService.generateTokenWithJti(createdUser, jti);
+        String accessToken = jwtService.generateTokenWithJti(createdUser, jti, Set.of(Role.USER));
         String refreshToken = tokenService.createRefreshToken(createdUser.getId());
         return new LoginResponse(accessToken, refreshToken, "Bearer", jwtService.getExpirationMs());
     }

@@ -78,7 +78,7 @@ class AuthServiceImplTest {
         when(credentialRepository.findById(testUser.getId()))
                 .thenReturn(Optional.of(testCredential));
         when(passwordEncoder.matches(password, testCredential.getPasswordHash())).thenReturn(true);
-        when(jwtService.generateTokenWithJti(any(), any())).thenReturn(accessToken);
+        when(jwtService.generateTokenWithJti(any(), any(), any())).thenReturn(accessToken);
         when(tokenService.createRefreshToken(testUser.getId())).thenReturn(refreshToken);
         when(jwtService.getExpirationMs()).thenReturn(expiresIn);
 
@@ -88,7 +88,7 @@ class AuthServiceImplTest {
         assertEquals(refreshToken, result.refreshToken());
         assertEquals("Bearer", result.tokenType());
         assertEquals(expiresIn, result.expiresIn());
-        verify(jwtService).generateTokenWithJti(any(), any());
+        verify(jwtService).generateTokenWithJti(any(), any(), any());
         verify(tokenService).createRefreshToken(testUser.getId());
     }
 
@@ -158,7 +158,7 @@ class AuthServiceImplTest {
         when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
         when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
-        when(jwtService.generateTokenWithJti(any(), any())).thenReturn(accessToken);
+        when(jwtService.generateTokenWithJti(any(), any(), any())).thenReturn(accessToken);
         when(tokenService.createRefreshToken(testUser.getId())).thenReturn(refreshToken);
         when(jwtService.getExpirationMs()).thenReturn(expiresIn);
 
