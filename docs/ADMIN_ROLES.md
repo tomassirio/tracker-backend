@@ -56,6 +56,34 @@ data:
   bootstrap.admin.enabled: "true"
 ```
 
+### Example: GitHub Actions (Per Environment)
+
+Set environment-specific secrets or variables in your GitHub repository settings:
+
+1. Navigate to **Settings** → **Environments** → **Select environment** (e.g., `production`, `staging`, `dev`)
+2. Add the following environment variables:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `BOOTSTRAP_ADMIN_USERNAME` | Username of the user to promote to admin | `admin` |
+| `BOOTSTRAP_ADMIN_ENABLED` | Enable/disable bootstrap (default: true) | `true` |
+
+Then reference them in your workflow:
+
+```yaml
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production  # Uses environment-specific variables
+    steps:
+      - name: Deploy to Kubernetes
+        env:
+          BOOTSTRAP_ADMIN_USERNAME: ${{ vars.BOOTSTRAP_ADMIN_USERNAME }}
+          BOOTSTRAP_ADMIN_ENABLED: ${{ vars.BOOTSTRAP_ADMIN_ENABLED }}
+        run: |
+          # Your deployment command here
+```
+
 ### Bootstrap Scenarios
 
 #### Scenario 1: First deployment (no admins exist)
@@ -230,4 +258,4 @@ Look for the "Admin" tag in the API documentation.
 ---
 
 **Version**: 0.5.2+  
-**Last Updated**: 2026-02-21
+**Last Updated**: 2026-02-22
