@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.auth.controller;
 
+import com.tomassirio.wanderer.auth.service.AdminService;
 import com.tomassirio.wanderer.auth.service.UserRoleService;
 import com.tomassirio.wanderer.commons.security.Role;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminController {
 
     private final UserRoleService userRoleService;
+    private final AdminService adminService;
 
     /**
      * Promotes a user to admin role.
@@ -136,5 +138,39 @@ public class AdminController {
         log.info("Admin retrieving roles for user {}", userId);
         Set<Role> roles = userRoleService.getUserRoles(userId);
         return ResponseEntity.ok(roles);
+    }
+
+    /**
+     * Deletes a user from the system.
+     *
+     * @param userId the ID of the user to delete
+     * @return 204 No Content on success
+     */
+    @DeleteMapping("/users/{userId}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Delete user",
+            description =
+                    "Permanently deletes a user from the system, including all their data. "
+                            + "Cannot delete the last admin user.")
+    @ApiResponse(responseCode = "204", description = "User deleted successfully")
+    @ApiResponse(
+            responseCode = "400",
+            description = "User not found or cannot delete last admin",
+            content = @Content(schema = @Schema(implementation = Map.class)))
+    @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - valid JWT required",
+            content = @Content)
+    @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - ADMIN role required",
+            content = @Content)
+    public ResponseEntity<Void> deleteUser(
+            @Parameter(description = "User ID to delete", required = true) @PathVariable
+                    UUID userId) {
+        log.info("Admin deleting user {}", userId);
+        adminService.deleteUser(userId);
+        return ResponseEntity.noContent().build();
     }
 }
