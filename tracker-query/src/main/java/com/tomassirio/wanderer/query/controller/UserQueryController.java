@@ -6,9 +6,13 @@ import com.tomassirio.wanderer.query.dto.UserResponse;
 import com.tomassirio.wanderer.query.service.UserQueryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,6 +32,23 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserQueryController {
 
     private final UserQueryService userQueryService;
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Get all users (Admin only)",
+            description =
+                    "Retrieves all users with pagination and sorting support. "
+                            + "Use query parameters: page, size, sort (e.g., sort=username,asc)")
+    @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
+    @ApiResponse(responseCode = "401", description = "Unauthorized - valid JWT required")
+    @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required")
+    public ResponseEntity<Page<UserResponse>> getAllUsers(
+            @Parameter(description = "Pagination and sorting parameters")
+                    @PageableDefault(size = 20, sort = "username")
+                    Pageable pageable) {
+        return ResponseEntity.ok(userQueryService.getAllUsers(pageable));
+    }
 
     @GetMapping(ApiConstants.USER_BY_ID_ENDPOINT)
     @Operation(summary = "Get user by ID", description = "Retrieves a specific user by their ID")

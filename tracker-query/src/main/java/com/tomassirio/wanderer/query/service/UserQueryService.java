@@ -2,6 +2,8 @@ package com.tomassirio.wanderer.query.service;
 
 import com.tomassirio.wanderer.query.dto.UserResponse;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 /**
  * Service interface for user query operations. Provides methods to retrieve user information.
@@ -27,4 +29,12 @@ public interface UserQueryService {
      * @throws jakarta.persistence.EntityNotFoundException if the user is not found
      */
     UserResponse getUserByUsername(String username);
+
+    /**
+     * Retrieves all users with pagination and sorting support.
+     *
+     * @param pageable pagination and sorting information
+     * @return a page of user responses
+     */
+    Page<UserResponse> getAllUsers(Pageable pageable);
 }

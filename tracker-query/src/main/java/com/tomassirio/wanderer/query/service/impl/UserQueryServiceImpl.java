@@ -6,6 +6,8 @@ import com.tomassirio.wanderer.query.service.UserQueryService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -42,5 +44,12 @@ public class UserQueryServiceImpl implements UserQueryService {
                         .findByUsername(username)
                         .orElseThrow(() -> new EntityNotFoundException("User not found"));
         return new UserResponse(user.getId(), user.getUsername());
+    }
+
+    @Override
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository
+                .findAll(pageable)
+                .map(user -> new UserResponse(user.getId(), user.getUsername()));
     }
 }
