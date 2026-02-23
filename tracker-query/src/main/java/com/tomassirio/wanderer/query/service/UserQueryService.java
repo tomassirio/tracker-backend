@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.service;
 
+import com.tomassirio.wanderer.query.dto.UserAdminResponse;
 import com.tomassirio.wanderer.query.dto.UserResponse;
 import java.util.UUID;
 import org.springframework.data.domain.Page;
@@ -37,4 +38,13 @@ public interface UserQueryService {
      * @return a page of user responses
      */
     Page<UserResponse> getAllUsers(Pageable pageable);
+
+    /**
+     * Retrieves all users with statistics for admin view. Includes friends count, followers count,
+     * and trips count for each user.
+     *
+     * @param pageable pagination and sorting information
+     * @return a page of user admin responses with statistics
+     */
+    Page<UserAdminResponse> getAllUsersWithStats(Pageable pageable);
 }

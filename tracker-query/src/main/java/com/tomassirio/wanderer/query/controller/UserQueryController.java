@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.query.controller;
 
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
+import com.tomassirio.wanderer.query.dto.UserAdminResponse;
 import com.tomassirio.wanderer.query.dto.UserResponse;
 import com.tomassirio.wanderer.query.service.UserQueryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,18 +37,18 @@ public class UserQueryController {
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
-            summary = "Get all users (Admin only)",
+            summary = "Get all users with statistics (Admin only)",
             description =
-                    "Retrieves all users with pagination and sorting support. "
+                    "Retrieves all users with their statistics (friends, followers, trips count). "
                             + "Use query parameters: page, size, sort (e.g., sort=username,asc)")
     @ApiResponse(responseCode = "200", description = "Users retrieved successfully")
     @ApiResponse(responseCode = "401", description = "Unauthorized - valid JWT required")
     @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required")
-    public ResponseEntity<Page<UserResponse>> getAllUsers(
+    public ResponseEntity<Page<UserAdminResponse>> getAllUsers(
             @Parameter(description = "Pagination and sorting parameters")
                     @PageableDefault(size = 20, sort = "username")
                     Pageable pageable) {
-        return ResponseEntity.ok(userQueryService.getAllUsers(pageable));
+        return ResponseEntity.ok(userQueryService.getAllUsersWithStats(pageable));
     }
 
     @GetMapping(ApiConstants.USER_BY_ID_ENDPOINT)

@@ -50,4 +50,6 @@ public interface TripRepository extends JpaRepository<Trip, UUID> {
                     + "(t.tripSettings.visibility = 'PROTECTED' AND t.userId IN :friendIds)")
     List<Trip> findAllAvailableTripsForUser(
             @Param("userId") UUID userId, @Param("friendIds") List<UUID> friendIds);
+
+    long countByUserId(UUID userId);
 }

@@ -27,3 +27,5 @@ databaseChangeLog:
       file: db/changelog/013-create-active-trips-table.yaml
   - include:
       file: db/changelog/014-create-promoted-trips-table.yaml
+  - include:
+      file: db/changelog/015-add-created-at-to-users.yaml

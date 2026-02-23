@@ -5,9 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.query.dto.UserAdminResponse;
 import com.tomassirio.wanderer.query.dto.UserResponse;
+import com.tomassirio.wanderer.query.repository.FriendshipRepository;
+import com.tomassirio.wanderer.query.repository.TripRepository;
+import com.tomassirio.wanderer.query.repository.UserFollowRepository;
 import com.tomassirio.wanderer.query.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,6 +32,9 @@ import org.springframework.data.domain.Sort;
 class UserQueryServiceImplTest {
 
     @Mock private UserRepository userRepository;
+    @Mock private FriendshipRepository friendshipRepository;
+    @Mock private UserFollowRepository userFollowRepository;
+    @Mock private TripRepository tripRepository;
 
     @InjectMocks private UserQueryServiceImpl userQueryService;
 
@@ -118,7 +126,12 @@ class UserQueryServiceImplTest {
     @Test
     void getAllUsers_withPagination_shouldReturnCorrectPage() {
         // Given
-        User user1 = User.builder().id(UUID.randomUUID()).username("charlie").build();
+        User user1 =
+                User.builder()
+                        .id(UUID.randomUUID())
+                        .username("charlie")
+                        .createdAt(Instant.now())
+                        .build();
         Pageable pageable = PageRequest.of(1, 2, Sort.by("username")); // Second page, 2 per page
         Page<User> userPage = new PageImpl<>(List.of(user1), pageable, 5); // 5 total, showing 1
 
@@ -132,5 +145,82 @@ class UserQueryServiceImplTest {
         assertEquals(3, result.getTotalPages()); // 5 items / 2 per page = 3 pages
         assertEquals(1, result.getContent().size());
         assertEquals("charlie", result.getContent().get(0).username());
+    }
+
+    @Test
+    void getAllUsersWithStats_shouldReturnUserAdminResponsesWithCounts() {
+        // Given
+        User user1 = User.builder().id(UUID.randomUUID()).username("alice").build();
+        User user2 = User.builder().id(UUID.randomUUID()).username("bob").build();
+        List<User> users = List.of(user1, user2);
+        Pageable pageable = PageRequest.of(0, 20, Sort.by("username"));
+        Page<User> userPage = new PageImpl<>(users, pageable, users.size());
+
+        when(userRepository.findAll(pageable)).thenReturn(userPage);
+        when(friendshipRepository.countByUserId(user1.getId())).thenReturn(5L);
+        when(userFollowRepository.countByFollowedId(user1.getId())).thenReturn(10L);
+        when(tripRepository.countByUserId(user1.getId())).thenReturn(3L);
+        when(friendshipRepository.countByUserId(user2.getId())).thenReturn(8L);
+        when(userFollowRepository.countByFollowedId(user2.getId())).thenReturn(15L);
+        when(tripRepository.countByUserId(user2.getId())).thenReturn(7L);
+
+        // When
+        Page<UserAdminResponse> result = userQueryService.getAllUsersWithStats(pageable);
+
+        // Then
+        assertEquals(2, result.getTotalElements());
+        assertEquals(2, result.getContent().size());
+
+        UserAdminResponse aliceResponse = result.getContent().get(0);
+        assertEquals("alice", aliceResponse.username());
+        assertEquals(5L, aliceResponse.friendsCount());
+        assertEquals(10L, aliceResponse.followersCount());
+        assertEquals(3L, aliceResponse.tripsCount());
+
+        UserAdminResponse bobResponse = result.getContent().get(1);
+        assertEquals("bob", bobResponse.username());
+        assertEquals(8L, bobResponse.friendsCount());
+        assertEquals(15L, bobResponse.followersCount());
+        assertEquals(7L, bobResponse.tripsCount());
+    }
+
+    @Test
+    void getAllUsersWithStats_withEmptyResult_shouldReturnEmptyPage() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<User> emptyPage = new PageImpl<>(List.of(), pageable, 0);
+
+        when(userRepository.findAll(pageable)).thenReturn(emptyPage);
+
+        // When
+        Page<UserAdminResponse> result = userQueryService.getAllUsersWithStats(pageable);
+
+        // Then
+        assertEquals(0, result.getTotalElements());
+        assertEquals(0, result.getContent().size());
+    }
+
+    @Test
+    void getAllUsersWithStats_withZeroCounts_shouldReturnZeroValues() {
+        // Given
+        User user = User.builder().id(UUID.randomUUID()).username("newuser").build();
+        Pageable pageable = PageRequest.of(0, 20);
+        Page<User> userPage = new PageImpl<>(List.of(user), pageable, 1);
+
+        when(userRepository.findAll(pageable)).thenReturn(userPage);
+        when(friendshipRepository.countByUserId(user.getId())).thenReturn(0L);
+        when(userFollowRepository.countByFollowedId(user.getId())).thenReturn(0L);
+        when(tripRepository.countByUserId(user.getId())).thenReturn(0L);
+
+        // When
+        Page<UserAdminResponse> result = userQueryService.getAllUsersWithStats(pageable);
+
+        // Then
+        assertEquals(1, result.getContent().size());
+        UserAdminResponse response = result.getContent().get(0);
+        assertEquals("newuser", response.username());
+        assertEquals(0L, response.friendsCount());
+        assertEquals(0L, response.followersCount());
+        assertEquals(0L, response.tripsCount());
     }
 }
