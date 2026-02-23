@@ -193,6 +193,17 @@ jobs:
               "--set" "application.trackerCommandUrl=http://tracker-command${{ env.ENV_SUFFIX }}:8081"
               "--set" "application.trackerQueryUrl=http://tracker-query${{ env.ENV_SUFFIX }}:8082"
             )
+            # Bootstrap admin configuration from GitHub environment variables
+            if [ -n "${{ vars.BOOTSTRAP_ADMIN_USERNAME }}" ]; then
+              HELM_ARGS+=(
+                "--set" "application.bootstrap.adminUsername=${{ vars.BOOTSTRAP_ADMIN_USERNAME }}"
+              )
+            fi
+            if [ -n "${{ vars.BOOTSTRAP_ADMIN_ENABLED }}" ]; then
+              HELM_ARGS+=(
+                "--set" "application.bootstrap.adminEnabled=${{ vars.BOOTSTRAP_ADMIN_ENABLED }}"
+              )
+            fi
           fi
           
           if [ "${{ matrix.service }}" == "tracker-command" ] && [ -n "${{ secrets.GOOGLE_MAPS_API_KEY }}" ]; then

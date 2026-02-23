@@ -59,6 +59,13 @@ application:
   # Spring Cloud
   springCloud:
     compatibilityVerifierEnabled: false
+
+  # Bootstrap Admin Configuration
+  # Set via GitHub environment variables per environment
+  bootstrap:
+    adminUsername: ""
+    adminEnabled: true
+
 # Pod Storage
 volumeClaimTemplates:
   enabled: false

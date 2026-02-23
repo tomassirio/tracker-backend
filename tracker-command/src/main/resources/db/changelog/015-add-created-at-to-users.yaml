@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-add-created-at-to-users
+      author: tomassirio
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: true
+                  defaultValueComputed: CURRENT_TIMESTAMP
+        - sql:
+            sql: UPDATE users SET created_at = CURRENT_TIMESTAMP WHERE created_at IS NULL
+        - addNotNullConstraint:
+            tableName: users
+            columnName: created_at
+            columnDataType: timestamp with time zone
+

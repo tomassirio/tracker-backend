@@ -1,11 +1,18 @@
 package com.tomassirio.wanderer.query.service.impl;
 
+import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.query.dto.UserAdminResponse;
 import com.tomassirio.wanderer.query.dto.UserResponse;
+import com.tomassirio.wanderer.query.repository.FriendshipRepository;
+import com.tomassirio.wanderer.query.repository.TripRepository;
+import com.tomassirio.wanderer.query.repository.UserFollowRepository;
 import com.tomassirio.wanderer.query.repository.UserRepository;
 import com.tomassirio.wanderer.query.service.UserQueryService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,6 +28,9 @@ import org.springframework.web.server.ResponseStatusException;
 public class UserQueryServiceImpl implements UserQueryService {
 
     private final UserRepository userRepository;
+    private final FriendshipRepository friendshipRepository;
+    private final UserFollowRepository userFollowRepository;
+    private final TripRepository tripRepository;
 
     @Override
     public UserResponse getUserById(UUID id) {
@@ -42,5 +52,31 @@ public class UserQueryServiceImpl implements UserQueryService {
                         .findByUsername(username)
                         .orElseThrow(() -> new EntityNotFoundException("User not found"));
         return new UserResponse(user.getId(), user.getUsername());
+    }
+
+    @Override
+    public Page<UserResponse> getAllUsers(Pageable pageable) {
+        return userRepository
+                .findAll(pageable)
+                .map(user -> new UserResponse(user.getId(), user.getUsername()));
+    }
+
+    @Override
+    public Page<UserAdminResponse> getAllUsersWithStats(Pageable pageable) {
+        return userRepository.findAll(pageable).map(this::mapToAdminResponse);
+    }
+
+    private UserAdminResponse mapToAdminResponse(User user) {
+        long friendsCount = friendshipRepository.countByUserId(user.getId());
+        long followersCount = userFollowRepository.countByFollowedId(user.getId());
+        long tripsCount = tripRepository.countByUserId(user.getId());
+
+        return new UserAdminResponse(
+                user.getId(),
+                user.getUsername(),
+                friendsCount,
+                followersCount,
+                tripsCount,
+                user.getCreatedAt());
     }
 }

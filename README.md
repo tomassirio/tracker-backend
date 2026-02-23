@@ -22,6 +22,7 @@ A comprehensive tracking system for my pilgrimage to Santiago de Compostela, bui
   - See [`docs/wiki/SETUP-INSTRUCTIONS.md`](docs/wiki/SETUP-INSTRUCTIONS.md) for details
 - **[Docker Guide](docs/DOCKER.md)** - Complete guide for building and running with Docker
 - **[CI/CD Workflows](docs/CI-CD.md)** - GitHub Actions workflows and automation
+- **[Admin Role Management](docs/ADMIN_ROLES.md)** - Guide for promoting users to admin and bootstrap configuration
 - **[Release Notes](https://github.com/tomassirio/tracker-backend/releases)** - Version history and changelog
 
 ## 📖 Description

@@ -1,8 +1,12 @@
 package com.tomassirio.wanderer.query.service.impl;
 
 import com.tomassirio.wanderer.commons.domain.PromotedTrip;
+import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.query.dto.PromotedTripResponse;
 import com.tomassirio.wanderer.query.repository.PromotedTripRepository;
+import com.tomassirio.wanderer.query.repository.TripRepository;
+import com.tomassirio.wanderer.query.repository.UserRepository;
 import com.tomassirio.wanderer.query.service.PromotedTripQueryService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
@@ -25,6 +29,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class PromotedTripQueryServiceImpl implements PromotedTripQueryService {
 
     private final PromotedTripRepository promotedTripRepository;
+    private final TripRepository tripRepository;
+    private final UserRepository userRepository;
 
     @Override
     public List<PromotedTripResponse> getAllPromotedTrips() {
@@ -48,11 +54,40 @@ public class PromotedTripQueryServiceImpl implements PromotedTripQueryService {
     }
 
     private PromotedTripResponse mapToResponse(PromotedTrip promotedTrip) {
+        Trip trip =
+                tripRepository
+                        .findById(promotedTrip.getTripId())
+                        .orElseThrow(
+                                () ->
+                                        new EntityNotFoundException(
+                                                "Trip not found: " + promotedTrip.getTripId()));
+
+        User promoter =
+                userRepository
+                        .findById(promotedTrip.getPromotedBy())
+                        .orElseThrow(
+                                () ->
+                                        new EntityNotFoundException(
+                                                "Promoter not found: "
+                                                        + promotedTrip.getPromotedBy()));
+
+        User tripOwner =
+                userRepository
+                        .findById(trip.getUserId())
+                        .orElseThrow(
+                                () ->
+                                        new EntityNotFoundException(
+                                                "Trip owner not found: " + trip.getUserId()));
+
         return new PromotedTripResponse(
                 promotedTrip.getId().toString(),
                 promotedTrip.getTripId().toString(),
+                trip.getName(),
                 promotedTrip.getDonationLink(),
                 promotedTrip.getPromotedBy().toString(),
+                promoter.getUsername(),
+                tripOwner.getId().toString(),
+                tripOwner.getUsername(),
                 promotedTrip.getPromotedAt());
     }
 }
