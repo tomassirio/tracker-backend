@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for promoted trip query operations. Handles promoted trip retrieval requests.
- * All endpoints require ADMIN role.
+ * REST controller for promoted trip query operations. Handles promoted trip retrieval requests. All
+ * endpoints require ADMIN role.
  *
  * @author tomassirio
  * @since 0.5.0
@@ -36,7 +36,9 @@ public class PromotedTripQueryController {
     @Operation(
             summary = "Get all promoted trips",
             description = "Retrieves a list of all currently promoted trips. Requires ADMIN role.")
-    @ApiResponse(responseCode = "200", description = "List of promoted trips retrieved successfully")
+    @ApiResponse(
+            responseCode = "200",
+            description = "List of promoted trips retrieved successfully")
     @ApiResponse(responseCode = "401", description = "Unauthorized - valid JWT required")
     @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required")
     public ResponseEntity<List<PromotedTripResponse>> getAllPromotedTrips() {
