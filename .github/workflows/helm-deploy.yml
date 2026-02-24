@@ -211,6 +211,12 @@ jobs:
               "--set" "application.googleMaps.apiKey=${{ secrets.GOOGLE_MAPS_API_KEY }}"
             )
           fi
+
+          if [ "${{ matrix.service }}" == "tracker-command" ] || [ "${{ matrix.service }}" == "tracker-query" ]; then
+            HELM_ARGS+=(
+              "--set" "application.tracker.authUrl=http://tracker-auth${{ env.ENV_SUFFIX }}:8083"
+            )
+          fi
           
           helm "${HELM_ARGS[@]}" --wait --timeout 5m
           echo "✓ ${{ matrix.service }} deployed successfully"

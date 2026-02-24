@@ -73,6 +73,10 @@ application:
   tracker:
     authUrl: "http://tracker-auth:8083"
 
+  # Spring Cloud Configuration
+  springCloud:
+    compatibilityVerifierEnabled: false
+
 # Pod Storage
 volumeClaimTemplates:
   enabled: false
