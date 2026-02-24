@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.controller;
 
+import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -38,6 +39,38 @@ class UserAchievementQueryControllerTest {
         mockMvc =
                 MockMvcTestUtils.buildMockMvcWithCurrentUserResolver(
                         userAchievementQueryController, new GlobalExceptionHandler());
+    }
+
+    @Test
+    void getMyAchievements_shouldReturnCurrentUserAchievements() throws Exception {
+        // Given
+        AchievementDTO achievementDTO =
+                new AchievementDTO(
+                        UUID.randomUUID().toString(),
+                        AchievementType.UPDATES_10,
+                        "Getting Started",
+                        "Post 10 updates",
+                        10);
+
+        UserAchievementDTO userAchievement =
+                new UserAchievementDTO(
+                        UUID.randomUUID().toString(),
+                        USER_ID.toString(),
+                        achievementDTO,
+                        UUID.randomUUID().toString(),
+                        Instant.now(),
+                        15.0);
+
+        when(achievementQueryService.getUserAchievements(USER_ID))
+                .thenReturn(List.of(userAchievement));
+
+        // When & Then
+        mockMvc.perform(get(USERS_URL + "/me/achievements"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].userId").value(USER_ID.toString()))
+                .andExpect(jsonPath("$[0].achievement.type").value("UPDATES_10"));
     }
 
     @Test

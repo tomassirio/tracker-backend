@@ -9,7 +9,7 @@ The previous achievements API had a confusing structure, particularly the endpoi
 We refactored the achievements API into three focused controllers with clear, RESTful endpoint structures:
 
 1. **AchievementQueryController** - Achievement types catalog
-2. **UserAchievementQueryController** - User-specific achievements  
+2. **UserAchievementQueryController** - User-specific achievements (including current user)
 3. **TripAchievementQueryController** - Trip-specific achievements
 
 ---
@@ -31,7 +31,7 @@ We refactored the achievements API into three focused controllers with clear, RE
 | Endpoint | Purpose | Controller |
 |----------|---------|------------|
 | `GET /achievements` | Get all available achievement types | AchievementQueryController |
-| `GET /achievements/me/achievements` | Get current user achievements | AchievementQueryController |
+| `GET /users/me/achievements` | Get current user achievements ✅ **FIXED** | UserAchievementQueryController |
 | `GET /users/{userId}/achievements` | Get user achievements | UserAchievementQueryController |
 | `GET /trips/{tripId}/achievements` | Get trip achievements ✨ **NEW** | TripAchievementQueryController |
 
@@ -41,7 +41,7 @@ We refactored the achievements API into three focused controllers with clear, RE
 
 ### 1. Clearer Resource Hierarchy
 - Achievement types live under `/achievements`
-- User achievements live under `/users/{userId}/achievements`
+- User achievements live under `/users/{userId}/achievements` and `/users/me/achievements`
 - Trip achievements live under `/trips/{tripId}/achievements`
 
 ### 2. New Functionality
@@ -51,8 +51,8 @@ GET /trips/{tripId}/achievements
 ```
 
 ### 3. Better Controller Organization
-- **AchievementQueryController**: Only handles achievement catalog and current user
-- **UserAchievementQueryController**: Handles all user-specific achievement queries
+- **AchievementQueryController**: Only handles achievement catalog
+- **UserAchievementQueryController**: Handles all user-specific achievement queries (including current user)
 - **TripAchievementQueryController**: Handles all trip-specific achievement queries
 
 ---
@@ -112,8 +112,8 @@ A comprehensive frontend integration guide has been created at [docs/ACHIEVEMENT
 
 All endpoints are fully tested:
 
-- ✅ `AchievementQueryControllerTest` - 2 tests
-- ✅ `UserAchievementQueryControllerTest` - 1 test
+- ✅ `AchievementQueryControllerTest` - 1 test
+- ✅ `UserAchievementQueryControllerTest` - 2 tests
 - ✅ `TripAchievementQueryControllerTest` - 1 test
 - ✅ `AchievementQueryServiceImplTest` - 4 tests (added 1 new)
 
@@ -121,7 +121,7 @@ All endpoints are fully tested:
 
 ## Summary
 
-✅ **Problem Solved**: Removed confusing `/achievements/me/achievements` structure  
+✅ **Problem Solved**: Moved `/achievements/me/achievements` to `/users/me/achievements` for consistent RESTful structure  
 ✅ **Gap Filled**: Added trip achievements endpoint  
 ✅ **Better Organization**: Three focused controllers instead of one monolithic controller  
 ✅ **Clean API**: Removed deprecated endpoints for a clearer structure  

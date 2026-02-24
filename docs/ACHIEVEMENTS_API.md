@@ -52,7 +52,7 @@ async function getAllAchievements() {
 
 ## 2. Get Current User's Achievements
 
-**Endpoint:** `GET /achievements/me/achievements`  
+**Endpoint:** `GET /users/me/achievements`  
 **Authentication:** Required (Bearer Token)  
 **Description:** Retrieves all achievements unlocked by the currently authenticated user.
 
@@ -87,7 +87,7 @@ Authorization: Bearer <your-jwt-token>
 
 ```javascript
 async function getMyAchievements(token) {
-  const response = await fetch('https://api.tracker.com/api/1/achievements/me/achievements', {
+  const response = await fetch('https://api.tracker.com/api/1/users/me/achievements', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
