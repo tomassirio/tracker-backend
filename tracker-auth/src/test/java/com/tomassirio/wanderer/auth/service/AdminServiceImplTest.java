@@ -3,7 +3,6 @@ package com.tomassirio.wanderer.auth.service;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-import com.tomassirio.wanderer.auth.client.TrackerCommandClient;
 import com.tomassirio.wanderer.auth.domain.Credential;
 import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.service.impl.AdminServiceImpl;
@@ -24,7 +23,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class AdminServiceImplTest {
 
     @Mock private CredentialRepository credentialRepository;
-    @Mock private TrackerCommandClient trackerCommandClient;
 
     @InjectMocks private AdminServiceImpl adminService;
 
@@ -45,36 +43,27 @@ class AdminServiceImplTest {
     }
 
     @Test
-    void deleteUser_whenUserExists_shouldDeleteSuccessfully() {
-        // Given
+    void deleteCredentials_whenUserExists_shouldDeleteCredentials() {
         when(credentialRepository.findById(testUserId)).thenReturn(Optional.of(testCredential));
-        doNothing().when(trackerCommandClient).deleteUser(testUserId);
 
-        // When
-        adminService.deleteUser(testUserId);
+        adminService.deleteCredentials(testUserId);
 
-        // Then
-        verify(trackerCommandClient).deleteUser(testUserId);
         verify(credentialRepository).delete(testCredential);
     }
 
     @Test
-    void deleteUser_whenUserNotFound_shouldThrowException() {
-        // Given
+    void deleteCredentials_whenUserNotFound_shouldThrowException() {
         when(credentialRepository.findById(testUserId)).thenReturn(Optional.empty());
 
-        // When & Then
-        assertThatThrownBy(() -> adminService.deleteUser(testUserId))
+        assertThatThrownBy(() -> adminService.deleteCredentials(testUserId))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("User not found");
 
-        verify(trackerCommandClient, never()).deleteUser(any());
         verify(credentialRepository, never()).delete(any());
     }
 
     @Test
-    void deleteUser_whenLastAdmin_shouldThrowException() {
-        // Given
+    void deleteCredentials_whenLastAdmin_shouldThrowException() {
         Credential adminCredential =
                 Credential.builder()
                         .userId(testUserId)
@@ -87,18 +76,15 @@ class AdminServiceImplTest {
         when(credentialRepository.findById(testUserId)).thenReturn(Optional.of(adminCredential));
         when(credentialRepository.findAll()).thenReturn(List.of(adminCredential));
 
-        // When & Then
-        assertThatThrownBy(() -> adminService.deleteUser(testUserId))
+        assertThatThrownBy(() -> adminService.deleteCredentials(testUserId))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Cannot delete the last admin user");
 
-        verify(trackerCommandClient, never()).deleteUser(any());
         verify(credentialRepository, never()).delete(any());
     }
 
     @Test
-    void deleteUser_whenAdminButNotLast_shouldDeleteSuccessfully() {
-        // Given
+    void deleteCredentials_whenAdminButNotLast_shouldDeleteCredentials() {
         UUID otherAdminId = UUID.randomUUID();
         Credential adminCredential =
                 Credential.builder()
@@ -120,29 +106,9 @@ class AdminServiceImplTest {
         when(credentialRepository.findById(testUserId)).thenReturn(Optional.of(adminCredential));
         when(credentialRepository.findAll())
                 .thenReturn(List.of(adminCredential, otherAdminCredential));
-        doNothing().when(trackerCommandClient).deleteUser(testUserId);
 
-        // When
-        adminService.deleteUser(testUserId);
+        adminService.deleteCredentials(testUserId);
 
-        // Then
-        verify(trackerCommandClient).deleteUser(testUserId);
         verify(credentialRepository).delete(adminCredential);
-    }
-
-    @Test
-    void deleteUser_whenCommandServiceFails_shouldThrowException() {
-        // Given
-        when(credentialRepository.findById(testUserId)).thenReturn(Optional.of(testCredential));
-        doThrow(new RuntimeException("Connection refused"))
-                .when(trackerCommandClient)
-                .deleteUser(testUserId);
-
-        // When & Then
-        assertThatThrownBy(() -> adminService.deleteUser(testUserId))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Failed to delete user data from command service");
-
-        verify(credentialRepository, never()).delete(any());
     }
 }

@@ -37,10 +37,20 @@ public interface UserService {
     UUID createUser(UserCreationRequest request);
 
     /**
-     * Delete a user and all associated data.
+     * Delete a user, all associated data, and their credentials from the auth service. Used by both
+     * self-deletion ({@code /me}) and admin deletion.
      *
      * @param userId the UUID of the user to delete
      * @throws jakarta.persistence.EntityNotFoundException if the user does not exist
      */
     void deleteUser(UUID userId);
+
+    /**
+     * Delete only the user's local data (trips, comments, friendships, follows, etc.) without
+     * touching auth credentials. Used as a compensation step during registration rollback.
+     *
+     * @param userId the UUID of the user to delete
+     * @throws jakarta.persistence.EntityNotFoundException if the user does not exist
+     */
+    void deleteUserData(UUID userId);
 }

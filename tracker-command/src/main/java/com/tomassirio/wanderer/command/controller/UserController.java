@@ -3,6 +3,8 @@ package com.tomassirio.wanderer.command.controller;
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
+import com.tomassirio.wanderer.commons.security.CurrentUserId;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,7 +24,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for user command operations. Handles user creation and deletion requests.
+ * REST controller for user command operations. Handles user creation and self-deletion requests.
  *
  * @since 0.1.8
  */
@@ -47,22 +49,35 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(userId);
     }
 
-    @DeleteMapping(ApiConstants.USER_BY_ID_ENDPOINT)
-    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping(ApiConstants.ME_SUFFIX)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
-            summary = "Delete a user",
+            summary = "Delete own account",
             description =
-                    "Deletes a user and all associated data (trips, comments, friendships, follows). "
-                            + "Only admins can delete users. Called by the auth service during admin user deletion.")
-    @ApiResponse(responseCode = "202", description = "User deletion accepted")
+                    "Deletes the currently authenticated user's account and all associated data "
+                            + "(trips, comments, friendships, follows), then removes credentials from the auth service.")
+    @ApiResponse(responseCode = "202", description = "Account deletion accepted")
     @ApiResponse(responseCode = "401", description = "Unauthorized - valid JWT required")
-    @ApiResponse(responseCode = "403", description = "Forbidden - ADMIN role required")
     @ApiResponse(responseCode = "404", description = "User not found")
-    public ResponseEntity<Void> deleteUser(
-            @Parameter(description = "User ID to delete", required = true) @PathVariable UUID id) {
-        log.info("Received request to delete user: {}", id);
-        userService.deleteUser(id);
-        log.info("Accepted user deletion request for ID: {}", id);
+    public ResponseEntity<Void> deleteMe(@Parameter(hidden = true) @CurrentUserId UUID userId) {
+        log.info("User {} requesting self-deletion", userId);
+        userService.deleteUser(userId);
+        log.info("Self-deletion completed for user: {}", userId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+    }
+
+    /**
+     * Internal endpoint for deleting only a user's local data. Used by the auth service as a
+     * compensation step during registration rollback. Not intended for frontend use.
+     *
+     * @param id the ID of the user to delete
+     * @return 202 Accepted
+     */
+    @Hidden
+    @DeleteMapping(ApiConstants.USER_BY_ID_ENDPOINT)
+    public ResponseEntity<Void> deleteUserData(@PathVariable UUID id) {
+        log.info("Internal request to delete user data: {}", id);
+        userService.deleteUserData(id);
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 }

@@ -16,6 +16,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
+import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,10 +27,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class UserControllerTest {
+
+    private static final UUID CURRENT_USER_ID = UUID.randomUUID();
 
     private MockMvc mockMvc;
 
@@ -45,9 +47,8 @@ class UserControllerTest {
         objectMapper.registerModule(new JavaTimeModule());
 
         mockMvc =
-                MockMvcBuilders.standaloneSetup(userController)
-                        .setControllerAdvice(new GlobalExceptionHandler())
-                        .build();
+                MockMvcTestUtils.buildMockMvcWithCurrentUserResolver(
+                        userController, CURRENT_USER_ID, new GlobalExceptionHandler());
     }
 
     @Test
@@ -101,22 +102,30 @@ class UserControllerTest {
     }
 
     @Test
-    void deleteUser_whenUserExists_shouldReturnAccepted() throws Exception {
-        UUID userId = UUID.randomUUID();
-        doNothing().when(userService).deleteUser(userId);
+    void deleteMe_shouldReturnAccepted() throws Exception {
+        doNothing().when(userService).deleteUser(CURRENT_USER_ID);
 
-        mockMvc.perform(delete("/api/1/users/{id}", userId)).andExpect(status().isAccepted());
+        mockMvc.perform(delete("/api/1/users/me")).andExpect(status().isAccepted());
 
-        verify(userService).deleteUser(userId);
+        verify(userService).deleteUser(CURRENT_USER_ID);
     }
 
     @Test
-    void deleteUser_whenUserNotFound_shouldReturnNotFound() throws Exception {
-        UUID userId = UUID.randomUUID();
-        doThrow(new EntityNotFoundException("User not found with id: " + userId))
+    void deleteMe_whenUserNotFound_shouldReturnNotFound() throws Exception {
+        doThrow(new EntityNotFoundException("User not found with id: " + CURRENT_USER_ID))
                 .when(userService)
-                .deleteUser(userId);
+                .deleteUser(CURRENT_USER_ID);
 
-        mockMvc.perform(delete("/api/1/users/{id}", userId)).andExpect(status().isNotFound());
+        mockMvc.perform(delete("/api/1/users/me")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteUserData_shouldReturnAccepted() throws Exception {
+        UUID userId = UUID.randomUUID();
+        doNothing().when(userService).deleteUserData(userId);
+
+        mockMvc.perform(delete("/api/1/users/{id}", userId)).andExpect(status().isAccepted());
+
+        verify(userService).deleteUserData(userId);
     }
 }

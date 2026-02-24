@@ -1,6 +1,5 @@
 package com.tomassirio.wanderer.auth.service.impl;
 
-import com.tomassirio.wanderer.auth.client.TrackerCommandClient;
 import com.tomassirio.wanderer.auth.domain.Credential;
 import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.service.AdminService;
@@ -12,7 +11,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Service implementation for admin operations.
+ * Service implementation for admin operations. Handles credential deletion with last-admin
+ * protection. Data cleanup is handled by the command service before calling these methods.
  *
  * @since 0.5.2
  */
@@ -22,11 +22,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class AdminServiceImpl implements AdminService {
 
     private final CredentialRepository credentialRepository;
-    private final TrackerCommandClient trackerCommandClient;
 
     @Override
     @Transactional
-    public void deleteUser(UUID userId) {
+    public void deleteCredentials(UUID userId) {
+        Credential credential = findAndValidateDeletion(userId);
+        credentialRepository.delete(credential);
+        log.info("Deleted credentials for user: {}", userId);
+    }
+
+    private Credential findAndValidateDeletion(UUID userId) {
         Credential credential =
                 credentialRepository
                         .findById(userId)
@@ -37,7 +42,6 @@ public class AdminServiceImpl implements AdminService {
 
         // Prevent deleting the last admin
         if (credential.getRoles().contains(Role.ADMIN)) {
-            boolean hasOtherAdmins = credentialRepository.existsByRolesContaining("ADMIN");
             long adminCount =
                     credentialRepository.findAll().stream()
                             .filter(c -> c.getRoles().contains(Role.ADMIN))
@@ -48,18 +52,6 @@ public class AdminServiceImpl implements AdminService {
             }
         }
 
-        // Delete from command service (user data, trips, etc.)
-        try {
-            trackerCommandClient.deleteUser(userId);
-            log.info("Deleted user data from command service for user: {}", userId);
-        } catch (Exception e) {
-            log.error("Failed to delete user data from command service for user: {}", userId, e);
-            throw new RuntimeException(
-                    "Failed to delete user data from command service: " + e.getMessage(), e);
-        }
-
-        // Delete credentials from auth service
-        credentialRepository.delete(credential);
-        log.info("Deleted credentials for user: {}", userId);
+        return credential;
     }
 }

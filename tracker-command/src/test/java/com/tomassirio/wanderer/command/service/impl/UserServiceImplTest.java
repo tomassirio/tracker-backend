@@ -3,10 +3,12 @@ package com.tomassirio.wanderer.command.service.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.tomassirio.wanderer.command.client.TrackerAuthClient;
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.event.UserCreatedEvent;
 import com.tomassirio.wanderer.command.event.UserDeletedEvent;
@@ -29,6 +31,8 @@ class UserServiceImplTest {
     @Mock private UserRepository userRepository;
 
     @Mock private ApplicationEventPublisher eventPublisher;
+
+    @Mock private TrackerAuthClient trackerAuthClient;
 
     @InjectMocks private UserServiceImpl userService;
 
@@ -69,11 +73,12 @@ class UserServiceImplTest {
     }
 
     @Test
-    void deleteUser_whenUserExists_shouldPublishEvent() {
+    void deleteUser_whenUserExists_shouldPublishEventAndDeleteCredentials() {
         // Given
         UUID userId = UUID.randomUUID();
         User user = User.builder().id(userId).username("johndoe").build();
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        doNothing().when(trackerAuthClient).deleteCredentials(userId);
 
         // When
         userService.deleteUser(userId);
@@ -82,9 +87,8 @@ class UserServiceImplTest {
         ArgumentCaptor<UserDeletedEvent> eventCaptor =
                 ArgumentCaptor.forClass(UserDeletedEvent.class);
         verify(eventPublisher).publishEvent(eventCaptor.capture());
-
-        UserDeletedEvent event = eventCaptor.getValue();
-        assertThat(event.getUserId()).isEqualTo(userId);
+        assertThat(eventCaptor.getValue().getUserId()).isEqualTo(userId);
+        verify(trackerAuthClient).deleteCredentials(userId);
     }
 
     @Test
@@ -95,6 +99,38 @@ class UserServiceImplTest {
 
         // When & Then
         assertThatThrownBy(() -> userService.deleteUser(userId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("User not found");
+
+        verify(eventPublisher, never()).publishEvent(any(UserDeletedEvent.class));
+    }
+
+    @Test
+    void deleteUserData_whenUserExists_shouldPublishEventWithoutDeletingCredentials() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("johndoe").build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        // When
+        userService.deleteUserData(userId);
+
+        // Then
+        ArgumentCaptor<UserDeletedEvent> eventCaptor =
+                ArgumentCaptor.forClass(UserDeletedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getUserId()).isEqualTo(userId);
+        verify(trackerAuthClient, never()).deleteCredentials(any());
+    }
+
+    @Test
+    void deleteUserData_whenUserNotFound_shouldThrowException() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> userService.deleteUserData(userId))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("User not found");
 

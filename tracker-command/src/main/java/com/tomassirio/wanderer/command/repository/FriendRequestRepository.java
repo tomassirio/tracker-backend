@@ -2,7 +2,6 @@ package com.tomassirio.wanderer.command.repository;
 
 import com.tomassirio.wanderer.commons.domain.FriendRequest;
 import com.tomassirio.wanderer.commons.domain.FriendRequestStatus;
-
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;

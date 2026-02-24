@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.query.cucumber;
 
 import com.tomassirio.wanderer.commons.cucumber.BaseCucumberSpringConfiguration;
 import com.tomassirio.wanderer.query.TrackerQueryApplication;
+import com.tomassirio.wanderer.query.client.TrackerAuthClient;
 import com.tomassirio.wanderer.query.repository.CommentRepository;
 import com.tomassirio.wanderer.query.repository.FriendRequestRepository;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
@@ -35,4 +36,6 @@ public class CucumberSpringConfiguration extends BaseCucumberSpringConfiguration
     @MockitoBean public FriendRequestRepository friendRequestRepository;
 
     @MockitoBean public TripUpdateRepository tripUpdateRepository;
+
+    @MockitoBean public TrackerAuthClient trackerAuthClient;
 }
