@@ -11,11 +11,9 @@ import org.springframework.stereotype.Repository;
 public interface UserFollowRepository extends JpaRepository<UserFollow, UUID> {
     Optional<UserFollow> findByFollowerIdAndFollowedId(UUID followerId, UUID followedId);
 
-    List<UserFollow> findByFollowerId(UUID followerId);
-
     List<UserFollow> findByFollowedId(UUID followedId);
 
     boolean existsByFollowerIdAndFollowedId(UUID followerId, UUID followedId);
 
-    void deleteByFollowerIdAndFollowedId(UUID followerId, UUID followedId);
+    void deleteByFollowerIdOrFollowedId(UUID followerId, UUID followedId);
 }

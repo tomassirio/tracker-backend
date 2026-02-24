@@ -2,9 +2,11 @@ package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.event.UserCreatedEvent;
+import com.tomassirio.wanderer.command.event.UserDeletedEvent;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.domain.User;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -42,5 +44,19 @@ public class UserServiceImpl implements UserService {
 
         log.info("User created with id={}", userId);
         return userId;
+    }
+
+    @Override
+    public void deleteUser(UUID userId) {
+        log.info("Deleting user with id={}", userId);
+
+        userRepository
+                .findById(userId)
+                .orElseThrow(
+                        () -> new EntityNotFoundException("User not found with id: " + userId));
+
+        eventPublisher.publishEvent(UserDeletedEvent.builder().userId(userId).build());
+
+        log.info("User deletion processed for id={}", userId);
     }
 }

@@ -35,4 +35,12 @@ public interface UserService {
      * @throws IllegalArgumentException if username or email are already in use
      */
     UUID createUser(UserCreationRequest request);
+
+    /**
+     * Delete a user and all associated data.
+     *
+     * @param userId the UUID of the user to delete
+     * @throws jakarta.persistence.EntityNotFoundException if the user does not exist
+     */
+    void deleteUser(UUID userId);
 }

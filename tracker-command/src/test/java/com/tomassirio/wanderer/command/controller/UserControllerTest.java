@@ -1,8 +1,12 @@
 package com.tomassirio.wanderer.command.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -12,6 +16,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -93,5 +98,25 @@ class UserControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteUser_whenUserExists_shouldReturnAccepted() throws Exception {
+        UUID userId = UUID.randomUUID();
+        doNothing().when(userService).deleteUser(userId);
+
+        mockMvc.perform(delete("/api/1/users/{id}", userId)).andExpect(status().isAccepted());
+
+        verify(userService).deleteUser(userId);
+    }
+
+    @Test
+    void deleteUser_whenUserNotFound_shouldReturnNotFound() throws Exception {
+        UUID userId = UUID.randomUUID();
+        doThrow(new EntityNotFoundException("User not found with id: " + userId))
+                .when(userService)
+                .deleteUser(userId);
+
+        mockMvc.perform(delete("/api/1/users/{id}", userId)).andExpect(status().isNotFound());
     }
 }

@@ -9,8 +9,10 @@ import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.event.UserCreatedEvent;
+import com.tomassirio.wanderer.command.event.UserDeletedEvent;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.User;
+import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -64,5 +66,38 @@ class UserServiceImplTest {
                 .hasMessage("Username already in use");
 
         verify(eventPublisher, never()).publishEvent(any(UserCreatedEvent.class));
+    }
+
+    @Test
+    void deleteUser_whenUserExists_shouldPublishEvent() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("johndoe").build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        // When
+        userService.deleteUser(userId);
+
+        // Then
+        ArgumentCaptor<UserDeletedEvent> eventCaptor =
+                ArgumentCaptor.forClass(UserDeletedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        UserDeletedEvent event = eventCaptor.getValue();
+        assertThat(event.getUserId()).isEqualTo(userId);
+    }
+
+    @Test
+    void deleteUser_whenUserNotFound_shouldThrowException() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> userService.deleteUser(userId))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("User not found");
+
+        verify(eventPublisher, never()).publishEvent(any(UserDeletedEvent.class));
     }
 }
