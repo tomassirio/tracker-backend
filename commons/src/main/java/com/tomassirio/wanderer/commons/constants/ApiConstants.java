@@ -154,8 +154,18 @@ public final class ApiConstants {
     // ============================================================
 
     public static final String ACHIEVEMENTS_PATH = API_V1 + "/achievements";
-    public static final String USER_ACHIEVEMENTS_ENDPOINT = USERS_SEGMENT + "/achievements";
+    
+    // User achievement endpoints
+    public static final String USER_ACHIEVEMENTS_ENDPOINT = "/{userId}/achievements";
+    public static final String MY_ACHIEVEMENTS_ENDPOINT = ME_SUFFIX + "/achievements";
+    
+    // Trip achievement endpoints  
+    public static final String TRIP_ACHIEVEMENTS_BY_ID_ENDPOINT = "/{tripId}/achievements";
+    
+    // Deprecated endpoints (for backward compatibility)
+    @Deprecated(forRemoval = true)
     public static final String USER_ACHIEVEMENTS_ME_ENDPOINT = ME_SUFFIX + "/achievements";
+    @Deprecated(forRemoval = true)
     public static final String TRIP_ACHIEVEMENTS_ENDPOINT =
             USERS_SEGMENT + "/trips/{tripId}/achievements";
 

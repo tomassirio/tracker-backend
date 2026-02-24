@@ -17,4 +17,7 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
             "SELECT ua FROM UserAchievement ua JOIN FETCH ua.achievement WHERE ua.user.id = :userId AND ua.trip.id = :tripId")
     List<UserAchievement> findByUserIdAndTripId(
             @Param("userId") UUID userId, @Param("tripId") UUID tripId);
+
+    @Query("SELECT ua FROM UserAchievement ua JOIN FETCH ua.achievement WHERE ua.trip.id = :tripId")
+    List<UserAchievement> findByTripId(@Param("tripId") UUID tripId);
 }

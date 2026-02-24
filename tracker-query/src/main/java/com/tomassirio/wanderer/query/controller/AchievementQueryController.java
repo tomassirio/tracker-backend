@@ -37,16 +37,7 @@ public class AchievementQueryController {
         return ResponseEntity.ok(achievementQueryService.getAvailableAchievements());
     }
 
-    @GetMapping(ApiConstants.USER_ACHIEVEMENTS_ENDPOINT)
-    @Operation(
-            summary = "Get user achievements",
-            description = "Retrieves all achievements unlocked by a specific user")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved user achievements")
-    public ResponseEntity<List<UserAchievementDTO>> getUserAchievements(@PathVariable UUID userId) {
-        return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
-    }
-
-    @GetMapping(ApiConstants.USER_ACHIEVEMENTS_ME_ENDPOINT)
+    @GetMapping(ApiConstants.MY_ACHIEVEMENTS_ENDPOINT)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Get current user achievements",
@@ -56,15 +47,5 @@ public class AchievementQueryController {
     public ResponseEntity<List<UserAchievementDTO>> getMyAchievements(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
         return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
-    }
-
-    @GetMapping(ApiConstants.TRIP_ACHIEVEMENTS_ENDPOINT)
-    @Operation(
-            summary = "Get user achievements for a trip",
-            description = "Retrieves all achievements unlocked by a user for a specific trip")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved trip achievements")
-    public ResponseEntity<List<UserAchievementDTO>> getUserAchievementsByTrip(
-            @PathVariable UUID userId, @PathVariable UUID tripId) {
-        return ResponseEntity.ok(achievementQueryService.getUserAchievementsByTrip(userId, tripId));
     }
 }

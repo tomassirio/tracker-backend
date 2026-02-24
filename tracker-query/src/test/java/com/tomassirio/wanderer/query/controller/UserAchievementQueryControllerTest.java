@@ -1,6 +1,5 @@
 package com.tomassirio.wanderer.query.controller;
 
-import static com.tomassirio.wanderer.commons.utils.BaseTestEntityFactory.USER_ID;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -13,7 +12,6 @@ import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import com.tomassirio.wanderer.query.service.AchievementQueryService;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,27 +23,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 @ExtendWith(MockitoExtension.class)
-class AchievementQueryControllerTest {
+class UserAchievementQueryControllerTest {
 
-    private static final String ACHIEVEMENTS_URL = "/api/1/achievements";
+    private static final String USERS_URL = "/api/1/users";
 
     private MockMvc mockMvc;
 
     @Mock private AchievementQueryService achievementQueryService;
 
-    @InjectMocks private AchievementQueryController achievementQueryController;
+    @InjectMocks private UserAchievementQueryController userAchievementQueryController;
 
     @BeforeEach
     void setUp() {
         mockMvc =
                 MockMvcTestUtils.buildMockMvcWithCurrentUserResolver(
-                        achievementQueryController, new GlobalExceptionHandler());
+                        userAchievementQueryController, new GlobalExceptionHandler());
     }
 
     @Test
-    void getAvailableAchievements_shouldReturnAllAchievements() throws Exception {
+    void getUserAchievements_shouldReturnUserAchievements() throws Exception {
         // Given
-        AchievementDTO achievement1 =
+        UUID userId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+
+        AchievementDTO achievementDTO =
                 new AchievementDTO(
                         UUID.randomUUID().toString(),
                         AchievementType.DISTANCE_100KM,
@@ -53,59 +54,61 @@ class AchievementQueryControllerTest {
                         "Walk 100km in a single trip",
                         100);
 
-        AchievementDTO achievement2 =
-                new AchievementDTO(
+        UserAchievementDTO userAchievement =
+                new UserAchievementDTO(
                         UUID.randomUUID().toString(),
-                        AchievementType.UPDATES_10,
-                        "Getting Started",
-                        "Post 10 updates on a single trip",
-                        10);
+                        userId.toString(),
+                        achievementDTO,
+                        tripId.toString(),
+                        Instant.now(),
+                        105.5);
 
-        List<AchievementDTO> achievements = Arrays.asList(achievement1, achievement2);
-
-        when(achievementQueryService.getAvailableAchievements()).thenReturn(achievements);
+        when(achievementQueryService.getUserAchievements(userId))
+                .thenReturn(List.of(userAchievement));
 
         // When & Then
-        mockMvc.perform(get(ACHIEVEMENTS_URL))
+        mockMvc.perform(get(USERS_URL + "/" + userId + "/achievements"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].type").value("DISTANCE_100KM"))
-                .andExpect(jsonPath("$[0].name").value("First Century"))
-                .andExpect(jsonPath("$[0].thresholdValue").value(100))
-                .andExpect(jsonPath("$[1].type").value("UPDATES_10"))
-                .andExpect(jsonPath("$[1].name").value("Getting Started"));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].userId").value(userId.toString()))
+                .andExpect(jsonPath("$[0].tripId").value(tripId.toString()))
+                .andExpect(jsonPath("$[0].achievement.type").value("DISTANCE_100KM"))
+                .andExpect(jsonPath("$[0].valueAchieved").value(105.5));
     }
 
     @Test
-    void getMyAchievements_shouldReturnCurrentUserAchievements() throws Exception {
+    void getUserAchievementsByTrip_shouldReturnTripAchievements() throws Exception {
         // Given
+        UUID userId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+
         AchievementDTO achievementDTO =
                 new AchievementDTO(
                         UUID.randomUUID().toString(),
-                        AchievementType.UPDATES_10,
-                        "Getting Started",
-                        "Post 10 updates",
-                        10);
+                        AchievementType.DURATION_7_DAYS,
+                        "Week Warrior",
+                        "Trip lasting 7 days",
+                        7);
 
         UserAchievementDTO userAchievement =
                 new UserAchievementDTO(
                         UUID.randomUUID().toString(),
-                        USER_ID.toString(),
+                        userId.toString(),
                         achievementDTO,
-                        UUID.randomUUID().toString(),
+                        tripId.toString(),
                         Instant.now(),
-                        15.0);
+                        10.0);
 
-        when(achievementQueryService.getUserAchievements(USER_ID))
+        when(achievementQueryService.getUserAchievementsByTrip(userId, tripId))
                 .thenReturn(List.of(userAchievement));
 
         // When & Then
-        mockMvc.perform(get(ACHIEVEMENTS_URL + "/me/achievements"))
+        mockMvc.perform(get(USERS_URL + "/users/" + userId + "/trips/" + tripId + "/achievements"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].userId").value(USER_ID.toString()))
-                .andExpect(jsonPath("$[0].achievement.type").value("UPDATES_10"));
+                .andExpect(jsonPath("$[0].tripId").value(tripId.toString()))
+                .andExpect(jsonPath("$[0].achievement.type").value("DURATION_7_DAYS"));
     }
 }
