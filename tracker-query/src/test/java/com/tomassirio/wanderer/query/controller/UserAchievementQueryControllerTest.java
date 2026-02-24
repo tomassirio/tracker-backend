@@ -76,39 +76,4 @@ class UserAchievementQueryControllerTest {
                 .andExpect(jsonPath("$[0].achievement.type").value("DISTANCE_100KM"))
                 .andExpect(jsonPath("$[0].valueAchieved").value(105.5));
     }
-
-    @Test
-    void getUserAchievementsByTrip_shouldReturnTripAchievements() throws Exception {
-        // Given
-        UUID userId = UUID.randomUUID();
-        UUID tripId = UUID.randomUUID();
-
-        AchievementDTO achievementDTO =
-                new AchievementDTO(
-                        UUID.randomUUID().toString(),
-                        AchievementType.DURATION_7_DAYS,
-                        "Week Warrior",
-                        "Trip lasting 7 days",
-                        7);
-
-        UserAchievementDTO userAchievement =
-                new UserAchievementDTO(
-                        UUID.randomUUID().toString(),
-                        userId.toString(),
-                        achievementDTO,
-                        tripId.toString(),
-                        Instant.now(),
-                        10.0);
-
-        when(achievementQueryService.getUserAchievementsByTrip(userId, tripId))
-                .thenReturn(List.of(userAchievement));
-
-        // When & Then
-        mockMvc.perform(get(USERS_URL + "/users/" + userId + "/trips/" + tripId + "/achievements"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].tripId").value(tripId.toString()))
-                .andExpect(jsonPath("$[0].achievement.type").value("DURATION_7_DAYS"));
-    }
 }

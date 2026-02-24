@@ -36,16 +36,4 @@ public class UserAchievementQueryController {
             @PathVariable UUID userId) {
         return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
     }
-
-    @GetMapping(ApiConstants.TRIP_ACHIEVEMENTS_ENDPOINT)
-    @Operation(
-            summary = "Get user achievements for a trip",
-            description =
-                    "Retrieves all achievements unlocked by a specific user for a specific trip")
-    @ApiResponse(responseCode = "200", description = "Successfully retrieved trip achievements")
-    public ResponseEntity<List<UserAchievementDTO>> getUserAchievementsByTrip(
-            @PathVariable UUID userId, @PathVariable UUID tripId) {
-        return ResponseEntity.ok(
-                achievementQueryService.getUserAchievementsByTrip(userId, tripId));
-    }
 }

@@ -151,35 +151,6 @@ async function getTripAchievements(tripId) {
 
 ---
 
-## 5. Get User Achievements for a Specific Trip
-
-**Endpoint:** `GET /users/{userId}/trips/{tripId}/achievements`  
-**Authentication:** Not required  
-**Description:** Retrieves all achievements unlocked by a specific user for a specific trip.
-
-### Path Parameters
-
-- `userId` (UUID): The unique identifier of the user
-- `tripId` (UUID): The unique identifier of the trip
-
-### Response
-
-Same structure as "Get Current User's Achievements"
-
-### JavaScript Example
-
-```javascript
-async function getUserTripAchievements(userId, tripId) {
-  const response = await fetch(
-    `https://api.tracker.com/api/1/users/users/${userId}/trips/${tripId}/achievements`
-  );
-  const achievements = await response.json();
-  return achievements;
-}
-```
-
----
-
 ## Achievement Types
 
 The system supports 23 achievement types across different categories:
@@ -312,17 +283,6 @@ function AchievementsPage({ tripId }) {
 ```
 
 ---
-
-## Migration Notes
-
-### Deprecated Endpoints (Still Supported)
-
-The following endpoints are still available for backward compatibility but are deprecated:
-
-- `GET /achievements/users/{userId}/achievements` → Use `GET /users/{userId}/achievements`
-- `GET /achievements/users/{userId}/trips/{tripId}/achievements` → Use `GET /users/{userId}/trips/{tripId}/achievements`
-
-**Recommendation:** Update to the new endpoint structure as soon as possible.
 
 ---
 

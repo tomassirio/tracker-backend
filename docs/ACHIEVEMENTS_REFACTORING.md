@@ -16,7 +16,7 @@ We refactored the achievements API into three focused controllers with clear, RE
 
 ## Endpoint Comparison
 
-### Before (Deprecated but Still Supported)
+### Before
 
 | Endpoint | Purpose |
 |----------|---------|
@@ -34,7 +34,6 @@ We refactored the achievements API into three focused controllers with clear, RE
 | `GET /achievements/me/achievements` | Get current user achievements | AchievementQueryController |
 | `GET /users/{userId}/achievements` | Get user achievements | UserAchievementQueryController |
 | `GET /trips/{tripId}/achievements` | Get trip achievements ✨ **NEW** | TripAchievementQueryController |
-| `GET /users/users/{userId}/trips/{tripId}/achievements` | Get user+trip achievements | UserAchievementQueryController |
 
 ---
 
@@ -55,11 +54,6 @@ GET /trips/{tripId}/achievements
 - **AchievementQueryController**: Only handles achievement catalog and current user
 - **UserAchievementQueryController**: Handles all user-specific achievement queries
 - **TripAchievementQueryController**: Handles all trip-specific achievement queries
-
-### 4. Backward Compatibility
-Old endpoints still work but are marked as deprecated in the code:
-- `@Deprecated(forRemoval = true)`
-- Frontend teams can migrate at their own pace
 
 ---
 
@@ -93,16 +87,10 @@ List<UserAchievementDTO> getTripAchievements(UUID tripId);
 
 ### API Constants
 ```java
-// New endpoints
+// Achievement endpoint constants
 public static final String USER_ACHIEVEMENTS_ENDPOINT = "/{userId}/achievements";
 public static final String MY_ACHIEVEMENTS_ENDPOINT = ME_SUFFIX + "/achievements";
 public static final String TRIP_ACHIEVEMENTS_BY_ID_ENDPOINT = "/{tripId}/achievements";
-
-// Deprecated (but still work)
-@Deprecated(forRemoval = true)
-public static final String USER_ACHIEVEMENTS_ME_ENDPOINT = ME_SUFFIX + "/achievements";
-@Deprecated(forRemoval = true)
-public static final String TRIP_ACHIEVEMENTS_ENDPOINT = USERS_SEGMENT + "/trips/{tripId}/achievements";
 ```
 
 ---
@@ -116,7 +104,6 @@ A comprehensive frontend integration guide has been created at [docs/ACHIEVEMENT
 - ✅ JavaScript/React integration examples
 - ✅ Achievement types reference (23 types)
 - ✅ Error handling guide
-- ✅ Migration notes
 - ✅ Best practices
 
 ---
@@ -126,29 +113,9 @@ A comprehensive frontend integration guide has been created at [docs/ACHIEVEMENT
 All endpoints are fully tested:
 
 - ✅ `AchievementQueryControllerTest` - 2 tests
-- ✅ `UserAchievementQueryControllerTest` - 2 tests (new)
-- ✅ `TripAchievementQueryControllerTest` - 1 test (new)
+- ✅ `UserAchievementQueryControllerTest` - 1 test
+- ✅ `TripAchievementQueryControllerTest` - 1 test
 - ✅ `AchievementQueryServiceImplTest` - 4 tests (added 1 new)
-
----
-
-## Migration Path for Frontend Teams
-
-1. **Immediate**: Start using the new endpoints for new features
-2. **Short-term**: Update existing code to use new endpoints
-3. **Long-term**: Old endpoints will be removed in a future major version
-
-### Example Migration
-
-**Before:**
-```javascript
-fetch('/api/1/achievements/users/123/achievements')
-```
-
-**After:**
-```javascript
-fetch('/api/1/users/123/achievements')
-```
 
 ---
 
@@ -157,7 +124,7 @@ fetch('/api/1/users/123/achievements')
 ✅ **Problem Solved**: Removed confusing `/achievements/me/achievements` structure  
 ✅ **Gap Filled**: Added trip achievements endpoint  
 ✅ **Better Organization**: Three focused controllers instead of one monolithic controller  
-✅ **Backward Compatible**: Old endpoints still work during migration  
+✅ **Clean API**: Removed deprecated endpoints for a clearer structure  
 ✅ **Well Documented**: Comprehensive frontend integration guide  
 ✅ **Fully Tested**: 100% test coverage for new functionality  
 

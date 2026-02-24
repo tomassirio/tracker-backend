@@ -161,13 +161,6 @@ public final class ApiConstants {
     
     // Trip achievement endpoints  
     public static final String TRIP_ACHIEVEMENTS_BY_ID_ENDPOINT = "/{tripId}/achievements";
-    
-    // Deprecated endpoints (for backward compatibility)
-    @Deprecated(forRemoval = true)
-    public static final String USER_ACHIEVEMENTS_ME_ENDPOINT = ME_SUFFIX + "/achievements";
-    @Deprecated(forRemoval = true)
-    public static final String TRIP_ACHIEVEMENTS_ENDPOINT =
-            USERS_SEGMENT + "/trips/{tripId}/achievements";
 
     // ============================================================
     // Public endpoint patterns (for SecurityConfig)
