@@ -7,6 +7,7 @@ import com.tomassirio.wanderer.command.event.UserDeletedEvent;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.domain.User;
+import feign.FeignException;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,10 +61,15 @@ public class UserServiceImpl implements UserService {
         // Delete all local user data
         eventPublisher.publishEvent(UserDeletedEvent.builder().userId(userId).build());
 
-        // Delete credentials from auth service
+        // Delete credentials from auth service (best-effort)
         try {
             trackerAuthClient.deleteCredentials(userId);
             log.info("Deleted credentials from auth service for user: {}", userId);
+        } catch (FeignException.BadRequest | FeignException.NotFound e) {
+            log.warn(
+                    "User {} not found in auth service, skipping credential deletion: {}",
+                    userId,
+                    e.getMessage());
         } catch (Exception e) {
             log.error("Failed to delete credentials from auth service for user: {}", userId, e);
             throw new RuntimeException(

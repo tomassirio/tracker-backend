@@ -3,12 +3,14 @@ package com.tomassirio.wanderer.query.controller;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.security.Role;
 import com.tomassirio.wanderer.query.client.TrackerAuthClient;
+import feign.FeignException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -71,7 +73,15 @@ public class AdminQueryController {
     public ResponseEntity<Set<Role>> getUserRoles(
             @Parameter(description = "User ID", required = true) @PathVariable UUID userId) {
         log.info("Admin retrieving roles for user {}", userId);
-        Set<Role> roles = trackerAuthClient.getUserRoles(userId);
-        return ResponseEntity.ok(roles);
+        try {
+            Set<Role> roles = trackerAuthClient.getUserRoles(userId);
+            return ResponseEntity.ok(roles);
+        } catch (FeignException.BadRequest | FeignException.NotFound e) {
+            log.warn(
+                    "User {} not found in auth service, returning empty roles: {}",
+                    userId,
+                    e.getMessage());
+            return ResponseEntity.ok(Collections.emptySet());
+        }
     }
 }
