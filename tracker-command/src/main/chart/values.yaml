@@ -69,6 +69,10 @@ application:
   liquibase:
     changeLog: "classpath:db/changelog/db.changelog-master.yaml"
 
+  # Tracker service URLs
+  tracker:
+    authUrl: "http://tracker-auth:8083"
+
 # Pod Storage
 volumeClaimTemplates:
   enabled: false

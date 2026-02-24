@@ -38,3 +38,7 @@ data:
 
     # Liquibase
     spring.liquibase.change-log={{ .Values.application.liquibase.changeLog }}
+
+    # Tracker service URLs
+    tracker.auth.url={{ .Values.application.tracker.authUrl }}
+
