@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.tomassirio.wanderer.auth.service.AdminService;
 import com.tomassirio.wanderer.auth.service.UserRoleService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.security.Role;
@@ -42,6 +43,8 @@ class AdminControllerTest {
     private MockMvc mockMvc;
 
     @Mock private UserRoleService userRoleService;
+
+    @Mock private AdminService adminService;
 
     @InjectMocks private AdminController adminController;
 
@@ -157,6 +160,30 @@ class AdminControllerTest {
 
         // When & Then
         mockMvc.perform(get("/api/1/admin/users/{userId}/roles", userId).with(jwtAuthAdmin()))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void deleteCredentials_whenValidUser_shouldReturn204() throws Exception {
+        UUID userId = UUID.randomUUID();
+        doNothing().when(adminService).deleteCredentials(userId);
+
+        mockMvc.perform(
+                        delete("/api/1/admin/users/{userId}/credentials", userId)
+                                .with(jwtAuthAdmin()))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void deleteCredentials_whenUserNotFound_shouldReturn400() throws Exception {
+        UUID userId = UUID.randomUUID();
+        doThrow(new IllegalArgumentException("User not found"))
+                .when(adminService)
+                .deleteCredentials(userId);
+
+        mockMvc.perform(
+                        delete("/api/1/admin/users/{userId}/credentials", userId)
+                                .with(jwtAuthAdmin()))
                 .andExpect(status().isBadRequest());
     }
 }

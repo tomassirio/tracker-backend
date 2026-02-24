@@ -3,7 +3,11 @@ package com.tomassirio.wanderer.command.controller;
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
+import com.tomassirio.wanderer.commons.security.CurrentUserId;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.UUID;
@@ -11,13 +15,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * REST controller for user command operations. Handles user creation requests.
+ * REST controller for user command operations. Handles user creation and self-deletion requests.
  *
  * @since 0.1.8
  */
@@ -40,5 +47,37 @@ public class UserController {
         UUID userId = userService.createUser(request);
         log.info("Accepted user creation request with ID: {}", userId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(userId);
+    }
+
+    @DeleteMapping(ApiConstants.ME_SUFFIX)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Delete own account",
+            description =
+                    "Deletes the currently authenticated user's account and all associated data "
+                            + "(trips, comments, friendships, follows), then removes credentials from the auth service.")
+    @ApiResponse(responseCode = "202", description = "Account deletion accepted")
+    @ApiResponse(responseCode = "401", description = "Unauthorized - valid JWT required")
+    @ApiResponse(responseCode = "404", description = "User not found")
+    public ResponseEntity<Void> deleteMe(@Parameter(hidden = true) @CurrentUserId UUID userId) {
+        log.info("User {} requesting self-deletion", userId);
+        userService.deleteUser(userId);
+        log.info("Self-deletion completed for user: {}", userId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
+    }
+
+    /**
+     * Internal endpoint for deleting only a user's local data. Used by the auth service as a
+     * compensation step during registration rollback. Not intended for frontend use.
+     *
+     * @param id the ID of the user to delete
+     * @return 202 Accepted
+     */
+    @Hidden
+    @DeleteMapping(ApiConstants.USER_BY_ID_ENDPOINT)
+    public ResponseEntity<Void> deleteUserData(@PathVariable UUID id) {
+        log.info("Internal request to delete user data: {}", id);
+        userService.deleteUserData(id);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 }

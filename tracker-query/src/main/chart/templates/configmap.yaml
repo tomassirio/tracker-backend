@@ -38,3 +38,10 @@ data:
 
     # Liquibase
     spring.liquibase.change-log={{ .Values.application.liquibase.changeLog }}
+
+    # Tracker service URLs
+    tracker.auth.url={{ .Values.application.tracker.authUrl }}
+
+    # Disable Spring Cloud compatibility verifier
+    spring.cloud.compatibility-verifier.enabled={{ .Values.application.springCloud.compatibilityVerifierEnabled }}
+

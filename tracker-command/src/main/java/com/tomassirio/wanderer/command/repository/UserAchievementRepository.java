@@ -17,4 +17,8 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
             @Param("userId") UUID userId,
             @Param("achievementType") AchievementType achievementType,
             @Param("tripId") UUID tripId);
+
+    @Query("DELETE FROM UserAchievement ua WHERE ua.user.id = :userId")
+    @org.springframework.data.jpa.repository.Modifying
+    void deleteByUserId(@Param("userId") UUID userId);
 }

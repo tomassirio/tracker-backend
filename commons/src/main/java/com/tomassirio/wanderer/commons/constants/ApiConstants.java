@@ -49,6 +49,17 @@ public final class ApiConstants {
     public static final String PASSWORD_CHANGE_ENDPOINT = "/password/change";
 
     // ============================================================
+    // Admin endpoints
+    // ============================================================
+
+    public static final String ADMIN_PATH = API_V1 + "/admin";
+    public static final String ADMIN_USERS_PATH = ADMIN_PATH + "/users";
+    public static final String ADMIN_USER_PROMOTE_ENDPOINT = "/{userId}/promote";
+    public static final String ADMIN_USER_ROLES_ENDPOINT = "/{userId}/roles";
+    public static final String ADMIN_USER_BY_ID_ENDPOINT = "/{userId}";
+    public static final String ADMIN_USER_CREDENTIALS_ENDPOINT = "/{userId}/credentials";
+
+    // ============================================================
     // User endpoints
     // ============================================================
 
