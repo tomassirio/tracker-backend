@@ -4,6 +4,8 @@
 
 The achievement system allows users to unlock achievements based on their trip activities and social interactions. Achievements are calculated event-driven and broadcasted via WebSocket to provide real-time notifications.
 
+> **📚 Frontend Integration**: For API endpoint documentation and integration examples, see [ACHIEVEMENTS_API.md](ACHIEVEMENTS_API.md)
+
 ## Architecture
 
 ### CQRS Pattern
