@@ -154,10 +154,13 @@ public final class ApiConstants {
     // ============================================================
 
     public static final String ACHIEVEMENTS_PATH = API_V1 + "/achievements";
-    public static final String USER_ACHIEVEMENTS_ENDPOINT = USERS_SEGMENT + "/achievements";
-    public static final String USER_ACHIEVEMENTS_ME_ENDPOINT = ME_SUFFIX + "/achievements";
-    public static final String TRIP_ACHIEVEMENTS_ENDPOINT =
-            USERS_SEGMENT + "/trips/{tripId}/achievements";
+    
+    // User achievement endpoints
+    public static final String USER_ACHIEVEMENTS_ENDPOINT = "/{userId}/achievements";
+    public static final String MY_ACHIEVEMENTS_ENDPOINT = ME_SUFFIX + "/achievements";
+    
+    // Trip achievement endpoints  
+    public static final String TRIP_ACHIEVEMENTS_BY_ID_ENDPOINT = "/{tripId}/achievements";
 
     // ============================================================
     // Public endpoint patterns (for SecurityConfig)
@@ -197,6 +200,13 @@ public final class ApiConstants {
         public static final String TRIP_PROMOTION_INFO =
                 TRIPS_PATH + "/{id:" + UUID_REGEX + "}/promotion";
 
+        // Achievement endpoints (public so anyone can view achievements)
+        public static final String ALL_ACHIEVEMENTS = ACHIEVEMENTS_PATH;
+        public static final String USER_ACHIEVEMENTS =
+                USERS_PATH + "/{userId:" + UUID_REGEX + "}/achievements";
+        public static final String TRIP_ACHIEVEMENTS =
+                TRIPS_PATH + "/{tripId:" + UUID_REGEX + "}/achievements";
+
         // API documentation endpoints
         public static final String SWAGGER_UI = "/swagger-ui/**";
         public static final String API_DOCS = "/v3/api-docs/**";
@@ -216,6 +226,9 @@ public final class ApiConstants {
                 TRIP_UPDATES,
                 PROMOTED_TRIPS,
                 TRIP_PROMOTION_INFO,
+                ALL_ACHIEVEMENTS,
+                USER_ACHIEVEMENTS,
+                TRIP_ACHIEVEMENTS,
                 SWAGGER_UI,
                 API_DOCS
             };

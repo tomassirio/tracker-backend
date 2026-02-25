@@ -34,4 +34,12 @@ public interface AchievementQueryService {
      * @return list of user achievements for the trip
      */
     List<UserAchievementDTO> getUserAchievementsByTrip(UUID userId, UUID tripId);
+
+    /**
+     * Retrieves all achievements unlocked for a specific trip (by any user).
+     *
+     * @param tripId the trip's unique identifier
+     * @return list of user achievements for the trip
+     */
+    List<UserAchievementDTO> getTripAchievements(UUID tripId);
 }

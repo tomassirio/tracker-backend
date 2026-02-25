@@ -20,6 +20,7 @@ A comprehensive tracking system for my pilgrimage to Santiago de Compostela, bui
   - All wiki source files are in [`docs/wiki/`](docs/wiki/)
   - To publish to GitHub Wiki: `./setup-wiki.sh`
   - See [`docs/wiki/SETUP-INSTRUCTIONS.md`](docs/wiki/SETUP-INSTRUCTIONS.md) for details
+- **[Achievements API Guide](docs/ACHIEVEMENTS_API.md)** - Frontend integration guide for achievements endpoints
 - **[Docker Guide](docs/DOCKER.md)** - Complete guide for building and running with Docker
 - **[CI/CD Workflows](docs/CI-CD.md)** - GitHub Actions workflows and automation
 - **[Admin Role Management](docs/ADMIN_ROLES.md)** - Guide for promoting users to admin and bootstrap configuration

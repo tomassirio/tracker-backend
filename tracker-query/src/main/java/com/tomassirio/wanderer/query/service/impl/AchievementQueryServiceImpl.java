@@ -43,4 +43,11 @@ public class AchievementQueryServiceImpl implements AchievementQueryService {
                 .map(UserAchievementMapper.INSTANCE::toDTO)
                 .toList();
     }
+
+    @Override
+    public List<UserAchievementDTO> getTripAchievements(UUID tripId) {
+        return userAchievementRepository.findByTripId(tripId).stream()
+                .map(UserAchievementMapper.INSTANCE::toDTO)
+                .toList();
+    }
 }

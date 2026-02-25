@@ -150,4 +150,45 @@ class AchievementQueryServiceImplTest {
         assertThat(result.get(0).userId()).isEqualTo(userId.toString());
         assertThat(result.get(0).tripId()).isEqualTo(tripId.toString());
     }
+
+    @Test
+    void getTripAchievements_shouldReturnAllAchievementsForTrip() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        User user = User.builder().id(userId).username("testuser").build();
+        Trip trip = Trip.builder().id(tripId).name("Camino").userId(userId).build();
+        Achievement achievement =
+                Achievement.builder()
+                        .id(UUID.randomUUID())
+                        .type(AchievementType.DISTANCE_100KM)
+                        .name("First Century")
+                        .description("Walk 100km")
+                        .thresholdValue(100)
+                        .enabled(true)
+                        .build();
+
+        UserAchievement userAchievement =
+                UserAchievement.builder()
+                        .id(UUID.randomUUID())
+                        .user(user)
+                        .achievement(achievement)
+                        .trip(trip)
+                        .unlockedAt(Instant.now())
+                        .valueAchieved(105.5)
+                        .build();
+
+        when(unlockedAchievementRepository.findByTripId(tripId))
+                .thenReturn(List.of(userAchievement));
+
+        // When
+        List<UserAchievementDTO> result = service.getTripAchievements(tripId);
+
+        // Then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).userId()).isEqualTo(userId.toString());
+        assertThat(result.get(0).tripId()).isEqualTo(tripId.toString());
+        assertThat(result.get(0).achievement().type()).isEqualTo(AchievementType.DISTANCE_100KM);
+    }
 }
