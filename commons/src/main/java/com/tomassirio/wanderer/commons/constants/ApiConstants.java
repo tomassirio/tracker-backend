@@ -123,6 +123,7 @@ public final class ApiConstants {
     public static final String TRIP_UPDATE_DONATION_LINK_ENDPOINT = "/{id}/promote";
     public static final String TRIP_PROMOTION_INFO_ENDPOINT = "/{id}/promotion";
     public static final String TRIP_UPDATES_ENDPOINT = "/{tripId}/updates";
+    public static final String TRIP_UPDATE_BY_ID_ENDPOINT = "/updates" + UUID_PATH_VARIABLE;
     public static final String TRIP_COMMENTS_ENDPOINT = "/{tripId}/comments";
     public static final String TRIPS_AVAILABLE_ENDPOINT = ME_SUFFIX + "/available";
     public static final String TRIP_FROM_PLAN_ENDPOINT = "/from-plan/{tripPlanId}";
@@ -147,6 +148,7 @@ public final class ApiConstants {
     // ============================================================
 
     public static final String COMMENTS_PATH = API_V1 + "/comments";
+    public static final String COMMENT_BY_ID_ENDPOINT = UUID_PATH_VARIABLE;
     public static final String COMMENT_REACTIONS_ENDPOINT = "/{commentId}/reactions";
 
     // ============================================================

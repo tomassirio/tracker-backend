@@ -32,8 +32,7 @@ public class TripAchievementQueryController {
             summary = "Get trip achievements",
             description = "Retrieves all achievements unlocked for a specific trip")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved trip achievements")
-    public ResponseEntity<List<UserAchievementDTO>> getTripAchievements(
-            @PathVariable UUID tripId) {
+    public ResponseEntity<List<UserAchievementDTO>> getTripAchievements(@PathVariable UUID tripId) {
         return ResponseEntity.ok(achievementQueryService.getTripAchievements(tripId));
     }
 }

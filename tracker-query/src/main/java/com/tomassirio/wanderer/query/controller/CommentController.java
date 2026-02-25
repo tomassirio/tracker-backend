@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.3.0
  */
 @RestController
-@RequestMapping(ApiConstants.API_V1)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Comment Queries", description = "Endpoints for retrieving comment information")
@@ -29,7 +27,7 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    @GetMapping("/comments/{id}")
+    @GetMapping(ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_BY_ID_ENDPOINT)
     @Operation(
             summary = "Get comment by ID",
             description = "Retrieves a specific comment by its ID")
@@ -42,7 +40,7 @@ public class CommentController {
         return ResponseEntity.ok(comment);
     }
 
-    @GetMapping("/trips/{tripId}/comments")
+    @GetMapping(ApiConstants.TRIPS_PATH + ApiConstants.TRIP_COMMENTS_ENDPOINT)
     @Operation(
             summary = "Get all comments for a trip",
             description = "Retrieves all top-level comments with their replies for a specific trip")
