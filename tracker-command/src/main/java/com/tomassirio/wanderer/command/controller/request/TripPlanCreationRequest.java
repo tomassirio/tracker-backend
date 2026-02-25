@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.controller.request;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -23,12 +24,16 @@ public record TripPlanCreationRequest(
         @Schema(description = "Trip end date", example = "2025-10-25")
                 @NotNull(message = "End date is required")
                 LocalDate endDate,
-        @Schema(description = "Starting location") @NotNull(message = "Start location is required")
+        @Schema(description = "Starting location")
+                @Valid
+                @NotNull(message = "Start location is required")
                 GeoLocation startLocation,
-        @Schema(description = "Ending location") @NotNull(message = "End location is required")
+        @Schema(description = "Ending location")
+                @Valid
+                @NotNull(message = "End location is required")
                 GeoLocation endLocation,
         @Schema(description = "Intermediate waypoints (optional)", example = "[]")
-                List<GeoLocation> waypoints,
+                List<@Valid GeoLocation> waypoints,
         @Schema(description = "Plan type", example = "SIMPLE")
                 @NotNull(message = "Plan type is required")
                 TripPlanType planType) {}
