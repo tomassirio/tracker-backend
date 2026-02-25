@@ -69,6 +69,11 @@ application:
   liquibase:
     changeLog: "classpath:db/changelog/db.changelog-master.yaml"
 
+  # Google Maps Configuration
+  googleMaps:
+    apiKey: ""
+    enabled: true
+
   # Tracker service URLs
   tracker:
     authUrl: "http://tracker-auth:8083"
