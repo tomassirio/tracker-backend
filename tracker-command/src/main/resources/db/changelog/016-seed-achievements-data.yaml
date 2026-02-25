@@ -1,0 +1,440 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-seed-achievements-data
+      author: tomassirio
+      comment: "Seed achievements table with all AchievementType enum values so they are available for queries"
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: achievements
+      changes:
+        # Distance achievements
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DISTANCE_100KM
+              - column:
+                  name: name
+                  value: "First Century"
+              - column:
+                  name: description
+                  value: "Walk 100km in a single trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 100
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DISTANCE_200KM
+              - column:
+                  name: name
+                  value: "4daagse"
+              - column:
+                  name: description
+                  value: "Walk 200km in a single trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 200
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DISTANCE_500KM
+              - column:
+                  name: name
+                  value: "Long Hauler"
+              - column:
+                  name: description
+                  value: "Walk 500km in a single trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 500
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DISTANCE_800KM
+              - column:
+                  name: name
+                  value: "Camino Complete"
+              - column:
+                  name: description
+                  value: "Walk 800km in a single trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 800
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DISTANCE_1000KM
+              - column:
+                  name: name
+                  value: "Thousand Miles"
+              - column:
+                  name: description
+                  value: "Walk 1000km in a single trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 1000
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DISTANCE_1600KM
+              - column:
+                  name: name
+                  value: "The Proclaimer"
+              - column:
+                  name: description
+                  value: "Walk 500 miles and 500 more (~1600km)"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 1600
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DISTANCE_2200KM
+              - column:
+                  name: name
+                  value: "The Hobbit"
+              - column:
+                  name: description
+                  value: "Walk from the Shire to Mordor (2200km)"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 2200
+              - column:
+                  name: enabled
+                  valueBoolean: true
+
+        # Update achievements
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: UPDATES_10
+              - column:
+                  name: name
+                  value: "Getting Started"
+              - column:
+                  name: description
+                  value: "Post 10 updates on a single trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 10
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: UPDATES_50
+              - column:
+                  name: name
+                  value: "Regular Reporter"
+              - column:
+                  name: description
+                  value: "Post 50 updates on a single trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 50
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: UPDATES_100
+              - column:
+                  name: name
+                  value: "Century Poster"
+              - column:
+                  name: description
+                  value: "Post 100 updates on a single trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 100
+              - column:
+                  name: enabled
+                  valueBoolean: true
+
+        # Duration achievements
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DURATION_7_DAYS
+              - column:
+                  name: name
+                  value: "Week Warrior"
+              - column:
+                  name: description
+                  value: "Trip lasting 7 days"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 7
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DURATION_30_DAYS
+              - column:
+                  name: name
+                  value: "Monthly Trekker"
+              - column:
+                  name: description
+                  value: "Trip lasting 30 days"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 30
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DURATION_45_DAYS
+              - column:
+                  name: name
+                  value: "Six Week Explorer"
+              - column:
+                  name: description
+                  value: "Trip lasting 45 days"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 45
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: DURATION_60_DAYS
+              - column:
+                  name: name
+                  value: "Two Month Journey"
+              - column:
+                  name: description
+                  value: "Trip lasting 60 days"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 60
+              - column:
+                  name: enabled
+                  valueBoolean: true
+
+        # Social achievements - Followers
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FOLLOWERS_10
+              - column:
+                  name: name
+                  value: "Popular Walker"
+              - column:
+                  name: description
+                  value: "Reach 10 followers"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 10
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FOLLOWERS_50
+              - column:
+                  name: name
+                  value: "Influencer"
+              - column:
+                  name: description
+                  value: "Reach 50 followers"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 50
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FOLLOWERS_100
+              - column:
+                  name: name
+                  value: "Community Leader"
+              - column:
+                  name: description
+                  value: "Reach 100 followers"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 100
+              - column:
+                  name: enabled
+                  valueBoolean: true
+
+        # Social achievements - Friends
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FRIENDS_5
+              - column:
+                  name: name
+                  value: "Making Friends"
+              - column:
+                  name: description
+                  value: "Make 5 friends"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 5
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FRIENDS_20
+              - column:
+                  name: name
+                  value: "Social Butterfly"
+              - column:
+                  name: description
+                  value: "Make 20 friends"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 20
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FRIENDS_50
+              - column:
+                  name: name
+                  value: "Friend Collector"
+              - column:
+                  name: description
+                  value: "Make 50 friends"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 50
+              - column:
+                  name: enabled
+                  valueBoolean: true
+

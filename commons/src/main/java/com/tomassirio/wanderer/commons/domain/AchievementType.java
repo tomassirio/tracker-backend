@@ -1,5 +1,8 @@
 package com.tomassirio.wanderer.commons.domain;
 
+import lombok.Getter;
+
+@Getter
 public enum AchievementType {
     // Distance achievements (in kilometers)
     DISTANCE_100KM("First Century", "Walk 100km in a single trip", 100),
@@ -41,15 +44,4 @@ public enum AchievementType {
         this.threshold = threshold;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public int getThreshold() {
-        return threshold;
-    }
 }

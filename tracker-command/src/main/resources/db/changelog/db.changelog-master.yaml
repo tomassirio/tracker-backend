@@ -29,3 +29,5 @@ databaseChangeLog:
       file: db/changelog/014-create-promoted-trips-table.yaml
   - include:
       file: db/changelog/015-add-created-at-to-users.yaml
+  - include:
+      file: db/changelog/016-seed-achievements-data.yaml
