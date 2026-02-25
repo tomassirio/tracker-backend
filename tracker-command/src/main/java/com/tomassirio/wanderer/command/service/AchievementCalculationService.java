@@ -189,7 +189,11 @@ public class AchievementCalculationService {
         // Convert trip updates to LatLng coordinates
         List<LatLng> coordinates =
                 updates.stream()
-                        .filter(update -> update.getLocation() != null)
+                        .filter(
+                                update ->
+                                        update.getLocation() != null
+                                                && update.getLocation().getLat() != null
+                                                && update.getLocation().getLon() != null)
                         .map(
                                 update ->
                                         new LatLng(

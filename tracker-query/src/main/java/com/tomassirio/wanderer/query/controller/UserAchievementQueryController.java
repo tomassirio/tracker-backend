@@ -47,8 +47,7 @@ public class UserAchievementQueryController {
             summary = "Get user achievements",
             description = "Retrieves all achievements unlocked by a specific user")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved user achievements")
-    public ResponseEntity<List<UserAchievementDTO>> getUserAchievements(
-            @PathVariable UUID userId) {
+    public ResponseEntity<List<UserAchievementDTO>> getUserAchievements(@PathVariable UUID userId) {
         return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
     }
 }

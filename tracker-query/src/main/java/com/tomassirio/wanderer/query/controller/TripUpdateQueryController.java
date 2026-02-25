@@ -29,7 +29,7 @@ public class TripUpdateQueryController {
 
     private final TripUpdateService tripUpdateService;
 
-    @GetMapping("/updates/{id}")
+    @GetMapping(ApiConstants.TRIP_UPDATE_BY_ID_ENDPOINT)
     @Operation(
             summary = "Get trip update by ID",
             description = "Retrieves a specific trip update by its ID")

@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.command.controller.request;
 
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -9,6 +10,7 @@ import jakarta.validation.constraints.Size;
 
 public record TripUpdateCreationRequest(
         @Schema(description = "Current location", required = true)
+                @Valid
                 @NotNull(message = "Location is required")
                 GeoLocation location,
         @Schema(description = "Battery percentage", example = "75")

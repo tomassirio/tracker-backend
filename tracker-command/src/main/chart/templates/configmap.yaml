@@ -43,6 +43,10 @@ data:
     # Tracker service URLs
     tracker.auth.url={{ .Values.application.tracker.authUrl }}
 
+    # Google Maps Configuration
+    google.maps.api-key={{ .Values.application.googleMaps.apiKey }}
+    google.maps.enabled={{ .Values.application.googleMaps.enabled }}
+
     # Disable Spring Cloud compatibility verifier
     spring.cloud.compatibility-verifier.enabled={{ .Values.application.springCloud.compatibilityVerifierEnabled }}
 

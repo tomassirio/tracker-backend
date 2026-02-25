@@ -43,5 +43,4 @@ public enum AchievementType {
         this.description = description;
         this.threshold = threshold;
     }
-
 }
