@@ -31,3 +31,5 @@ databaseChangeLog:
       file: db/changelog/015-add-created-at-to-users.yaml
   - include:
       file: db/changelog/016-seed-achievements-data.yaml
+  - include:
+      file: db/changelog/017-add-automatic-updates-to-trips.yaml

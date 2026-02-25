@@ -97,4 +97,18 @@ public interface TripService {
      *     trip
      */
     UUID changeStatus(UUID userId, UUID id, TripStatus status);
+
+    /**
+     * Updates trip settings (updateRefresh and automaticUpdates).
+     *
+     * @param userId the UUID of the user making the request (for ownership validation)
+     * @param id the UUID of the trip to update
+     * @param updateRefresh the interval in seconds for automatic location updates (nullable)
+     * @param automaticUpdates whether automatic updates are enabled (nullable)
+     * @return the UUID of the trip
+     * @throws jakarta.persistence.EntityNotFoundException if no trip exists with the given ID
+     * @throws org.springframework.security.access.AccessDeniedException if user doesn't own the
+     *     trip
+     */
+    UUID updateSettings(UUID userId, UUID id, Integer updateRefresh, Boolean automaticUpdates);
 }

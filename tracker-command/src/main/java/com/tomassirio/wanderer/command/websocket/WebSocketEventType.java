@@ -23,6 +23,7 @@ public final class WebSocketEventType {
     public static final String TRIP_STATUS_CHANGED = "TRIP_STATUS_CHANGED";
     public static final String TRIP_VISIBILITY_CHANGED = "TRIP_VISIBILITY_CHANGED";
     public static final String TRIP_UPDATED = "TRIP_UPDATED";
+    public static final String TRIP_SETTINGS_UPDATED = "TRIP_SETTINGS_UPDATED";
 
     // Trip Plan events
     public static final String TRIP_PLAN_CREATED = "TRIP_PLAN_CREATED";

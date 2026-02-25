@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-add-automatic-updates-to-trips
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: trips
+                columnName: automatic_updates
+      changes:
+        - addColumn:
+            tableName: trips
+            columns:
+              - column:
+                  name: automatic_updates
+                  type: boolean
+                  defaultValueBoolean: false

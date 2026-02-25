@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -465,5 +466,75 @@ class TripControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(requestBody))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void updateSettings_whenValidRequest_shouldReturnAccepted() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        String requestBody = "{\"updateRefresh\": 120, \"automaticUpdates\": true}";
+
+        when(tripService.updateSettings(any(UUID.class), eq(tripId), eq(120), eq(true)))
+                .thenReturn(tripId);
+
+        // When & Then
+        mockMvc.perform(
+                        patch(TRIPS_BASE_URL + "/{id}/settings", tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(tripId.toString()));
+    }
+
+    @Test
+    void updateSettings_whenPartialUpdate_shouldReturnAccepted() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        String requestBody = "{\"automaticUpdates\": false}";
+
+        when(tripService.updateSettings(any(UUID.class), eq(tripId), eq(null), eq(false)))
+                .thenReturn(tripId);
+
+        // When & Then
+        mockMvc.perform(
+                        patch(TRIPS_BASE_URL + "/{id}/settings", tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$").value(tripId.toString()));
+    }
+
+    @Test
+    void updateSettings_whenTripNotFound_shouldReturnNotFound() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        String requestBody = "{\"updateRefresh\": 120, \"automaticUpdates\": true}";
+
+        when(tripService.updateSettings(any(UUID.class), eq(tripId), any(), any()))
+                .thenThrow(new EntityNotFoundException("Trip not found"));
+
+        // When & Then
+        mockMvc.perform(
+                        patch(TRIPS_BASE_URL + "/{id}/settings", tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateSettings_whenUserDoesNotOwnTrip_shouldReturnForbidden() throws Exception {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        String requestBody = "{\"updateRefresh\": 120, \"automaticUpdates\": true}";
+
+        when(tripService.updateSettings(any(UUID.class), eq(tripId), any(), any()))
+                .thenThrow(new AccessDeniedException("Access denied"));
+
+        // When & Then
+        mockMvc.perform(
+                        patch(TRIPS_BASE_URL + "/{id}/settings", tripId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(requestBody))
+                .andExpect(status().isForbidden());
     }
 }

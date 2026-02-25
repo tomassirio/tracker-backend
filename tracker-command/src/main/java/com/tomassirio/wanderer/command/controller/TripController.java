@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.command.controller;
 
 import com.tomassirio.wanderer.command.controller.request.PromoteTripRequest;
 import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.TripSettingsRequest;
 import com.tomassirio.wanderer.command.controller.request.TripStatusRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
@@ -147,6 +148,26 @@ public class TripController {
         UUID tripId = tripService.changeStatus(userId, id, request.status());
 
         log.info("Accepted status change request for trip ID: {}", tripId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
+    }
+
+    @PatchMapping(ApiConstants.TRIP_SETTINGS_ENDPOINT)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Update trip settings",
+            description =
+                    "Updates trip settings including updateRefresh and automaticUpdates. Returns 202 Accepted with the trip ID as the operation completes asynchronously.")
+    public ResponseEntity<UUID> updateSettings(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @PathVariable UUID id,
+            @Valid @RequestBody TripSettingsRequest request) {
+        log.info("Received request to update settings for trip {} by user {}", id, userId);
+
+        UUID tripId =
+                tripService.updateSettings(
+                        userId, id, request.updateRefresh(), request.automaticUpdates());
+
+        log.info("Accepted settings update request for trip ID: {}", tripId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 

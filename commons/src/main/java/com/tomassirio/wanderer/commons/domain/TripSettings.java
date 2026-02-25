@@ -29,4 +29,7 @@ public class TripSettings {
 
     @Column(name = "update_refresh")
     private Integer updateRefresh; // interval in seconds for automatic location updates
+
+    @Column(name = "automatic_updates")
+    private Boolean automaticUpdates; // whether automatic updates are enabled
 }
