@@ -31,9 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.3.0
  */
 @RestController
-@RequestMapping(
-        value = ApiConstants.TRIP_PLANS_PATH,
-        produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.TRIP_PLANS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Trip Plans", description = "Endpoints for managing trip plans and waypoints")

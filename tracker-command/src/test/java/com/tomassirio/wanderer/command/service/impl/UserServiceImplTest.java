@@ -11,8 +11,10 @@ import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.client.TrackerAuthClient;
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.UserDetailsRequest;
 import com.tomassirio.wanderer.command.event.UserCreatedEvent;
 import com.tomassirio.wanderer.command.event.UserDeletedEvent;
+import com.tomassirio.wanderer.command.event.UserDetailsUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.User;
 import feign.FeignException;
@@ -211,5 +213,75 @@ class UserServiceImplTest {
                 .hasMessageContaining("User not found");
 
         verify(eventPublisher, never()).publishEvent(any(UserDeletedEvent.class));
+    }
+
+    @Test
+    void updateUserDetails_whenUserExists_shouldPublishEventAndReturnUserId() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("johndoe").build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        UserDetailsRequest request =
+                new UserDetailsRequest(
+                        "John Doe", "Hiking enthusiast", "https://example.com/avatar.png");
+
+        // When
+        UUID result = userService.updateUserDetails(userId, request);
+
+        // Then
+        assertThat(result).isEqualTo(userId);
+
+        ArgumentCaptor<UserDetailsUpdatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(UserDetailsUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        UserDetailsUpdatedEvent event = eventCaptor.getValue();
+        assertThat(event.getUserId()).isEqualTo(userId);
+        assertThat(event.getDisplayName()).isEqualTo("John Doe");
+        assertThat(event.getBio()).isEqualTo("Hiking enthusiast");
+        assertThat(event.getAvatarUrl()).isEqualTo("https://example.com/avatar.png");
+    }
+
+    @Test
+    void updateUserDetails_whenPartialFields_shouldPublishEventWithNullFields() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        User user = User.builder().id(userId).username("johndoe").build();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        UserDetailsRequest request = new UserDetailsRequest("New Name", null, null);
+
+        // When
+        UUID result = userService.updateUserDetails(userId, request);
+
+        // Then
+        assertThat(result).isEqualTo(userId);
+
+        ArgumentCaptor<UserDetailsUpdatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(UserDetailsUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+
+        UserDetailsUpdatedEvent event = eventCaptor.getValue();
+        assertThat(event.getUserId()).isEqualTo(userId);
+        assertThat(event.getDisplayName()).isEqualTo("New Name");
+        assertThat(event.getBio()).isNull();
+        assertThat(event.getAvatarUrl()).isNull();
+    }
+
+    @Test
+    void updateUserDetails_whenUserNotFound_shouldThrowException() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        UserDetailsRequest request = new UserDetailsRequest("Name", "Bio", "https://example.com");
+
+        // When & Then
+        assertThatThrownBy(() -> userService.updateUserDetails(userId, request))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("User not found");
+
+        verify(eventPublisher, never()).publishEvent(any(UserDetailsUpdatedEvent.class));
     }
 }

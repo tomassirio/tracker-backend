@@ -1,6 +1,8 @@
 package com.tomassirio.wanderer.query.service.impl;
 
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.dto.UserDetailsDTO;
+import com.tomassirio.wanderer.commons.mapper.UserDetailsMapper;
 import com.tomassirio.wanderer.query.dto.UserAdminResponse;
 import com.tomassirio.wanderer.query.dto.UserResponse;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
@@ -42,7 +44,7 @@ public class UserQueryServiceImpl implements UserQueryService {
                 userRepository
                         .findById(id)
                         .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return new UserResponse(user.getId(), user.getUsername());
+        return toUserResponse(user);
     }
 
     @Override
@@ -51,14 +53,12 @@ public class UserQueryServiceImpl implements UserQueryService {
                 userRepository
                         .findByUsername(username)
                         .orElseThrow(() -> new EntityNotFoundException("User not found"));
-        return new UserResponse(user.getId(), user.getUsername());
+        return toUserResponse(user);
     }
 
     @Override
     public Page<UserResponse> getAllUsers(Pageable pageable) {
-        return userRepository
-                .findAll(pageable)
-                .map(user -> new UserResponse(user.getId(), user.getUsername()));
+        return userRepository.findAll(pageable).map(this::toUserResponse);
     }
 
     @Override
@@ -66,14 +66,21 @@ public class UserQueryServiceImpl implements UserQueryService {
         return userRepository.findAll(pageable).map(this::mapToAdminResponse);
     }
 
+    private UserResponse toUserResponse(User user) {
+        UserDetailsDTO detailsDTO = UserDetailsMapper.INSTANCE.toDTO(user.getUserDetails());
+        return new UserResponse(user.getId(), user.getUsername(), detailsDTO);
+    }
+
     private UserAdminResponse mapToAdminResponse(User user) {
         long friendsCount = friendshipRepository.countByUserId(user.getId());
         long followersCount = userFollowRepository.countByFollowedId(user.getId());
         long tripsCount = tripRepository.countByUserId(user.getId());
+        UserDetailsDTO detailsDTO = UserDetailsMapper.INSTANCE.toDTO(user.getUserDetails());
 
         return new UserAdminResponse(
                 user.getId(),
                 user.getUsername(),
+                detailsDTO,
                 friendsCount,
                 followersCount,
                 tripsCount,

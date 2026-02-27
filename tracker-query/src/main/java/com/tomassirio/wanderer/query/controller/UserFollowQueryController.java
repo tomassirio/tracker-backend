@@ -26,9 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.4.5
  */
 @RestController
-@RequestMapping(
-        value = ApiConstants.USERS_PATH,
-        produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.USERS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "User Follows Query", description = "Endpoints for querying user follows")

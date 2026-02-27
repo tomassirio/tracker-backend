@@ -1,10 +1,13 @@
 package com.tomassirio.wanderer.query.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.commons.domain.User;
+import com.tomassirio.wanderer.commons.domain.UserDetails;
 import com.tomassirio.wanderer.query.dto.UserAdminResponse;
 import com.tomassirio.wanderer.query.dto.UserResponse;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
@@ -222,5 +225,48 @@ class UserQueryServiceImplTest {
         assertEquals(0L, response.friendsCount());
         assertEquals(0L, response.followersCount());
         assertEquals(0L, response.tripsCount());
+    }
+
+    @Test
+    void getUserById_whenUserHasDetails_shouldReturnUserDetailsInResponse() {
+        // Given
+        UserDetails details =
+                UserDetails.builder()
+                        .displayName("John Doe")
+                        .bio("Walking the Camino")
+                        .avatarUrl("https://example.com/avatar.png")
+                        .build();
+        User user =
+                User.builder()
+                        .id(UUID.randomUUID())
+                        .username("johndoe")
+                        .userDetails(details)
+                        .build();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        // When
+        UserResponse result = userQueryService.getUserById(user.getId());
+
+        // Then
+        assertNotNull(result.userDetails());
+        assertEquals("John Doe", result.userDetails().displayName());
+        assertEquals("Walking the Camino", result.userDetails().bio());
+        assertEquals("https://example.com/avatar.png", result.userDetails().avatarUrl());
+    }
+
+    @Test
+    void getUserById_whenUserHasNoDetails_shouldReturnEmptyUserDetailsInResponse() {
+        // Given
+        User user = User.builder().id(UUID.randomUUID()).username("newuser").build();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        // When
+        UserResponse result = userQueryService.getUserById(user.getId());
+
+        // Then
+        assertNotNull(result.userDetails());
+        assertNull(result.userDetails().displayName());
+        assertNull(result.userDetails().bio());
+        assertNull(result.userDetails().avatarUrl());
     }
 }

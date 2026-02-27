@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.query.dto;
 
+import com.tomassirio.wanderer.commons.dto.UserDetailsDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.Instant;
 import java.util.UUID;
@@ -13,6 +14,7 @@ import java.util.UUID;
 public record UserAdminResponse(
         @Schema(description = "Unique identifier of the user") UUID id,
         @Schema(description = "Username of the user") String username,
+        @Schema(description = "User profile details") UserDetailsDTO userDetails,
         @Schema(description = "Number of friends the user has") long friendsCount,
         @Schema(description = "Number of followers the user has") long followersCount,
         @Schema(description = "Number of trips the user has created") long tripsCount,

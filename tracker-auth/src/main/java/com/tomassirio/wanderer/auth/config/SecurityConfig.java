@@ -24,7 +24,12 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
-@Import({JwtConfig.class, JwtConverterConfig.class, SecurityCorsConfig.class, SecurityHeadersConfig.class})
+@Import({
+    JwtConfig.class,
+    JwtConverterConfig.class,
+    SecurityCorsConfig.class,
+    SecurityHeadersConfig.class
+})
 public class SecurityConfig {
 
     private final Converter<Jwt, AbstractAuthenticationToken> jwtAuthenticationConverter;

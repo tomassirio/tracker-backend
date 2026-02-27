@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.controller;
 
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.UserDetailsRequest;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
@@ -18,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,9 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping(
-        value = ApiConstants.USERS_PATH,
-        produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.USERS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Users", description = "Endpoints for managing users")
@@ -50,6 +50,26 @@ public class UserController {
         UUID userId = userService.createUser(request);
         log.info("Accepted user creation request with ID: {}", userId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(userId);
+    }
+
+    @PatchMapping(value = ApiConstants.ME_SUFFIX, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN','USER')")
+    @Operation(
+            summary = "Update current user's details",
+            description =
+                    "Updates the authenticated user's profile details (display name, bio, avatar URL). "
+                            + "Only provided (non-null) fields are updated. "
+                            + "Returns 202 Accepted with the user ID as the operation completes asynchronously.")
+    @ApiResponse(responseCode = "202", description = "User details update accepted")
+    @ApiResponse(responseCode = "401", description = "Unauthorized - valid JWT required")
+    @ApiResponse(responseCode = "404", description = "User not found")
+    public ResponseEntity<UUID> updateMyDetails(
+            @Parameter(hidden = true) @CurrentUserId UUID userId,
+            @Valid @RequestBody UserDetailsRequest request) {
+        log.info("User {} updating their details", userId);
+        UUID updatedUserId = userService.updateUserDetails(userId, request);
+        log.info("Accepted user details update for user: {}", updatedUserId);
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(updatedUserId);
     }
 
     @DeleteMapping(ApiConstants.ME_SUFFIX)

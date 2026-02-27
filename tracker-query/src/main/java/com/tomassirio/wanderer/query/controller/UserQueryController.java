@@ -28,9 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping(
-        value = ApiConstants.USERS_PATH,
-        produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.USERS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "User Queries", description = "Endpoints for retrieving user information")
 public class UserQueryController {

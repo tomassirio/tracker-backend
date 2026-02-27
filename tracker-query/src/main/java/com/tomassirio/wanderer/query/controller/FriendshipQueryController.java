@@ -26,9 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.4.0
  */
 @RestController
-@RequestMapping(
-        value = ApiConstants.USERS_PATH,
-        produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.USERS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Friends Query", description = "Endpoints for querying friends")
