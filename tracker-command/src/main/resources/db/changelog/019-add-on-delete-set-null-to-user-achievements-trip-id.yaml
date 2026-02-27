@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-add-on-delete-actions-to-trip-foreign-keys
+      author: tomassirio
+      comment: >
+        Add ON DELETE actions to all foreign keys referencing the trips table.
+        - comments and trip_updates get ON DELETE CASCADE (belt-and-suspenders with JPA cascade).
+        - user_achievements gets ON DELETE SET NULL (achievements survive trip deletion, trip_id is already nullable).
+      changes:
+        # --- comments.trip_id → ON DELETE CASCADE ---
+        - dropForeignKeyConstraint:
+            baseTableName: comments
+            constraintName: fk_comments_trip_id
+        - addForeignKeyConstraint:
+            baseTableName: comments
+            baseColumnNames: trip_id
+            referencedTableName: trips
+            referencedColumnNames: id
+            constraintName: fk_comments_trip_id
+            onDelete: CASCADE
+
+        # --- trip_updates.trip_id → ON DELETE CASCADE ---
+        - dropForeignKeyConstraint:
+            baseTableName: trip_updates
+            constraintName: fk_trip_updates_trip_id
+        - addForeignKeyConstraint:
+            baseTableName: trip_updates
+            baseColumnNames: trip_id
+            referencedTableName: trips
+            referencedColumnNames: id
+            constraintName: fk_trip_updates_trip_id
+            onDelete: CASCADE
+
+        # --- user_achievements.trip_id → ON DELETE SET NULL ---
+        - dropForeignKeyConstraint:
+            baseTableName: user_achievements
+            constraintName: fk_user_achievements_trip_id
+        - addForeignKeyConstraint:
+            baseTableName: user_achievements
+            baseColumnNames: trip_id
+            referencedTableName: trips
+            referencedColumnNames: id
+            constraintName: fk_user_achievements_trip_id
+            onDelete: SET NULL
+
+
