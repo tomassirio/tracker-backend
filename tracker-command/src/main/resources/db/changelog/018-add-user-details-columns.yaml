@@ -2,6 +2,12 @@ databaseChangeLog:
   - changeSet:
       id: 018-add-user-details-columns
       author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: users
+                columnName: display_name
       changes:
         - addColumn:
             tableName: users
