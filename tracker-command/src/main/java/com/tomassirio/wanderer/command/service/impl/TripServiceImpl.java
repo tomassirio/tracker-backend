@@ -5,6 +5,7 @@ import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
 import com.tomassirio.wanderer.command.event.TripCreatedEvent;
 import com.tomassirio.wanderer.command.event.TripDeletedEvent;
 import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;
+import com.tomassirio.wanderer.command.event.TripSettingsUpdatedEvent;
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
 import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
 import com.tomassirio.wanderer.command.repository.ActiveTripRepository;
@@ -203,5 +204,27 @@ public class TripServiceImpl implements TripService {
                         .build());
 
         return tripId;
+    }
+
+    @Override
+    public UUID updateSettings(
+            UUID userId, UUID id, Integer updateRefresh, Boolean automaticUpdates) {
+        // Validate trip exists and ownership
+        Trip trip =
+                tripRepository
+                        .findById(id)
+                        .orElseThrow(() -> new EntityNotFoundException("Trip not found"));
+
+        ownershipValidator.validateOwnership(trip, userId, Trip::getUserId, Trip::getId, "trip");
+
+        // Publish event - persistence handler will write to DB
+        eventPublisher.publishEvent(
+                TripSettingsUpdatedEvent.builder()
+                        .tripId(id)
+                        .updateRefresh(updateRefresh)
+                        .automaticUpdates(automaticUpdates)
+                        .build());
+
+        return id;
     }
 }

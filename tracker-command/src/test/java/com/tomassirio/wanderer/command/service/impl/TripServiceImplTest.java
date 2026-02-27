@@ -14,6 +14,7 @@ import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
 import com.tomassirio.wanderer.command.event.TripCreatedEvent;
 import com.tomassirio.wanderer.command.event.TripDeletedEvent;
 import com.tomassirio.wanderer.command.event.TripMetadataUpdatedEvent;
+import com.tomassirio.wanderer.command.event.TripSettingsUpdatedEvent;
 import com.tomassirio.wanderer.command.event.TripStatusChangedEvent;
 import com.tomassirio.wanderer.command.event.TripVisibilityChangedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
@@ -1013,5 +1014,128 @@ class TripServiceImplTest {
         assertThat(result).isEqualTo(tripId);
         verify(activeTripRepository, never()).findById(any());
         verify(eventPublisher).publishEvent(any(TripStatusChangedEvent.class));
+    }
+
+    @Test
+    void updateSettings_whenUserOwnsTrip_shouldUpdateSettings() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .updateRefresh(60)
+                        .automaticUpdates(false)
+                        .build();
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("My Trip")
+                        .userId(USER_ID)
+                        .tripSettings(existingSettings)
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+
+        // When
+        UUID result = tripService.updateSettings(USER_ID, tripId, 120, true);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
+        verify(tripRepository).findById(tripId);
+        verify(eventPublisher).publishEvent(any(TripSettingsUpdatedEvent.class));
+    }
+
+    @Test
+    void updateSettings_whenUserDoesNotOwnTrip_shouldThrowAccessDeniedException() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID otherUserId = UUID.randomUUID();
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("Other User's Trip")
+                        .userId(otherUserId)
+                        .tripSettings(
+                                TripSettings.builder()
+                                        .tripStatus(TripStatus.CREATED)
+                                        .visibility(TripVisibility.PUBLIC)
+                                        .build())
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+
+        // When & Then
+        assertThatThrownBy(
+                        () ->
+                                tripService.updateSettings(
+                                        USER_ID, tripId, 120, true)) // USER_ID is not the owner
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("does not have permission to modify trip");
+
+        verify(tripRepository).findById(tripId);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void updateSettings_whenTripNotFound_shouldThrowEntityNotFoundException() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThatThrownBy(() -> tripService.updateSettings(USER_ID, tripId, 120, true))
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessageContaining("Trip not found");
+
+        verify(tripRepository).findById(tripId);
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void updateSettings_whenPartialUpdate_shouldUpdateOnlyProvidedFields() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .updateRefresh(60)
+                        .automaticUpdates(false)
+                        .build();
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("My Trip")
+                        .userId(USER_ID)
+                        .tripSettings(existingSettings)
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+
+        // When - only update automaticUpdates
+        UUID result = tripService.updateSettings(USER_ID, tripId, null, true);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(tripId);
+        verify(tripRepository).findById(tripId);
+        verify(eventPublisher).publishEvent(any(TripSettingsUpdatedEvent.class));
     }
 }

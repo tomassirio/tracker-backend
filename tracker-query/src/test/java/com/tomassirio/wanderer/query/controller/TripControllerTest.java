@@ -452,7 +452,8 @@ class TripControllerTest {
     }
 
     private TripDTO createTripDTO(UUID tripId, String name, TripVisibility visibility) {
-        TripSettingsDTO tripSettings = new TripSettingsDTO(TripStatus.CREATED, visibility, null);
+        TripSettingsDTO tripSettings =
+                new TripSettingsDTO(TripStatus.CREATED, visibility, null, null);
         TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null, null);
 
         return new TripDTO(
@@ -471,7 +472,7 @@ class TripControllerTest {
 
     private TripDTO createTripDTOWithStatus(
             UUID tripId, String name, TripVisibility visibility, TripStatus status) {
-        TripSettingsDTO tripSettings = new TripSettingsDTO(status, visibility, null);
+        TripSettingsDTO tripSettings = new TripSettingsDTO(status, visibility, null, null);
         TripDetailsDTO tripDetails = new TripDetailsDTO(null, null, null, null, null);
 
         return new TripDTO(
