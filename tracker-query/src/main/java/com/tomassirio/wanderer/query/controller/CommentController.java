@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,7 +28,9 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    @GetMapping(ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_BY_ID_ENDPOINT)
+    @GetMapping(
+            value = ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_BY_ID_ENDPOINT,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Get comment by ID",
             description = "Retrieves a specific comment by its ID")
@@ -40,7 +43,9 @@ public class CommentController {
         return ResponseEntity.ok(comment);
     }
 
-    @GetMapping(ApiConstants.TRIPS_PATH + ApiConstants.TRIP_COMMENTS_ENDPOINT)
+    @GetMapping(
+            value = ApiConstants.TRIPS_PATH + ApiConstants.TRIP_COMMENTS_ENDPOINT,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Get all comments for a trip",
             description = "Retrieves all top-level comments with their replies for a specific trip")
