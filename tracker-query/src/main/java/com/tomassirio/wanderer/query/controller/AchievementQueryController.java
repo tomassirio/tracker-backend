@@ -16,9 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** REST controller for achievement query operations. Handles achievement retrieval requests. */
 @RestController
-@RequestMapping(
-        value = ApiConstants.ACHIEVEMENTS_PATH,
-        produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.ACHIEVEMENTS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "Achievement Queries", description = "Endpoints for retrieving achievement information")
 public class AchievementQueryController {

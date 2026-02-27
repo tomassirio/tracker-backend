@@ -24,9 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
  * retrieval requests.
  */
 @RestController
-@RequestMapping(
-        value = ApiConstants.USERS_PATH,
-        produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.USERS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "User Achievements", description = "Endpoints for retrieving user achievements")
 public class UserAchievementQueryController {

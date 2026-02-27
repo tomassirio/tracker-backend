@@ -42,7 +42,7 @@ class UserQueryControllerTest {
     @Test
     void getUser_whenUserExists_shouldReturnUser() throws Exception {
         UUID id = UUID.randomUUID();
-        UserResponse resp = new UserResponse(id, "johndoe");
+        UserResponse resp = new UserResponse(id, "johndoe", null);
 
         when(userQueryService.getUserById(id)).thenReturn(resp);
 
@@ -64,7 +64,7 @@ class UserQueryControllerTest {
     @Test
     void getUserByUsername_whenUserExists_shouldReturnUser() throws Exception {
         String username = "alice";
-        UserResponse resp = new UserResponse(UUID.randomUUID(), username);
+        UserResponse resp = new UserResponse(UUID.randomUUID(), username, null);
 
         when(userQueryService.getUserByUsername(username)).thenReturn(resp);
 
@@ -75,7 +75,7 @@ class UserQueryControllerTest {
 
     @Test
     void getMyUser_whenUserExists_shouldReturnUser() throws Exception {
-        UserResponse resp = new UserResponse(USER_ID, "currentuser");
+        UserResponse resp = new UserResponse(USER_ID, "currentuser", null);
 
         when(userQueryService.getUserById(USER_ID)).thenReturn(resp);
 

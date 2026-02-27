@@ -33,9 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.5.3
  */
 @RestController
-@RequestMapping(
-        value = ApiConstants.ADMIN_USERS_PATH,
-        produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.ADMIN_USERS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(

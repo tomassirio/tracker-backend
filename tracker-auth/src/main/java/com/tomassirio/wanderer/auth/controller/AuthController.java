@@ -18,11 +18,11 @@ import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,9 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping(
-            value = ApiConstants.AUTH_PATH,
-            produces = MediaType.APPLICATION_JSON_VALUE)
+@RequestMapping(value = ApiConstants.AUTH_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Endpoints for user authentication and registration")
 public class AuthController {
@@ -46,9 +44,7 @@ public class AuthController {
     private final AuthService authService;
     private final TokenService tokenService;
 
-    @PostMapping(
-            value = ApiConstants.LOGIN_ENDPOINT,
-            consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = ApiConstants.LOGIN_ENDPOINT, consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "User login",
             description = "Authenticates a user and returns access and refresh tokens")
@@ -81,9 +77,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
-    @PostMapping(
-            value = ApiConstants.REFRESH_ENDPOINT,
-            consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = ApiConstants.REFRESH_ENDPOINT, consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Refresh access token",
             description = "Exchanges a refresh token for a new access token and refresh token")

@@ -33,3 +33,7 @@ databaseChangeLog:
       file: db/changelog/016-seed-achievements-data.yaml
   - include:
       file: db/changelog/017-add-automatic-updates-to-trips.yaml
+  - include:
+      file: db/changelog/018-add-user-details-columns.yaml
+  - include:
+      file: db/changelog/019-add-on-delete-set-null-to-user-achievements-trip-id.yaml

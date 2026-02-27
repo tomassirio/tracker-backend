@@ -2,8 +2,10 @@ package com.tomassirio.wanderer.command.service.impl;
 
 import com.tomassirio.wanderer.command.client.TrackerAuthClient;
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.UserDetailsRequest;
 import com.tomassirio.wanderer.command.event.UserCreatedEvent;
 import com.tomassirio.wanderer.command.event.UserDeletedEvent;
+import com.tomassirio.wanderer.command.event.UserDetailsUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.UserService;
 import com.tomassirio.wanderer.commons.domain.User;
@@ -91,5 +93,27 @@ public class UserServiceImpl implements UserService {
         eventPublisher.publishEvent(UserDeletedEvent.builder().userId(userId).build());
 
         log.info("User data deletion processed for id={}", userId);
+    }
+
+    @Override
+    public UUID updateUserDetails(UUID userId, UserDetailsRequest request) {
+        log.info("Updating user details for userId={}", userId);
+
+        userRepository
+                .findById(userId)
+                .orElseThrow(
+                        () -> new EntityNotFoundException("User not found with id: " + userId));
+
+        // Publish event - persistence handler will write to DB
+        eventPublisher.publishEvent(
+                UserDetailsUpdatedEvent.builder()
+                        .userId(userId)
+                        .displayName(request.displayName())
+                        .bio(request.bio())
+                        .avatarUrl(request.avatarUrl())
+                        .build());
+
+        log.info("Accepted user details update for userId={}", userId);
+        return userId;
     }
 }

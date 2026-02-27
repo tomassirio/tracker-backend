@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.service;
 
 import com.tomassirio.wanderer.command.controller.request.UserCreationRequest;
+import com.tomassirio.wanderer.command.controller.request.UserDetailsRequest;
 import java.util.UUID;
 
 /**
@@ -53,4 +54,14 @@ public interface UserService {
      * @throws jakarta.persistence.EntityNotFoundException if the user does not exist
      */
     void deleteUserData(UUID userId);
+
+    /**
+     * Update the user details (display name, bio, avatar URL) for the given user.
+     *
+     * @param userId the UUID of the user to update
+     * @param request the user details to set
+     * @return the UUID of the user being updated
+     * @throws jakarta.persistence.EntityNotFoundException if the user does not exist
+     */
+    UUID updateUserDetails(UUID userId, UserDetailsRequest request);
 }

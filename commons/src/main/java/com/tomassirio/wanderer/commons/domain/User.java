@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.commons.domain;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
@@ -24,6 +25,8 @@ public class User {
 
     @Column(nullable = false, unique = true)
     private String username;
+
+    @Embedded private UserDetails userDetails;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
