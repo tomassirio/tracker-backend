@@ -20,6 +20,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,7 +39,9 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping(ApiConstants.TRIPS_PATH)
+@RequestMapping(
+        value = ApiConstants.TRIPS_PATH,
+        produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Trips", description = "Endpoints for managing trips")
@@ -48,7 +51,7 @@ public class TripController {
     private final TripUpdateService tripUpdateService;
     private final PromotedTripService promotedTripService;
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Create a new trip",
@@ -66,7 +69,9 @@ public class TripController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
-    @PostMapping(ApiConstants.TRIP_FROM_PLAN_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.TRIP_FROM_PLAN_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Create a trip from a trip plan",
@@ -88,7 +93,9 @@ public class TripController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
-    @PutMapping(ApiConstants.TRIP_BY_ID_ENDPOINT)
+    @PutMapping(
+            value = ApiConstants.TRIP_BY_ID_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Update a trip",
@@ -110,7 +117,9 @@ public class TripController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
-    @PatchMapping(ApiConstants.TRIP_VISIBILITY_ENDPOINT)
+    @PatchMapping(
+            value = ApiConstants.TRIP_VISIBILITY_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Change trip visibility",
@@ -128,7 +137,9 @@ public class TripController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(tripId);
     }
 
-    @PatchMapping(ApiConstants.TRIP_STATUS_ENDPOINT)
+    @PatchMapping(
+            value = ApiConstants.TRIP_STATUS_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Change trip status",
@@ -166,7 +177,9 @@ public class TripController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 
-    @PostMapping(ApiConstants.TRIP_UPDATES_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.TRIP_UPDATES_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Create a trip update",
@@ -184,7 +197,9 @@ public class TripController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(updateId);
     }
 
-    @PostMapping(ApiConstants.TRIP_PROMOTE_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.TRIP_PROMOTE_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Promote a trip",
@@ -220,7 +235,9 @@ public class TripController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
     }
 
-    @PutMapping(ApiConstants.TRIP_UPDATE_DONATION_LINK_ENDPOINT)
+    @PutMapping(
+            value = ApiConstants.TRIP_UPDATE_DONATION_LINK_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(
             summary = "Update donation link",

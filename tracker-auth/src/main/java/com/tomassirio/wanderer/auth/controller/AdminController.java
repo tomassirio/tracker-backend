@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.5.2
  */
 @RestController
-@RequestMapping(ApiConstants.ADMIN_USERS_PATH)
+@RequestMapping(
+        value = ApiConstants.ADMIN_USERS_PATH,
+        produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Admin", description = "Admin-only endpoints for user role management")

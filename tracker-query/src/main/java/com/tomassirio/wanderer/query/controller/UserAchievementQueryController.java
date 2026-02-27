@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,7 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
  * retrieval requests.
  */
 @RestController
-@RequestMapping(ApiConstants.USERS_PATH)
+@RequestMapping(
+        value = ApiConstants.USERS_PATH,
+        produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "User Achievements", description = "Endpoints for retrieving user achievements")
 public class UserAchievementQueryController {

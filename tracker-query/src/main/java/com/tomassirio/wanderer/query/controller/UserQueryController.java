@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping(ApiConstants.USERS_PATH)
+@RequestMapping(
+        value = ApiConstants.USERS_PATH,
+        produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "User Queries", description = "Endpoints for retrieving user information")
 public class UserQueryController {

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +31,9 @@ public class PromotedTripQueryController {
 
     private final PromotedTripQueryService promotedTripQueryService;
 
-    @GetMapping(ApiConstants.PROMOTED_TRIPS_PATH + ApiConstants.ALL_PROMOTED_TRIPS_ENDPOINT)
+    @GetMapping(
+            value = ApiConstants.PROMOTED_TRIPS_PATH + ApiConstants.ALL_PROMOTED_TRIPS_ENDPOINT,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Get all promoted trips",
             description = "Retrieves a list of all currently promoted trips. Public endpoint.")
@@ -41,7 +44,9 @@ public class PromotedTripQueryController {
         return ResponseEntity.ok(promotedTripQueryService.getAllPromotedTrips());
     }
 
-    @GetMapping(ApiConstants.TRIPS_PATH + ApiConstants.TRIP_PROMOTION_INFO_ENDPOINT)
+    @GetMapping(
+            value = ApiConstants.TRIPS_PATH + ApiConstants.TRIP_PROMOTION_INFO_ENDPOINT,
+            produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Get promotion info for a trip",
             description =

@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,7 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 /** REST controller for achievement query operations. Handles achievement retrieval requests. */
 @RestController
-@RequestMapping(ApiConstants.ACHIEVEMENTS_PATH)
+@RequestMapping(
+        value = ApiConstants.ACHIEVEMENTS_PATH,
+        produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "Achievement Queries", description = "Endpoints for retrieving achievement information")
 public class AchievementQueryController {

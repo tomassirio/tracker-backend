@@ -13,6 +13,7 @@ import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,7 +36,10 @@ public class CommentController {
 
     private final CommentService commentService;
 
-    @PostMapping(ApiConstants.TRIPS_PATH + ApiConstants.TRIP_COMMENTS_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.TRIPS_PATH + ApiConstants.TRIP_COMMENTS_ENDPOINT,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Add a comment or reply to a trip",
@@ -56,7 +60,10 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(commentId);
     }
 
-    @PostMapping(ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_REACTIONS_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_REACTIONS_ENDPOINT,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Add a reaction to a comment",
@@ -80,7 +87,10 @@ public class CommentController {
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(updatedCommentId);
     }
 
-    @DeleteMapping(ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_REACTIONS_ENDPOINT)
+    @DeleteMapping(
+            value = ApiConstants.COMMENTS_PATH + ApiConstants.COMMENT_REACTIONS_ENDPOINT,
+            produces = MediaType.APPLICATION_JSON_VALUE,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Remove a reaction from a comment",

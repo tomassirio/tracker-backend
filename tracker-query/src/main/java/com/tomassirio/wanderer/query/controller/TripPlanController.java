@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,7 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.3.0
  */
 @RestController
-@RequestMapping(ApiConstants.TRIP_PLANS_PATH)
+@RequestMapping(
+        value = ApiConstants.TRIP_PLANS_PATH,
+        produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Trip Plan Queries", description = "Endpoints for retrieving trip plan information")

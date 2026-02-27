@@ -22,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,7 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
  * @since 0.1.8
  */
 @RestController
-@RequestMapping(ApiConstants.AUTH_PATH)
+@RequestMapping(
+            value = ApiConstants.AUTH_PATH,
+            produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Tag(name = "Authentication", description = "Endpoints for user authentication and registration")
 public class AuthController {
@@ -43,7 +46,9 @@ public class AuthController {
     private final AuthService authService;
     private final TokenService tokenService;
 
-    @PostMapping(ApiConstants.LOGIN_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.LOGIN_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "User login",
             description = "Authenticates a user and returns access and refresh tokens")
@@ -52,7 +57,9 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping(ApiConstants.REGISTER_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.REGISTER_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "User registration",
             description = "Registers a new user and returns access and refresh tokens")
@@ -74,7 +81,9 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
-    @PostMapping(ApiConstants.REFRESH_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.REFRESH_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Refresh access token",
             description = "Exchanges a refresh token for a new access token and refresh token")
@@ -84,7 +93,9 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping(ApiConstants.PASSWORD_RESET_ENDPOINT)
+    @PostMapping(
+            value = ApiConstants.PASSWORD_RESET_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Initiate password reset",
             description =
@@ -97,7 +108,9 @@ public class AuthController {
                 Map.of("message", "Password reset token generated", "token", resetToken));
     }
 
-    @PutMapping(ApiConstants.PASSWORD_RESET_ENDPOINT)
+    @PutMapping(
+            value = ApiConstants.PASSWORD_RESET_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Complete password reset",
             description = "Resets the password using a valid reset token")
@@ -107,7 +120,9 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 
-    @PutMapping(ApiConstants.PASSWORD_CHANGE_ENDPOINT)
+    @PutMapping(
+            value = ApiConstants.PASSWORD_CHANGE_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
     @Operation(
             summary = "Change password",
