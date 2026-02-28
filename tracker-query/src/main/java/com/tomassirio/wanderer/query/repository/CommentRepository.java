@@ -17,10 +17,11 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
      * via the Comment entity's relationships.
      */
     @Query(
-            "SELECT c FROM Comment c LEFT JOIN FETCH c.user WHERE c.trip.id = :tripId AND c.parentComment IS NULL ORDER BY c.timestamp DESC")
+            "SELECT DISTINCT c FROM Comment c LEFT JOIN FETCH c.user LEFT JOIN FETCH c.commentReactions cr LEFT JOIN FETCH cr.user WHERE c.trip.id = :tripId AND c.parentComment IS NULL ORDER BY c.timestamp DESC")
     List<Comment> findTopLevelCommentsByTripId(@Param("tripId") UUID tripId);
 
     /** Find a comment by ID with user data eagerly loaded. */
-    @Query("SELECT c FROM Comment c LEFT JOIN FETCH c.user WHERE c.id = :commentId")
+    @Query(
+            "SELECT c FROM Comment c LEFT JOIN FETCH c.user LEFT JOIN FETCH c.commentReactions cr LEFT JOIN FETCH cr.user WHERE c.id = :commentId")
     Optional<Comment> findByIdWithUser(@Param("commentId") UUID commentId);
 }
