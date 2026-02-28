@@ -36,6 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TokenServiceImpl implements TokenService {
 
+    private static final int TOKEN_BYTE_LENGTH = 32;
+    private static final long EMAIL_VERIFICATION_TOKEN_EXPIRY_SECONDS = 86400; // 24 hours
+
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
     private final EmailVerificationTokenRepository emailVerificationTokenRepository;
@@ -48,7 +51,7 @@ public class TokenServiceImpl implements TokenService {
     @Transactional
     public String createRefreshToken(UUID userId) {
         // Generate a secure random token
-        byte[] tokenBytes = new byte[32];
+        byte[] tokenBytes = new byte[TOKEN_BYTE_LENGTH];
         secureRandom.nextBytes(tokenBytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
 
@@ -133,7 +136,7 @@ public class TokenServiceImpl implements TokenService {
     @Transactional
     public String createPasswordResetToken(UUID userId) {
         // Generate a secure random token
-        byte[] tokenBytes = new byte[32];
+        byte[] tokenBytes = new byte[TOKEN_BYTE_LENGTH];
         secureRandom.nextBytes(tokenBytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
 
@@ -201,7 +204,7 @@ public class TokenServiceImpl implements TokenService {
     @Transactional
     public String createEmailVerificationToken(String email, String username, String passwordHash) {
         // Generate a secure random token
-        byte[] tokenBytes = new byte[32];
+        byte[] tokenBytes = new byte[TOKEN_BYTE_LENGTH];
         secureRandom.nextBytes(tokenBytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
 
@@ -209,7 +212,7 @@ public class TokenServiceImpl implements TokenService {
         String tokenHash = hashToken(token);
 
         // Calculate expiration (24 hours)
-        Instant expiresAt = Instant.now().plusSeconds(86400);
+        Instant expiresAt = Instant.now().plusSeconds(EMAIL_VERIFICATION_TOKEN_EXPIRY_SECONDS);
 
         // Create and save email verification token
         EmailVerificationToken verificationToken =
