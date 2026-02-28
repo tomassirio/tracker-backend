@@ -2,10 +2,12 @@ package com.tomassirio.wanderer.auth.service.impl;
 
 import com.tomassirio.wanderer.auth.client.TrackerQueryClient;
 import com.tomassirio.wanderer.auth.domain.Credential;
+import com.tomassirio.wanderer.auth.domain.EmailVerificationToken;
 import com.tomassirio.wanderer.auth.domain.PasswordResetToken;
 import com.tomassirio.wanderer.auth.domain.RefreshToken;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
 import com.tomassirio.wanderer.auth.repository.CredentialRepository;
+import com.tomassirio.wanderer.auth.repository.EmailVerificationTokenRepository;
 import com.tomassirio.wanderer.auth.repository.PasswordResetTokenRepository;
 import com.tomassirio.wanderer.auth.repository.RefreshTokenRepository;
 import com.tomassirio.wanderer.auth.service.JwtService;
@@ -36,6 +38,7 @@ public class TokenServiceImpl implements TokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final EmailVerificationTokenRepository emailVerificationTokenRepository;
     private final CredentialRepository credentialRepository;
     private final JwtService jwtService;
     private final TrackerQueryClient trackerQueryClient;
@@ -191,6 +194,81 @@ public class TokenServiceImpl implements TokenService {
             PasswordResetToken resetToken = maybeToken.get();
             resetToken.setUsed(true);
             passwordResetTokenRepository.save(resetToken);
+        }
+    }
+
+    @Override
+    @Transactional
+    public String createEmailVerificationToken(String email, String username, String passwordHash) {
+        // Generate a secure random token
+        byte[] tokenBytes = new byte[32];
+        secureRandom.nextBytes(tokenBytes);
+        String token = Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+
+        // Hash the token before storing
+        String tokenHash = hashToken(token);
+
+        // Calculate expiration (24 hours)
+        Instant expiresAt = Instant.now().plusSeconds(86400);
+
+        // Create and save email verification token
+        EmailVerificationToken verificationToken =
+                EmailVerificationToken.builder()
+                        .tokenId(UUID.randomUUID())
+                        .email(email)
+                        .username(username)
+                        .passwordHash(passwordHash)
+                        .tokenHash(tokenHash)
+                        .expiresAt(expiresAt)
+                        .verified(false)
+                        .build();
+
+        emailVerificationTokenRepository.save(verificationToken);
+
+        return token;
+    }
+
+    @Override
+    public String[] validateEmailVerificationToken(String token) {
+        // Hash the provided token to find it in the database
+        String tokenHash = hashToken(token);
+
+        // Find the verification token
+        Optional<EmailVerificationToken> maybeToken =
+                emailVerificationTokenRepository.findByTokenHash(tokenHash);
+        if (maybeToken.isEmpty()) {
+            throw new IllegalArgumentException("Invalid email verification token");
+        }
+
+        EmailVerificationToken verificationToken = maybeToken.get();
+
+        // Validate token
+        if (verificationToken.isVerified()) {
+            throw new IllegalArgumentException(
+                    "Email verification token has already been verified");
+        }
+
+        if (verificationToken.getExpiresAt().isBefore(Instant.now())) {
+            throw new IllegalArgumentException("Email verification token has expired");
+        }
+
+        return new String[] {
+            verificationToken.getEmail(),
+            verificationToken.getUsername(),
+            verificationToken.getPasswordHash()
+        };
+    }
+
+    @Override
+    @Transactional
+    public void markEmailVerificationTokenAsVerified(String token) {
+        String tokenHash = hashToken(token);
+        Optional<EmailVerificationToken> maybeToken =
+                emailVerificationTokenRepository.findByTokenHash(tokenHash);
+        if (maybeToken.isPresent()) {
+            EmailVerificationToken verificationToken = maybeToken.get();
+            verificationToken.setVerified(true);
+            emailVerificationTokenRepository.save(verificationToken);
         }
     }
 

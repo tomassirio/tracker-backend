@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changesets/003-create-refresh-tokens.yaml
   - include:
       file: db/changelog/changesets/004-create-password-reset-tokens.yaml
+  - include:
+      file: db/changelog/changesets/005-create-email-verification-tokens.yaml

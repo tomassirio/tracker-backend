@@ -58,4 +58,31 @@ public interface TokenService {
      * @param token the password reset token
      */
     void markPasswordResetTokenAsUsed(String token);
+
+    /**
+     * Creates an email verification token for the given email, username, and password.
+     *
+     * @param email the email address
+     * @param username the username
+     * @param passwordHash the hashed password
+     * @return the generated email verification token
+     */
+    String createEmailVerificationToken(String email, String username, String passwordHash);
+
+    /**
+     * Validates an email verification token and returns the associated email verification data.
+     *
+     * @param token the email verification token
+     * @return the email, username, and password hash as a string array [email, username,
+     *     passwordHash]
+     * @throws IllegalArgumentException if the token is invalid, expired, or already verified
+     */
+    String[] validateEmailVerificationToken(String token);
+
+    /**
+     * Marks an email verification token as verified.
+     *
+     * @param token the email verification token
+     */
+    void markEmailVerificationTokenAsVerified(String token);
 }
