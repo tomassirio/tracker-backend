@@ -50,17 +50,17 @@ To send actual emails via SMTP, configure the following properties:
 # Enable SMTP email sending
 app.email.enabled=true
 
-# SMTP Server Configuration
-app.email.host=smtp.gmail.com
+# SMTP Server Configuration (Brevo/Sendinblue)
+app.email.host=smtp-relay.brevo.com
 app.email.port=587
 
 # SMTP Authentication
-app.email.username=your-email@gmail.com
-app.email.password=your-app-password
+app.email.username=a39a49001@smtp-brevo.com
+app.email.password=your-brevo-smtp-key  # Set via EMAIL_PASSWORD environment variable
 
 # Email Sender Configuration
-app.email.from=noreply@tracker.example.com
-app.email.from-name=Tracker App
+app.email.from=noreply@tomassir.io
+app.email.from-name=Wanderer No Reply
 
 # Application Base URL (for verification links)
 app.email.base-url=https://tracker.example.com
@@ -77,15 +77,31 @@ All email properties can be configured via environment variables:
 | Property | Environment Variable | Default | Required |
 |----------|---------------------|---------|----------|
 | `app.email.enabled` | `EMAIL_ENABLED` | `false` | No |
-| `app.email.host` | `EMAIL_HOST` | `smtp.gmail.com` | Yes (if enabled) |
+| `app.email.host` | `EMAIL_HOST` | `smtp-relay.brevo.com` | Yes (if enabled) |
 | `app.email.port` | `EMAIL_PORT` | `587` | No |
-| `app.email.username` | `EMAIL_USERNAME` | - | Yes (if enabled) |
-| `app.email.password` | `EMAIL_PASSWORD` | - | Yes (if enabled) |
-| `app.email.from` | `EMAIL_FROM` | `noreply@tracker.example.com` | No |
-| `app.email.from-name` | `EMAIL_FROM_NAME` | `Tracker App` | No |
+| `app.email.username` | `EMAIL_USERNAME` | `a39a49001@smtp-brevo.com` | Yes (if enabled) |
+| `app.email.password` | `EMAIL_PASSWORD` | - | Yes (if enabled) - **Use GitHub Secret** |
+| `app.email.from` | `EMAIL_FROM` | `noreply@tomassir.io` | No |
+| `app.email.from-name` | `EMAIL_FROM_NAME` | `Wanderer No Reply` | No |
 | `app.email.base-url` | `EMAIL_BASE_URL` | `http://localhost:3000` | No |
 | `app.email.auth` | `EMAIL_AUTH` | `true` | No |
 | `app.email.start-tls` | `EMAIL_START_TLS` | `true` | No |
+
+### GitHub Secrets Configuration
+
+For production deployments via GitHub Actions, configure the SMTP password as a secret:
+
+1. Go to your repository **Settings** → **Secrets and variables** → **Actions**
+2. Add a new repository secret named `EMAIL_PASSWORD`
+3. Set the value to your Brevo SMTP key
+4. Reference it in your GitHub Actions workflow:
+
+```yaml
+# .github/workflows/deploy.yml
+env:
+  EMAIL_ENABLED: true
+  EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+```
 
 ### Example Docker Configuration
 
@@ -95,16 +111,31 @@ services:
   tracker-auth:
     environment:
       - EMAIL_ENABLED=true
-      - EMAIL_HOST=smtp.sendgrid.net
+      - EMAIL_HOST=smtp-relay.brevo.com
       - EMAIL_PORT=587
-      - EMAIL_USERNAME=apikey
-      - EMAIL_PASSWORD=${SENDGRID_API_KEY}
-      - EMAIL_FROM=noreply@tracker.app
-      - EMAIL_FROM_NAME=Tracker
-      - EMAIL_BASE_URL=https://tracker.app
+      - EMAIL_USERNAME=a39a49001@smtp-brevo.com
+      - EMAIL_PASSWORD=${EMAIL_PASSWORD}  # Pass from GitHub secret or .env file
+      - EMAIL_FROM=noreply@tomassir.io
+      - EMAIL_FROM_NAME=Wanderer No Reply
+      - EMAIL_BASE_URL=https://tracker.example.com
 ```
 
 ## Supported SMTP Providers
+
+### Brevo (Sendinblue) - **Default Configuration**
+
+```properties
+app.email.host=smtp-relay.brevo.com
+app.email.port=587
+app.email.username=a39a49001@smtp-brevo.com
+app.email.password=your-brevo-smtp-key  # Get from Brevo dashboard
+app.email.from=noreply@tomassir.io
+app.email.from-name=Wanderer No Reply
+app.email.auth=true
+app.email.start-tls=true
+```
+
+**Note**: Get your SMTP key from the [Brevo dashboard](https://app.brevo.com/settings/keys/smtp) under Settings → SMTP & API.
 
 ### Gmail
 

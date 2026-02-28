@@ -42,6 +42,9 @@ on:
       GOOGLE_MAPS_API_KEY:
         description: 'Google Maps API key for distance calculation'
         required: false
+      EMAIL_PASSWORD:
+        description: 'SMTP password for Brevo email service'
+        required: false
 
 env:
   ENV_SUFFIX: ${{ inputs.environment == 'dev' && '-dev' || '' }}
@@ -202,6 +205,22 @@ jobs:
             if [ -n "${{ vars.BOOTSTRAP_ADMIN_ENABLED }}" ]; then
               HELM_ARGS+=(
                 "--set" "application.bootstrap.adminEnabled=${{ vars.BOOTSTRAP_ADMIN_ENABLED }}"
+              )
+            fi
+            # Email configuration from GitHub environment variables and secrets
+            if [ -n "${{ vars.EMAIL_ENABLED }}" ]; then
+              HELM_ARGS+=(
+                "--set" "application.email.enabled=${{ vars.EMAIL_ENABLED }}"
+              )
+            fi
+            if [ -n "${{ secrets.EMAIL_PASSWORD }}" ]; then
+              HELM_ARGS+=(
+                "--set" "application.email.password=${{ secrets.EMAIL_PASSWORD }}"
+              )
+            fi
+            if [ -n "${{ vars.EMAIL_BASE_URL }}" ]; then
+              HELM_ARGS+=(
+                "--set" "application.email.baseUrl=${{ vars.EMAIL_BASE_URL }}"
               )
             fi
           fi

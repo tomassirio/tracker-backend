@@ -43,3 +43,15 @@ data:
     bootstrap.admin.username={{ .Values.application.bootstrap.adminUsername }}
     bootstrap.admin.enabled={{ .Values.application.bootstrap.adminEnabled }}
 
+    # Email Configuration (Brevo SMTP)
+    app.email.enabled={{ .Values.application.email.enabled }}
+    app.email.host={{ .Values.application.email.host }}
+    app.email.port={{ .Values.application.email.port }}
+    app.email.username={{ .Values.application.email.username }}
+    app.email.password={{ .Values.application.email.password }}
+    app.email.from={{ .Values.application.email.from }}
+    app.email.from-name={{ .Values.application.email.fromName }}
+    app.email.base-url={{ .Values.application.email.baseUrl }}
+    app.email.auth={{ .Values.application.email.auth }}
+    app.email.start-tls={{ .Values.application.email.startTls }}
+
