@@ -14,6 +14,7 @@ import com.tomassirio.wanderer.auth.dto.LoginRequest;
 import com.tomassirio.wanderer.auth.dto.LoginResponse;
 import com.tomassirio.wanderer.auth.dto.PasswordChangeRequest;
 import com.tomassirio.wanderer.auth.dto.PasswordResetConfirmRequest;
+import com.tomassirio.wanderer.auth.dto.RegisterPendingResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import com.tomassirio.wanderer.auth.service.AuthService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
@@ -105,11 +106,12 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_whenValidRequest_shouldReturnCreated() throws Exception {
+    void register_whenValidRequest_shouldReturnAccepted() throws Exception {
         RegisterRequest request =
                 new RegisterRequest("testuser", "test@example.com", "password123");
-        LoginResponse response =
-                new LoginResponse("jwt.access.token", "refresh.token", "Bearer", 3600000L);
+        RegisterPendingResponse response =
+                new RegisterPendingResponse(
+                        "Registration pending. Please check your email to verify your account.");
 
         when(authService.register(any(RegisterRequest.class))).thenReturn(response);
 
@@ -117,11 +119,12 @@ class AuthControllerTest {
                         post("/api/1/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.accessToken").value("jwt.access.token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh.token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(3600000L));
+                .andExpect(status().isAccepted())
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        "Registration pending. Please check your email to verify"
+                                                + " your account."));
     }
 
     @Test
