@@ -318,8 +318,7 @@ class CommentServiceImplTest {
                 .thenReturn(Optional.of(existingReaction));
 
         // When
-        UUID result =
-                commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.SMILEY);
+        UUID result = commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.SMILEY);
 
         // Then
         assertThat(result).isNotNull();

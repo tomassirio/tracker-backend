@@ -19,8 +19,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Event handler for persisting comment reaction events to the database.
  *
- * <p>This handler implements the CQRS write side by handling CommentReactionEvent and updating
- * both individual reaction entities and aggregated reaction counts in the database. Validation is
+ * <p>This handler implements the CQRS write side by handling CommentReactionEvent and updating both
+ * individual reaction entities and aggregated reaction counts in the database. Validation is
  * performed in the service layer before the event is emitted. WebSocket broadcasting is handled
  * centrally by {@link com.tomassirio.wanderer.command.websocket.BroadcastableEventListener}.
  */

@@ -108,8 +108,7 @@ public class CommentServiceImpl implements CommentService {
                         userId,
                         reactionType,
                         commentId);
-                throw new IllegalStateException(
-                        "User already has this reaction on the comment");
+                throw new IllegalStateException("User already has this reaction on the comment");
             } else {
                 // Different reaction type - remove old and add new (automatic replacement)
                 log.info(
