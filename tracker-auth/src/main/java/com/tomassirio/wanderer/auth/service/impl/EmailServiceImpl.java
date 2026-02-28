@@ -3,13 +3,20 @@ package com.tomassirio.wanderer.auth.service.impl;
 import com.tomassirio.wanderer.auth.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 /**
  * Email service implementation that logs verification emails to the console. This is useful for
- * development and testing. In production, this can be replaced with an SMTP-based implementation.
+ * development and testing. This implementation is active when app.email.enabled is false or not
+ * set.
  */
 @Service
+@ConditionalOnProperty(
+        prefix = "app.email",
+        name = "enabled",
+        havingValue = "false",
+        matchIfMissing = true)
 @RequiredArgsConstructor
 @Slf4j
 public class EmailServiceImpl implements EmailService {
