@@ -1,13 +1,11 @@
 package com.tomassirio.wanderer.command.controller;
 
-import com.tomassirio.wanderer.command.controller.request.PromoteTripRequest;
 import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripSettingsRequest;
 import com.tomassirio.wanderer.command.controller.request.TripStatusRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
 import com.tomassirio.wanderer.command.controller.request.TripVisibilityRequest;
-import com.tomassirio.wanderer.command.service.PromotedTripService;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
@@ -48,7 +46,6 @@ public class TripController {
 
     private final TripService tripService;
     private final TripUpdateService tripUpdateService;
-    private final PromotedTripService promotedTripService;
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN','USER')")
@@ -214,65 +211,5 @@ public class TripController {
 
         log.info("Accepted trip update creation request with ID: {}", updateId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(updateId);
-    }
-
-    @PostMapping(
-            value = ApiConstants.TRIP_PROMOTE_ENDPOINT,
-            consumes = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Promote a trip",
-            description =
-                    "Promotes a trip (admin only). Optionally includes a donation link. Returns 202 Accepted with the promoted trip ID as the operation completes asynchronously.")
-    public ResponseEntity<UUID> promoteTrip(
-            @Parameter(hidden = true) @CurrentUserId UUID adminId,
-            @PathVariable UUID id,
-            @Valid @RequestBody PromoteTripRequest request) {
-        log.info("Received request to promote trip {} by admin {}", id, adminId);
-
-        UUID promotedTripId =
-                promotedTripService.promoteTrip(
-                        adminId, id, request != null ? request.donationLink() : null);
-
-        log.info("Accepted trip promotion request with ID: {}", promotedTripId);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(promotedTripId);
-    }
-
-    @DeleteMapping(ApiConstants.TRIP_UNPROMOTE_ENDPOINT)
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Unpromote a trip",
-            description =
-                    "Removes promotion from a trip (admin only). Returns 202 Accepted as the operation completes asynchronously.")
-    public ResponseEntity<Void> unpromoteTrip(
-            @Parameter(hidden = true) @CurrentUserId UUID adminId, @PathVariable UUID id) {
-        log.info("Received request to unpromote trip {} by admin {}", id, adminId);
-
-        promotedTripService.unpromoteTrip(adminId, id);
-
-        log.info("Accepted trip unpromotion request for ID: {}", id);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).build();
-    }
-
-    @PutMapping(
-            value = ApiConstants.TRIP_UPDATE_DONATION_LINK_ENDPOINT,
-            consumes = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(
-            summary = "Update donation link",
-            description =
-                    "Updates the donation link for a promoted trip (admin only). Returns 202 Accepted with the promoted trip ID as the operation completes asynchronously.")
-    public ResponseEntity<UUID> updateDonationLink(
-            @Parameter(hidden = true) @CurrentUserId UUID adminId,
-            @PathVariable UUID id,
-            @Valid @RequestBody PromoteTripRequest request) {
-        log.info("Received request to update donation link for trip {} by admin {}", id, adminId);
-
-        UUID promotedTripId =
-                promotedTripService.updatePromotedTripDonationLink(
-                        adminId, id, request != null ? request.donationLink() : null);
-
-        log.info("Accepted donation link update request with ID: {}", promotedTripId);
-        return ResponseEntity.status(HttpStatus.ACCEPTED).body(promotedTripId);
     }
 }

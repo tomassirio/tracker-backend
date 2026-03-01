@@ -298,4 +298,169 @@ class PolylineServiceImplTest {
                 .timestamp(timestamp)
                 .build();
     }
+
+    // ================================================================
+    // Null / incomplete location tests
+    // ================================================================
+
+    @Test
+    void recomputePolyline_whenUpdatesHaveNullLocations_shouldFilterAndClearPolyline() {
+        // Given — 3 updates, but all have null locations → fewer than 2 valid → clear
+        UUID tripId = UUID.randomUUID();
+        Trip trip =
+                Trip.builder().id(tripId).name("Test Trip").encodedPolyline("oldPolyline").build();
+
+        TripUpdate nullLocationUpdate = createTripUpdate(trip, null, Instant.now());
+        TripUpdate nullLatUpdate =
+                createTripUpdate(
+                        trip,
+                        GeoLocation.builder().lat(null).lon(-8.0).build(),
+                        Instant.now().plusSeconds(1));
+        TripUpdate nullLonUpdate =
+                createTripUpdate(
+                        trip,
+                        GeoLocation.builder().lat(42.0).lon(null).build(),
+                        Instant.now().plusSeconds(2));
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        when(tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId))
+                .thenReturn(List.of(nullLocationUpdate, nullLatUpdate, nullLonUpdate));
+
+        // When
+        polylineService.recomputePolyline(tripId);
+
+        // Then — polyline cleared, no route service call
+        ArgumentCaptor<Trip> captor = ArgumentCaptor.forClass(Trip.class);
+        verify(tripRepository).save(captor.capture());
+
+        Trip saved = captor.getValue();
+        assertThat(saved.getEncodedPolyline()).isNull();
+        assertThat(saved.getPolylineUpdatedAt()).isNull();
+    }
+
+    @Test
+    void recomputePolyline_whenMixOfValidAndNullLocations_shouldFilterAndCompute() {
+        // Given — 4 updates: 2 valid, 2 null → 2 valid locations → compute polyline
+        UUID tripId = UUID.randomUUID();
+        Trip trip = Trip.builder().id(tripId).name("Test Trip").build();
+
+        GeoLocation validLoc1 = GeoLocation.builder().lat(42.0).lon(-8.0).build();
+        GeoLocation validLoc2 = GeoLocation.builder().lat(43.0).lon(-8.5).build();
+
+        TripUpdate validUpdate1 =
+                createTripUpdate(trip, validLoc1, Instant.now().minusSeconds(3600));
+        TripUpdate nullUpdate = createTripUpdate(trip, null, Instant.now().minusSeconds(1800));
+        TripUpdate nullLatUpdate =
+                createTripUpdate(
+                        trip,
+                        GeoLocation.builder().lat(null).lon(-8.2).build(),
+                        Instant.now().minusSeconds(900));
+        TripUpdate validUpdate2 = createTripUpdate(trip, validLoc2, Instant.now());
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        when(tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId))
+                .thenReturn(List.of(validUpdate1, nullUpdate, nullLatUpdate, validUpdate2));
+
+        List<LatLng> routePoints = List.of(new LatLng(42.0, -8.0), new LatLng(43.0, -8.5));
+        when(routeService.getFullRoutePoints(List.of(validLoc1, validLoc2)))
+                .thenReturn(routePoints);
+
+        // When
+        polylineService.recomputePolyline(tripId);
+
+        // Then — only 2 valid locations used, polyline computed
+        ArgumentCaptor<Trip> captor = ArgumentCaptor.forClass(Trip.class);
+        verify(tripRepository).save(captor.capture());
+
+        Trip saved = captor.getValue();
+        assertThat(saved.getEncodedPolyline()).isNotNull();
+        assertThat(saved.getPolylineUpdatedAt()).isNotNull();
+
+        List<LatLng> decoded = PolylineCodec.decode(saved.getEncodedPolyline());
+        assertThat(decoded).hasSize(2);
+    }
+
+    @Test
+    void appendSegment_whenUpdatesHaveNullLocations_shouldFilterAndClearPolyline() {
+        // Given — 3 updates but all have null/incomplete locations
+        UUID tripId = UUID.randomUUID();
+        Trip trip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("Test Trip")
+                        .encodedPolyline("existingPolyline")
+                        .build();
+
+        TripUpdate nullUpdate = createTripUpdate(trip, null, Instant.now());
+        TripUpdate nullLatUpdate =
+                createTripUpdate(
+                        trip,
+                        GeoLocation.builder().lat(null).lon(-8.0).build(),
+                        Instant.now().plusSeconds(1));
+        TripUpdate nullLonUpdate =
+                createTripUpdate(
+                        trip,
+                        GeoLocation.builder().lat(42.0).lon(null).build(),
+                        Instant.now().plusSeconds(2));
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        when(tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId))
+                .thenReturn(List.of(nullUpdate, nullLatUpdate, nullLonUpdate));
+
+        // When
+        polylineService.appendSegment(tripId);
+
+        // Then — polyline cleared
+        ArgumentCaptor<Trip> captor = ArgumentCaptor.forClass(Trip.class);
+        verify(tripRepository).save(captor.capture());
+
+        Trip saved = captor.getValue();
+        assertThat(saved.getEncodedPolyline()).isNull();
+        assertThat(saved.getPolylineUpdatedAt()).isNull();
+    }
+
+    @Test
+    void appendSegment_whenMixOfValidAndNullLocations_shouldFilterAndRecompute() {
+        // Given — existing polyline but some updates have null locations
+        UUID tripId = UUID.randomUUID();
+
+        GeoLocation validLoc1 = GeoLocation.builder().lat(42.0).lon(-8.0).build();
+        GeoLocation validLoc2 = GeoLocation.builder().lat(43.0).lon(-8.5).build();
+
+        List<LatLng> existingPoints = List.of(new LatLng(42.0, -8.0));
+        String existingEncoded = PolylineCodec.encode(existingPoints);
+
+        Trip trip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("Test Trip")
+                        .encodedPolyline(existingEncoded)
+                        .polylineUpdatedAt(Instant.now().minusSeconds(3600))
+                        .build();
+
+        TripUpdate validUpdate1 =
+                createTripUpdate(trip, validLoc1, Instant.now().minusSeconds(7200));
+        TripUpdate nullUpdate = createTripUpdate(trip, null, Instant.now().minusSeconds(3600));
+        TripUpdate validUpdate2 = createTripUpdate(trip, validLoc2, Instant.now());
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        when(tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId))
+                .thenReturn(List.of(validUpdate1, nullUpdate, validUpdate2));
+
+        // The two valid locations → incremental append from validLoc1 → validLoc2
+        List<LatLng> newSegmentPoints =
+                List.of(new LatLng(42.0, -8.0), new LatLng(42.5, -8.3), new LatLng(43.0, -8.5));
+        when(routeService.getRoutePoints(validLoc1, validLoc2)).thenReturn(newSegmentPoints);
+
+        // When
+        polylineService.appendSegment(tripId);
+
+        // Then — incremental append succeeded despite null update in the middle
+        ArgumentCaptor<Trip> captor = ArgumentCaptor.forClass(Trip.class);
+        verify(tripRepository).save(captor.capture());
+
+        Trip saved = captor.getValue();
+        assertThat(saved.getEncodedPolyline()).isNotNull();
+        assertThat(saved.getPolylineUpdatedAt()).isNotNull();
+    }
 }
