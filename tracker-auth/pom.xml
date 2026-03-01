@@ -98,6 +98,12 @@
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
+        <!-- Jakarta Mail (Angus Mail) for email sending -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Testing -->
         <!-- Commons test-jar provides BaseIntegrationTest -->
         <dependency>

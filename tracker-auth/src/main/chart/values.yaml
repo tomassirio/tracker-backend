@@ -66,6 +66,20 @@ application:
     adminUsername: ""
     adminEnabled: true
 
+  # Email Configuration (Brevo SMTP)
+  # PASSWORD is a secret - set via GitHub Actions secrets
+  email:
+    enabled: false
+    host: "smtp-relay.brevo.com"
+    port: 587
+    username: "a39a49001@smtp-brevo.com"
+    password: ""  # Set via GitHub secret EMAIL_PASSWORD
+    from: "noreply@tomassir.io"
+    fromName: "Wanderer No Reply"
+    baseUrl: "http://localhost:3000"
+    auth: true
+    startTls: true
+
 # Pod Storage
 volumeClaimTemplates:
   enabled: false

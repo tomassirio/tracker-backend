@@ -4,9 +4,11 @@ import com.tomassirio.wanderer.auth.client.TrackerCommandClient;
 import com.tomassirio.wanderer.auth.client.TrackerQueryClient;
 import com.tomassirio.wanderer.auth.domain.Credential;
 import com.tomassirio.wanderer.auth.dto.LoginResponse;
+import com.tomassirio.wanderer.auth.dto.RegisterPendingResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.service.AuthService;
+import com.tomassirio.wanderer.auth.service.EmailService;
 import com.tomassirio.wanderer.auth.service.JwtService;
 import com.tomassirio.wanderer.auth.service.TokenService;
 import com.tomassirio.wanderer.commons.domain.User;
@@ -32,6 +34,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final TokenService tokenService;
+    private final EmailService emailService;
     private final TrackerCommandClient trackerCommandClient;
     private final TrackerQueryClient trackerQueryClient;
 
@@ -81,13 +84,62 @@ public class AuthServiceImpl implements AuthService {
     }
 
     /**
-     * Register a new user and create credentials in the auth DB, then return a JWT. If credential
-     * creation fails after the domain user was created, attempt to delete the created domain user
-     * as a compensation step to avoid dangling accounts.
+     * Register a new user by creating a pending email verification. Instead of immediately creating
+     * the user, this generates a verification token and sends it via email. The user account is
+     * only created after email verification.
      */
-    public LoginResponse register(RegisterRequest request) {
+    public RegisterPendingResponse register(RegisterRequest request) {
+        // Check if email is already in use
+        if (credentialRepository.findByEmail(request.email()).isPresent()) {
+            throw new IllegalArgumentException("Email already in use: " + request.email());
+        }
+
+        // Check if username is already taken by querying the read side
+        try {
+            User existingUser = trackerQueryClient.getUserByUsername(request.username());
+            if (existingUser != null) {
+                throw new IllegalArgumentException("Username already taken: " + request.username());
+            }
+        } catch (FeignException e) {
+            // 404 is expected if username doesn't exist - this is good
+            if (e.status() != 404) {
+                throw new IllegalStateException("Failed to check username availability", e);
+            }
+        }
+
+        // Hash the password
+        String passwordHash = passwordEncoder.encode(request.password());
+
+        // Create email verification token
+        String verificationToken =
+                tokenService.createEmailVerificationToken(
+                        request.email(), request.username(), passwordHash);
+
+        // Send verification email
+        emailService.sendVerificationEmail(request.email(), request.username(), verificationToken);
+
+        return new RegisterPendingResponse(
+                "Registration pending. Please check your email to verify your account.");
+    }
+
+    /**
+     * Verify email and complete user registration. Validates the verification token, creates the
+     * user in the domain, creates credentials, and returns login tokens.
+     */
+    public LoginResponse verifyEmail(String token) {
+        // Validate the verification token and get registration data
+        String[] verificationData = tokenService.validateEmailVerificationToken(token);
+        String email = verificationData[0];
+        String username = verificationData[1];
+        String passwordHash = verificationData[2];
+
+        // Double-check that email is still available
+        if (credentialRepository.findByEmail(email).isPresent()) {
+            throw new IllegalStateException("Email already in use: " + email);
+        }
+
         // 1) Create the domain user via the command service (returns UUID)
-        var payload = Map.of("username", request.username(), "email", request.email());
+        var payload = Map.of("username", username, "email", email);
         UUID createdUserId;
         try {
             createdUserId = trackerCommandClient.createUser(payload);
@@ -118,17 +170,12 @@ public class AuthServiceImpl implements AuthService {
                         "Credentials already exist for user: " + createdUser.getId());
             }
 
-            if (credentialRepository.findByEmail(request.email()).isPresent()) {
-                throw new IllegalStateException("Email already in use: " + request.email());
-            }
-
-            String hash = passwordEncoder.encode(request.password());
             Credential credential =
                     Credential.builder()
                             .userId(createdUser.getId())
-                            .passwordHash(hash)
+                            .passwordHash(passwordHash)
                             .enabled(true)
-                            .email(request.email())
+                            .email(email)
                             .roles(Set.of(Role.USER))
                             .build();
             credentialRepository.save(credential);
@@ -137,8 +184,6 @@ public class AuthServiceImpl implements AuthService {
             try {
                 trackerCommandClient.deleteUser(createdUserId);
             } catch (FeignException ex) {
-                // Log and swallow the delete failure — we'll still rethrow the original exception
-                // (Logging framework may be added; for now throw a composed exception)
                 throw new IllegalStateException(
                         "Failed to create credentials and failed to rollback user creation: "
                                 + ex.getMessage(),
@@ -147,6 +192,9 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalStateException(
                     "Failed to create credentials, rolled back user creation", e);
         }
+
+        // Mark the verification token as verified
+        tokenService.markEmailVerificationTokenAsVerified(token);
 
         // 4) Issue JWT and refresh token
         String jti = UUID.randomUUID().toString();

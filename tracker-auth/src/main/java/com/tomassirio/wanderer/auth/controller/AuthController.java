@@ -7,7 +7,9 @@ import com.tomassirio.wanderer.auth.dto.PasswordResetConfirmRequest;
 import com.tomassirio.wanderer.auth.dto.PasswordResetRequest;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenRequest;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
+import com.tomassirio.wanderer.auth.dto.RegisterPendingResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
+import com.tomassirio.wanderer.auth.dto.VerifyEmailRequest;
 import com.tomassirio.wanderer.auth.service.AuthService;
 import com.tomassirio.wanderer.auth.service.TokenService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
@@ -58,10 +60,28 @@ public class AuthController {
             consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "User registration",
-            description = "Registers a new user and returns access and refresh tokens")
-    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
-        LoginResponse resp = authService.register(request);
-        return ResponseEntity.status(201).body(resp);
+            description =
+                    "Initiates user registration by sending an email verification link. The user"
+                            + " account is created only after email verification.")
+    public ResponseEntity<RegisterPendingResponse> register(
+            @Valid @RequestBody RegisterRequest request) {
+        RegisterPendingResponse response = authService.register(request);
+        return ResponseEntity.status(202).body(response);
+    }
+
+    @PostMapping(
+            value = ApiConstants.VERIFY_EMAIL_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Verify email",
+            description =
+                    "Verifies the user's email address using the token sent via email. Upon"
+                            + " successful verification, creates the user account and returns access"
+                            + " and refresh tokens.")
+    public ResponseEntity<LoginResponse> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request) {
+        LoginResponse response = authService.verifyEmail(request.token());
+        return ResponseEntity.status(201).body(response);
     }
 
     @PostMapping(ApiConstants.LOGOUT_ENDPOINT)
