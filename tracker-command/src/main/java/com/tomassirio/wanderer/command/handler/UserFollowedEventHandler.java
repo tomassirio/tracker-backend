@@ -2,7 +2,7 @@ package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.UserFollowedEvent;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
-import com.tomassirio.wanderer.command.service.AchievementCalculationService;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserFollowedEventHandler implements EventHandler<UserFollowedEvent> {
 
     private final UserFollowRepository userFollowRepository;
-    private final AchievementCalculationService achievementCalculationService;
+    private final AchievementService achievementCalculationService;
 
     @Override
     @EventListener

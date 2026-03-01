@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
-import com.tomassirio.wanderer.command.service.AchievementCalculationService;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
@@ -27,7 +27,7 @@ class TripUpdatedEventHandlerTest {
 
     @Mock private TripUpdateRepository tripUpdateRepository;
 
-    @Mock private AchievementCalculationService achievementCalculationService;
+    @Mock private AchievementService achievementCalculationService;
 
     @InjectMocks private TripUpdatedEventHandler handler;
 
