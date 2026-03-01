@@ -34,6 +34,7 @@ public final class WebSocketEventType {
     public static final String COMMENT_ADDED = "COMMENT_ADDED";
     public static final String COMMENT_REACTION_ADDED = "COMMENT_REACTION_ADDED";
     public static final String COMMENT_REACTION_REMOVED = "COMMENT_REACTION_REMOVED";
+    public static final String COMMENT_REACTION_REPLACED = "COMMENT_REACTION_REPLACED";
 
     // Friend request events
     public static final String FRIEND_REQUEST_SENT = "FRIEND_REQUEST_SENT";

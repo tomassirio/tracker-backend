@@ -110,7 +110,7 @@ public class CommentServiceImpl implements CommentService {
                         commentId);
                 throw new IllegalStateException("User already has this reaction on the comment");
             } else {
-                // Different reaction type - remove old and add new (automatic replacement)
+                // Different reaction type - replace old with new (automatic replacement)
                 log.info(
                         "User {} changing reaction on comment {} from {} to {}",
                         userId,
@@ -118,19 +118,28 @@ public class CommentServiceImpl implements CommentService {
                         existing.getReactionType(),
                         reactionType);
 
-                // Publish remove event for old reaction
+                // Publish single REPLACED event with both old and new reaction types
                 eventPublisher.publishEvent(
                         CommentReactionEvent.builder()
                                 .tripId(comment.getTrip().getId())
                                 .commentId(commentId)
-                                .reactionType(existing.getReactionType().name())
+                                .reactionType(reactionType.name())
+                                .previousReactionType(existing.getReactionType().name())
                                 .userId(userId)
-                                .added(false)
+                                .added(true) // Still marked as added for the new reaction
                                 .build());
+
+                log.info(
+                        "Successfully replaced reaction {} with {} for comment {}",
+                        existing.getReactionType(),
+                        reactionType,
+                        commentId);
+
+                return commentId;
             }
         }
 
-        // Publish add event for new reaction
+        // No existing reaction - publish add event for new reaction
         eventPublisher.publishEvent(
                 CommentReactionEvent.builder()
                         .tripId(comment.getTrip().getId())

@@ -25,7 +25,6 @@ import com.tomassirio.wanderer.commons.domain.User;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -302,7 +301,7 @@ class CommentServiceImplTest {
     }
 
     @Test
-    void addReactionToComment_whenUserChangesReaction_shouldPublishRemoveAndAddEvents() {
+    void addReactionToComment_whenUserChangesReaction_shouldPublishReplaceEvent() {
         // Given - User already has a HEART reaction, changing to SMILEY
         CommentReaction existingReaction =
                 CommentReaction.builder()
@@ -326,21 +325,15 @@ class CommentServiceImplTest {
 
         ArgumentCaptor<CommentReactionEvent> eventCaptor =
                 ArgumentCaptor.forClass(CommentReactionEvent.class);
-        verify(eventPublisher, org.mockito.Mockito.times(2)).publishEvent(eventCaptor.capture());
+        verify(eventPublisher, org.mockito.Mockito.times(1)).publishEvent(eventCaptor.capture());
 
-        List<CommentReactionEvent> events = eventCaptor.getAllValues();
+        CommentReactionEvent replaceEvent = eventCaptor.getValue();
 
-        // First event should be remove HEART
-        CommentReactionEvent removeEvent = events.get(0);
-        assertThat(removeEvent.getCommentId()).isEqualTo(COMMENT_ID);
-        assertThat(removeEvent.getReactionType()).isEqualTo(ReactionType.HEART.name());
-        assertThat(removeEvent.isAdded()).isFalse();
-
-        // Second event should be add SMILEY
-        CommentReactionEvent addEvent = events.get(1);
-        assertThat(addEvent.getCommentId()).isEqualTo(COMMENT_ID);
-        assertThat(addEvent.getReactionType()).isEqualTo(ReactionType.SMILEY.name());
-        assertThat(addEvent.isAdded()).isTrue();
+        // Should be a single REPLACED event with both old and new reaction types
+        assertThat(replaceEvent.getCommentId()).isEqualTo(COMMENT_ID);
+        assertThat(replaceEvent.getReactionType()).isEqualTo(ReactionType.SMILEY.name());
+        assertThat(replaceEvent.getPreviousReactionType()).isEqualTo(ReactionType.HEART.name());
+        assertThat(replaceEvent.isAdded()).isTrue();
     }
 
     // ============ REMOVE REACTION FROM COMMENT TESTS ============

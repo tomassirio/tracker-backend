@@ -57,7 +57,29 @@ public class CommentReactionEventHandler implements EventHandler<CommentReaction
         ReactionType reactionType = ReactionType.valueOf(event.getReactionType());
 
         if (event.isAdded()) {
-            // Add individual reaction entity
+            // Check if this is a replacement operation
+            if (event.getPreviousReactionType() != null) {
+                // This is a replacement - delete old reaction first
+                ReactionType previousReactionType =
+                        ReactionType.valueOf(event.getPreviousReactionType());
+
+                // Delete old reaction entity
+                commentReactionRepository.deleteByCommentIdAndUserId(
+                        event.getCommentId(), event.getUserId());
+
+                // Flush to ensure delete is executed before insert
+                commentReactionRepository.flush();
+
+                // Decrement old reaction count
+                comment.getReactions().decrementReaction(previousReactionType);
+
+                log.info(
+                        "Removed old reaction {} for comment: {}",
+                        previousReactionType,
+                        event.getCommentId());
+            }
+
+            // Add new individual reaction entity
             CommentReaction commentReaction =
                     CommentReaction.builder()
                             .id(UUID.randomUUID())

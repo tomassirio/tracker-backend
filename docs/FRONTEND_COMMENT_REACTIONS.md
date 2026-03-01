@@ -134,7 +134,7 @@ Remove a reaction from a comment (unchanged behavior).
 ### WebSocket Events
 
 #### COMMENT_REACTION_ADDED
-Emitted when a reaction is added.
+Emitted when a reaction is added (and there was no previous reaction from this user).
 
 ```json
 {
@@ -149,7 +149,7 @@ Emitted when a reaction is added.
 ```
 
 #### COMMENT_REACTION_REMOVED
-Emitted when a reaction is removed (either explicitly or during automatic replacement).
+Emitted when a reaction is explicitly removed by the user.
 
 ```json
 {
@@ -163,9 +163,26 @@ Emitted when a reaction is removed (either explicitly or during automatic replac
 }
 ```
 
-**Note:** When a user changes their reaction, you'll receive TWO events:
-1. `COMMENT_REACTION_REMOVED` (old reaction)
-2. `COMMENT_REACTION_ADDED` (new reaction)
+#### COMMENT_REACTION_REPLACED (NEW!)
+Emitted when a user changes their reaction from one type to another. This is a **single event** that contains both the old and new reaction types.
+
+```json
+{
+  "eventType": "COMMENT_REACTION_REPLACED",
+  "payload": {
+    "tripId": "trip-uuid",
+    "commentId": "comment-uuid",
+    "reactionType": "SMILEY",       // New reaction
+    "previousReactionType": "HEART", // Old reaction
+    "userId": "user-uuid"
+  }
+}
+```
+
+**Important:** When handling this event, the frontend should:
+1. Decrement the count for `previousReactionType`
+2. Increment the count for `reactionType`
+3. Update the `individualReactions` array by replacing the user's old reaction with the new one
 
 ## Frontend Implementation Guide
 
@@ -251,17 +268,63 @@ try {
 
 ### 4. WebSocket Handling
 
-Update your WebSocket handler to process both removed and added events:
+Update your WebSocket handler to process all three event types:
 
 ```typescript
 socket.on('COMMENT_REACTION_ADDED', (payload) => {
-  // Find comment and add reaction to individualReactions
+  // User added a new reaction (no previous reaction)
+  const comment = findCommentById(payload.commentId);
+  
+  // Add to individual reactions
+  comment.individualReactions.push({
+    userId: payload.userId,
+    username: payload.username, // You may need to fetch this
+    reactionType: payload.reactionType,
+    timestamp: new Date().toISOString()
+  });
+  
   // Increment aggregated count
+  const reactionKey = payload.reactionType.toLowerCase();
+  comment.reactions[reactionKey]++;
 });
 
 socket.on('COMMENT_REACTION_REMOVED', (payload) => {
-  // Find comment and remove reaction from individualReactions
+  // User explicitly removed their reaction
+  const comment = findCommentById(payload.commentId);
+  
+  // Remove from individual reactions
+  comment.individualReactions = comment.individualReactions.filter(
+    r => !(r.userId === payload.userId && r.reactionType === payload.reactionType)
+  );
+  
   // Decrement aggregated count
+  const reactionKey = payload.reactionType.toLowerCase();
+  comment.reactions[reactionKey]--;
+});
+
+socket.on('COMMENT_REACTION_REPLACED', (payload) => {
+  // User changed their reaction from one type to another
+  const comment = findCommentById(payload.commentId);
+  
+  // Update individual reactions - replace old with new
+  const existingIndex = comment.individualReactions.findIndex(
+    r => r.userId === payload.userId
+  );
+  
+  if (existingIndex !== -1) {
+    comment.individualReactions[existingIndex] = {
+      userId: payload.userId,
+      username: comment.individualReactions[existingIndex].username,
+      reactionType: payload.reactionType,
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  // Update aggregated counts
+  const oldKey = payload.previousReactionType.toLowerCase();
+  const newKey = payload.reactionType.toLowerCase();
+  comment.reactions[oldKey]--;
+  comment.reactions[newKey]++;
 });
 ```
 
