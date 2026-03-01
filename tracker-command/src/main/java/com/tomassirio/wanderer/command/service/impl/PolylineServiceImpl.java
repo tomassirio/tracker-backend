@@ -45,17 +45,27 @@ public class PolylineServiceImpl implements PolylineService {
 
         List<TripUpdate> updates = tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId);
 
-        if (updates.size() < 2) {
-            // Not enough locations to compute a polyline
+        // Filter to updates with valid locations
+        List<TripUpdate> validUpdates =
+                updates.stream()
+                        .filter(
+                                u ->
+                                        u.getLocation() != null
+                                                && u.getLocation().getLat() != null
+                                                && u.getLocation().getLon() != null)
+                        .toList();
+
+        if (validUpdates.size() < 2) {
+            // Not enough valid locations to compute a polyline
             trip.setEncodedPolyline(null);
             trip.setPolylineUpdatedAt(null);
             tripRepository.save(trip);
-            log.debug("Trip {} has fewer than 2 updates, polyline cleared", tripId);
+            log.debug("Trip {} has fewer than 2 valid locations, polyline cleared", tripId);
             return;
         }
 
-        GeoLocation previousLast = updates.get(updates.size() - 2).getLocation();
-        GeoLocation newLast = updates.getLast().getLocation();
+        GeoLocation previousLast = validUpdates.get(validUpdates.size() - 2).getLocation();
+        GeoLocation newLast = validUpdates.getLast().getLocation();
 
         if (trip.getEncodedPolyline() != null && !trip.getEncodedPolyline().isEmpty()) {
             // Incremental: decode existing, fetch new segment, append, re-encode
@@ -97,15 +107,19 @@ public class PolylineServiceImpl implements PolylineService {
     }
 
     private void recomputePolylineInternal(Trip trip, List<TripUpdate> updates) {
-        if (updates.size() < 2) {
+        List<GeoLocation> locations =
+                updates.stream()
+                        .map(TripUpdate::getLocation)
+                        .filter(loc -> loc != null && loc.getLat() != null && loc.getLon() != null)
+                        .toList();
+
+        if (locations.size() < 2) {
             trip.setEncodedPolyline(null);
             trip.setPolylineUpdatedAt(null);
             tripRepository.save(trip);
-            log.debug("Trip {} has fewer than 2 updates, polyline cleared", trip.getId());
+            log.debug("Trip {} has fewer than 2 valid locations, polyline cleared", trip.getId());
             return;
         }
-
-        List<GeoLocation> locations = updates.stream().map(TripUpdate::getLocation).toList();
 
         List<LatLng> routePoints = routeService.getFullRoutePoints(locations);
         String encoded = PolylineCodec.encode(routePoints);
