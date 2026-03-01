@@ -5,7 +5,7 @@ import static org.mockito.Mockito.verify;
 
 import com.tomassirio.wanderer.command.event.UserFollowedEvent;
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
-import com.tomassirio.wanderer.command.service.AchievementCalculationService;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
 import java.time.Instant;
 import java.util.UUID;
@@ -21,7 +21,7 @@ class UserFollowedEventHandlerTest {
 
     @Mock private UserFollowRepository userFollowRepository;
 
-    @Mock private AchievementCalculationService achievementCalculationService;
+    @Mock private AchievementService achievementCalculationService;
 
     @InjectMocks private UserFollowedEventHandler handler;
 

@@ -167,6 +167,8 @@ public class TripServiceImpl implements TripService {
                                         trip.tripPlanId(),
                                         trip.comments(),
                                         trip.tripUpdates(),
+                                        trip.encodedPolyline(),
+                                        trip.polylineUpdatedAt(),
                                         trip.creationTimestamp(),
                                         trip.enabled()))
                 .toList();
@@ -199,6 +201,8 @@ public class TripServiceImpl implements TripService {
                 trip.tripPlanId(),
                 trip.comments(),
                 trip.tripUpdates(),
+                trip.encodedPolyline(),
+                trip.polylineUpdatedAt(),
                 trip.creationTimestamp(),
                 trip.enabled());
     }

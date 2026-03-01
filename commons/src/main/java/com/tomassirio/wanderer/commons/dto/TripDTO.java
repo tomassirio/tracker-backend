@@ -13,5 +13,7 @@ public record TripDTO(
         String tripPlanId,
         List<CommentDTO> comments,
         List<TripUpdateDTO> tripUpdates,
+        String encodedPolyline,
+        Instant polylineUpdatedAt,
         Instant creationTimestamp,
         Boolean enabled) {}

@@ -50,6 +50,12 @@ public class Trip {
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TripUpdate> tripUpdates;
 
+    @Column(name = "encoded_polyline", columnDefinition = "TEXT")
+    private String encodedPolyline;
+
+    @Column(name = "polyline_updated_at")
+    private Instant polylineUpdatedAt;
+
     @NotNull
     @Column(name = "creation_timestamp", nullable = false)
     private Instant creationTimestamp;

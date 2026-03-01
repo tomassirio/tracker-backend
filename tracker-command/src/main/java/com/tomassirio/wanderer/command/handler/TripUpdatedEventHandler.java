@@ -3,7 +3,7 @@ package com.tomassirio.wanderer.command.handler;
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
-import com.tomassirio.wanderer.command.service.AchievementCalculationService;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +28,7 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
 
     private final TripRepository tripRepository;
     private final TripUpdateRepository tripUpdateRepository;
-    private final AchievementCalculationService achievementCalculationService;
+    private final AchievementService achievementCalculationService;
 
     @Override
     @EventListener
