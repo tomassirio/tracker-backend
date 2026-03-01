@@ -38,7 +38,7 @@ public class AchievementCalculationService {
     private final UserAchievementRepository userAchievementRepository;
     private final FriendshipRepository friendshipRepository;
     private final UserFollowRepository userFollowRepository;
-    private final GoogleMapsDistanceService googleMapsDistanceService;
+    private final DistanceCalculationStrategy distanceCalculationStrategy;
     private final EntityManager entityManager;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -205,8 +205,8 @@ public class AchievementCalculationService {
             return 0.0;
         }
 
-        // Use Google Maps Distance Service (with Haversine fallback)
-        return googleMapsDistanceService.calculatePathDistance(coordinates);
+        // Use distance calculation strategy (Google Maps or Haversine fallback)
+        return distanceCalculationStrategy.calculatePathDistance(coordinates);
     }
 
     private void unlockAchievementIfNotExists(Trip trip, AchievementType type, Double value) {

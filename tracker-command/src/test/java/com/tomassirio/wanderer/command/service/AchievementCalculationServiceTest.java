@@ -48,7 +48,7 @@ class AchievementCalculationServiceTest {
 
     @Mock private ApplicationEventPublisher eventPublisher;
 
-    @Mock private GoogleMapsDistanceService googleMapsDistanceService;
+    @Mock private DistanceCalculationStrategy distanceCalculationStrategy;
 
     @Mock private TypedQuery<Achievement> query;
 
@@ -133,7 +133,7 @@ class AchievementCalculationServiceTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
         when(tripUpdateRepository.countByTripId(tripId)).thenReturn(5L);
         when(tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId)).thenReturn(updates);
-        when(googleMapsDistanceService.calculatePathDistance(any()))
+        when(distanceCalculationStrategy.calculatePathDistance(any()))
                 .thenReturn(105.0); // Mock 105km
         when(unlockedAchievementRepository.existsByUserIdAndAchievementTypeAndTripId(
                         userId, AchievementType.DISTANCE_100KM, tripId))

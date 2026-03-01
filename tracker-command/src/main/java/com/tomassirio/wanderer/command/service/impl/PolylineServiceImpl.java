@@ -3,14 +3,14 @@ package com.tomassirio.wanderer.command.service.impl;
 import com.google.maps.model.LatLng;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
-import com.tomassirio.wanderer.command.service.GoogleRoutesService;
 import com.tomassirio.wanderer.command.service.PolylineService;
+import com.tomassirio.wanderer.command.service.RouteService;
+import com.tomassirio.wanderer.command.service.helper.PolylineCodec;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +32,7 @@ public class PolylineServiceImpl implements PolylineService {
 
     private final TripRepository tripRepository;
     private final TripUpdateRepository tripUpdateRepository;
-    private final GoogleRoutesService googleRoutesService;
+    private final RouteService routeService;
 
     @Override
     @Transactional
@@ -59,18 +59,16 @@ public class PolylineServiceImpl implements PolylineService {
 
         if (trip.getEncodedPolyline() != null && !trip.getEncodedPolyline().isEmpty()) {
             // Incremental: decode existing, fetch new segment, append, re-encode
-            List<LatLng> existingPoints =
-                    new ArrayList<>(googleRoutesService.decodePolyline(trip.getEncodedPolyline()));
+            List<LatLng> existingPoints = PolylineCodec.decode(trip.getEncodedPolyline());
 
-            List<LatLng> newSegmentPoints =
-                    googleRoutesService.getRoutePoints(previousLast, newLast);
+            List<LatLng> newSegmentPoints = routeService.getRoutePoints(previousLast, newLast);
 
             if (!newSegmentPoints.isEmpty()) {
                 // Skip first point to avoid duplicate with last point of existing polyline
                 existingPoints.addAll(newSegmentPoints.subList(1, newSegmentPoints.size()));
             }
 
-            String encoded = googleRoutesService.encodePolyline(existingPoints);
+            String encoded = PolylineCodec.encode(existingPoints);
             trip.setEncodedPolyline(encoded);
             trip.setPolylineUpdatedAt(Instant.now());
             tripRepository.save(trip);
@@ -109,8 +107,8 @@ public class PolylineServiceImpl implements PolylineService {
 
         List<GeoLocation> locations = updates.stream().map(TripUpdate::getLocation).toList();
 
-        List<LatLng> routePoints = googleRoutesService.getFullRoutePoints(locations);
-        String encoded = googleRoutesService.encodePolyline(routePoints);
+        List<LatLng> routePoints = routeService.getFullRoutePoints(locations);
+        String encoded = PolylineCodec.encode(routePoints);
 
         trip.setEncodedPolyline(encoded);
         trip.setPolylineUpdatedAt(Instant.now());

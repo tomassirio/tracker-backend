@@ -2,16 +2,14 @@ package com.tomassirio.wanderer.command.service.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.maps.model.LatLng;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
-import com.tomassirio.wanderer.command.service.GoogleRoutesService;
+import com.tomassirio.wanderer.command.service.RouteService;
+import com.tomassirio.wanderer.command.service.helper.PolylineCodec;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
@@ -34,7 +32,7 @@ class PolylineServiceImplTest {
 
     @Mock private TripUpdateRepository tripUpdateRepository;
 
-    @Mock private GoogleRoutesService googleRoutesService;
+    @Mock private RouteService routeService;
 
     @InjectMocks private PolylineServiceImpl polylineService;
 
@@ -84,12 +82,8 @@ class PolylineServiceImplTest {
         Trip trip = Trip.builder().id(tripId).name("Test Trip").build();
 
         TripUpdate update =
-                TripUpdate.builder()
-                        .id(UUID.randomUUID())
-                        .trip(trip)
-                        .location(GeoLocation.builder().lat(42.0).lon(-8.0).build())
-                        .timestamp(Instant.now())
-                        .build();
+                createTripUpdate(
+                        trip, GeoLocation.builder().lat(42.0).lon(-8.0).build(), Instant.now());
 
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
         when(tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId))
@@ -108,11 +102,16 @@ class PolylineServiceImplTest {
     void appendSegment_whenExistingPolyline_shouldAppendNewSegment() {
         // Given
         UUID tripId = UUID.randomUUID();
+
+        // Encode 2 existing points to create a realistic existing polyline
+        List<LatLng> existingPoints = List.of(new LatLng(42.0, -8.0), new LatLng(42.5, -8.2));
+        String existingEncoded = PolylineCodec.encode(existingPoints);
+
         Trip trip =
                 Trip.builder()
                         .id(tripId)
                         .name("Test Trip")
-                        .encodedPolyline("existingEncoded")
+                        .encodedPolyline(existingEncoded)
                         .polylineUpdatedAt(Instant.now().minusSeconds(3600))
                         .build();
 
@@ -128,17 +127,10 @@ class PolylineServiceImplTest {
         when(tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId))
                 .thenReturn(List.of(update1, update2, update3));
 
-        // Existing polyline decodes to 2 points
-        List<LatLng> existingPoints = List.of(new LatLng(42.0, -8.0), new LatLng(42.5, -8.2));
-        when(googleRoutesService.decodePolyline("existingEncoded")).thenReturn(existingPoints);
-
-        // New segment from loc2 -> loc3
+        // New segment from loc2 -> loc3 returns 3 points (first is duplicate)
         List<LatLng> newSegmentPoints =
                 List.of(new LatLng(42.5, -8.2), new LatLng(42.7, -8.3), new LatLng(43.0, -8.5));
-        when(googleRoutesService.getRoutePoints(loc2, loc3)).thenReturn(newSegmentPoints);
-
-        // Combined encoding
-        when(googleRoutesService.encodePolyline(any())).thenReturn("updatedEncoded");
+        when(routeService.getRoutePoints(loc2, loc3)).thenReturn(newSegmentPoints);
 
         // When
         polylineService.appendSegment(tripId);
@@ -148,16 +140,13 @@ class PolylineServiceImplTest {
         verify(tripRepository).save(captor.capture());
 
         Trip saved = captor.getValue();
-        assertThat(saved.getEncodedPolyline()).isEqualTo("updatedEncoded");
+        assertThat(saved.getEncodedPolyline()).isNotNull();
         assertThat(saved.getPolylineUpdatedAt()).isNotNull();
 
-        // Verify the encode was called with existing + new segment (minus duplicate first point)
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<LatLng>> pointsCaptor = ArgumentCaptor.forClass(List.class);
-        verify(googleRoutesService).encodePolyline(pointsCaptor.capture());
-
-        List<LatLng> encodedPoints = pointsCaptor.getValue();
-        assertThat(encodedPoints).hasSize(4); // 2 existing + 2 new (skip duplicate)
+        // Decode the saved polyline and verify it has 4 points
+        // (2 existing + 2 new, duplicate skipped)
+        List<LatLng> decodedResult = PolylineCodec.decode(saved.getEncodedPolyline());
+        assertThat(decodedResult).hasSize(4);
     }
 
     @Test
@@ -177,8 +166,7 @@ class PolylineServiceImplTest {
                 .thenReturn(List.of(update1, update2));
 
         List<LatLng> fullRoute = List.of(new LatLng(42.0, -8.0), new LatLng(42.5, -8.2));
-        when(googleRoutesService.getFullRoutePoints(List.of(loc1, loc2))).thenReturn(fullRoute);
-        when(googleRoutesService.encodePolyline(fullRoute)).thenReturn("fullEncoded");
+        when(routeService.getFullRoutePoints(List.of(loc1, loc2))).thenReturn(fullRoute);
 
         // When
         polylineService.appendSegment(tripId);
@@ -188,8 +176,11 @@ class PolylineServiceImplTest {
         verify(tripRepository).save(captor.capture());
 
         Trip saved = captor.getValue();
-        assertThat(saved.getEncodedPolyline()).isEqualTo("fullEncoded");
+        assertThat(saved.getEncodedPolyline()).isNotNull();
         assertThat(saved.getPolylineUpdatedAt()).isNotNull();
+
+        List<LatLng> decodedResult = PolylineCodec.decode(saved.getEncodedPolyline());
+        assertThat(decodedResult).hasSize(2);
     }
 
     @Test
@@ -246,9 +237,8 @@ class PolylineServiceImplTest {
 
         List<LatLng> fullRoutePoints =
                 List.of(new LatLng(42.0, -8.0), new LatLng(42.5, -8.2), new LatLng(43.0, -8.5));
-        when(googleRoutesService.getFullRoutePoints(List.of(loc1, loc2, loc3)))
+        when(routeService.getFullRoutePoints(List.of(loc1, loc2, loc3)))
                 .thenReturn(fullRoutePoints);
-        when(googleRoutesService.encodePolyline(fullRoutePoints)).thenReturn("recomputedEncoded");
 
         // When
         polylineService.recomputePolyline(tripId);
@@ -258,8 +248,11 @@ class PolylineServiceImplTest {
         verify(tripRepository).save(captor.capture());
 
         Trip saved = captor.getValue();
-        assertThat(saved.getEncodedPolyline()).isEqualTo("recomputedEncoded");
+        assertThat(saved.getEncodedPolyline()).isNotNull();
         assertThat(saved.getPolylineUpdatedAt()).isNotNull();
+
+        List<LatLng> decodedResult = PolylineCodec.decode(saved.getEncodedPolyline());
+        assertThat(decodedResult).hasSize(3);
     }
 
     @Test
@@ -279,19 +272,22 @@ class PolylineServiceImplTest {
                 .thenReturn(List.of(update1, update2));
 
         List<LatLng> fullRoute = List.of(new LatLng(42.0, -8.0), new LatLng(42.5, -8.2));
-        when(googleRoutesService.getFullRoutePoints(List.of(loc1, loc2))).thenReturn(fullRoute);
-        when(googleRoutesService.encodePolyline(fullRoute)).thenReturn("fullEncoded");
+        when(routeService.getFullRoutePoints(List.of(loc1, loc2))).thenReturn(fullRoute);
 
         // When
         polylineService.appendSegment(tripId);
 
-        // Then
-        verify(googleRoutesService).getFullRoutePoints(anyList());
-        verify(googleRoutesService, never()).decodePolyline(any());
+        // Then — goes through full recompute path (not incremental)
+        verify(routeService).getFullRoutePoints(List.of(loc1, loc2));
 
         ArgumentCaptor<Trip> captor = ArgumentCaptor.forClass(Trip.class);
         verify(tripRepository).save(captor.capture());
-        assertThat(captor.getValue().getEncodedPolyline()).isEqualTo("fullEncoded");
+
+        Trip saved = captor.getValue();
+        assertThat(saved.getEncodedPolyline()).isNotNull();
+
+        List<LatLng> decodedResult = PolylineCodec.decode(saved.getEncodedPolyline());
+        assertThat(decodedResult).hasSize(2);
     }
 
     private TripUpdate createTripUpdate(Trip trip, GeoLocation location, Instant timestamp) {

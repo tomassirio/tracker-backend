@@ -1,41 +1,33 @@
 package com.tomassirio.wanderer.command.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.lenient;
 
 import com.google.maps.model.LatLng;
-import com.tomassirio.wanderer.command.config.properties.GoogleMapsProperties;
+import com.tomassirio.wanderer.command.service.impl.HaversineDistanceStrategy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-@ExtendWith(MockitoExtension.class)
+/**
+ * Tests for {@link HaversineDistanceStrategy} via the {@link DistanceCalculationStrategy}
+ * interface.
+ */
 class GoogleMapsDistanceServiceTest {
 
-    @Mock private GoogleMapsProperties googleMapsProperties;
-
-    private GoogleMapsDistanceService service;
+    private DistanceCalculationStrategy strategy;
 
     @BeforeEach
     void setUp() {
-        // Disable Google Maps API for unit tests (will use Haversine fallback)
-        // Use lenient() to avoid UnnecessaryStubbingException
-        lenient().when(googleMapsProperties.isEnabled()).thenReturn(false);
-        lenient().when(googleMapsProperties.getApiKey()).thenReturn(null);
-        service = new GoogleMapsDistanceService(googleMapsProperties);
-        service.init();
+        strategy = new HaversineDistanceStrategy();
     }
 
     @Test
     void calculatePathDistance_whenNullCoordinates_shouldReturnZero() {
         // When
-        double distance = service.calculatePathDistance(null);
+        double distance = strategy.calculatePathDistance(null);
 
         // Then
         assertThat(distance).isEqualTo(0.0);
@@ -47,7 +39,7 @@ class GoogleMapsDistanceServiceTest {
         List<LatLng> coordinates = Collections.emptyList();
 
         // When
-        double distance = service.calculatePathDistance(coordinates);
+        double distance = strategy.calculatePathDistance(coordinates);
 
         // Then
         assertThat(distance).isEqualTo(0.0);
@@ -59,7 +51,7 @@ class GoogleMapsDistanceServiceTest {
         List<LatLng> coordinates = Collections.singletonList(new LatLng(40.7128, -74.0060));
 
         // When
-        double distance = service.calculatePathDistance(coordinates);
+        double distance = strategy.calculatePathDistance(coordinates);
 
         // Then
         assertThat(distance).isEqualTo(0.0);
@@ -75,7 +67,7 @@ class GoogleMapsDistanceServiceTest {
                         );
 
         // When
-        double distance = service.calculatePathDistance(coordinates);
+        double distance = strategy.calculatePathDistance(coordinates);
 
         // Then - Using Haversine, should be approximately 3944 km
         assertThat(distance).isGreaterThan(3900).isLessThan(4000);
@@ -92,7 +84,7 @@ class GoogleMapsDistanceServiceTest {
                         );
 
         // When
-        double distance = service.calculatePathDistance(coordinates);
+        double distance = strategy.calculatePathDistance(coordinates);
 
         // Then - Haversine gives straight-line distance (~58 km)
         assertThat(distance).isGreaterThan(50).isLessThan(70);
@@ -108,7 +100,7 @@ class GoogleMapsDistanceServiceTest {
                         );
 
         // When
-        double distance = service.calculatePathDistance(coordinates);
+        double distance = strategy.calculatePathDistance(coordinates);
 
         // Then - Should be approximately 1.11 km (0.01 degrees latitude ≈ 1.11 km)
         assertThat(distance).isGreaterThan(1.0).isLessThan(1.2);
@@ -128,7 +120,7 @@ class GoogleMapsDistanceServiceTest {
                         );
 
         // When
-        double distance = service.calculatePathDistance(coordinates);
+        double distance = strategy.calculatePathDistance(coordinates);
 
         // Then - Camino Francés is approximately 800 km
         // Haversine gives straight-line distance, so it will be less
@@ -142,7 +134,7 @@ class GoogleMapsDistanceServiceTest {
                 Arrays.asList(new LatLng(40.7128, -74.0060), new LatLng(40.7128, -74.0060));
 
         // When
-        double distance = service.calculatePathDistance(coordinates);
+        double distance = strategy.calculatePathDistance(coordinates);
 
         // Then
         assertThat(distance).isEqualTo(0.0);
@@ -159,86 +151,9 @@ class GoogleMapsDistanceServiceTest {
         }
 
         // When
-        double distance = service.calculatePathDistance(coordinates);
+        double distance = strategy.calculatePathDistance(coordinates);
 
         // Then - Should calculate distance without errors
-        assertThat(distance).isGreaterThan(0);
-    }
-
-    @Test
-    void calculatePathDistance_whenApiKeyConfigured_shouldInitializeGeoApiContext() {
-        // Given - Google Maps API enabled with key
-        lenient().when(googleMapsProperties.isEnabled()).thenReturn(true);
-        lenient().when(googleMapsProperties.getApiKey()).thenReturn("test-api-key");
-        GoogleMapsDistanceService serviceWithApi =
-                new GoogleMapsDistanceService(googleMapsProperties);
-
-        // When
-        serviceWithApi.init();
-
-        // Then - Should initialize without throwing exception
-        // Note: Actual API calls will fail with invalid key, but fallback to Haversine
-        List<LatLng> coordinates =
-                Arrays.asList(new LatLng(40.7128, -74.0060), new LatLng(34.0522, -118.2437));
-        double distance = serviceWithApi.calculatePathDistance(coordinates);
-
-        // Should fall back to Haversine and still calculate
-        assertThat(distance).isGreaterThan(0);
-
-        // Cleanup
-        serviceWithApi.cleanup();
-    }
-
-    @Test
-    void cleanup_whenCalled_shouldShutdownGeoApiContext() {
-        // Given - Service with API key
-        lenient().when(googleMapsProperties.isEnabled()).thenReturn(true);
-        lenient().when(googleMapsProperties.getApiKey()).thenReturn("test-api-key");
-        GoogleMapsDistanceService serviceWithApi =
-                new GoogleMapsDistanceService(googleMapsProperties);
-        serviceWithApi.init();
-
-        // When
-        serviceWithApi.cleanup();
-
-        // Then - Should not throw exception
-        // Note: We can't easily verify the internal state, but we ensure no exceptions
-    }
-
-    @Test
-    void init_whenApiKeyIsEmpty_shouldNotInitializeGeoApiContext() {
-        // Given
-        lenient().when(googleMapsProperties.isEnabled()).thenReturn(true);
-        lenient().when(googleMapsProperties.getApiKey()).thenReturn("");
-        GoogleMapsDistanceService serviceWithoutKey =
-                new GoogleMapsDistanceService(googleMapsProperties);
-
-        // When
-        serviceWithoutKey.init();
-
-        // Then - Should use Haversine fallback
-        List<LatLng> coordinates =
-                Arrays.asList(new LatLng(40.7128, -74.0060), new LatLng(34.0522, -118.2437));
-        double distance = serviceWithoutKey.calculatePathDistance(coordinates);
-
-        assertThat(distance).isGreaterThan(0);
-    }
-
-    @Test
-    void init_whenApiDisabled_shouldNotInitializeGeoApiContext() {
-        // Given
-        lenient().when(googleMapsProperties.isEnabled()).thenReturn(false);
-        lenient().when(googleMapsProperties.getApiKey()).thenReturn("some-key");
-        GoogleMapsDistanceService serviceDisabled =
-                new GoogleMapsDistanceService(googleMapsProperties);
-
-        // When
-        serviceDisabled.init();
-
-        // Then - Should use Haversine fallback
-        List<LatLng> coordinates =
-                Arrays.asList(new LatLng(40.7128, -74.0060), new LatLng(34.0522, -118.2437));
-        double distance = serviceDisabled.calculatePathDistance(coordinates);
 
         assertThat(distance).isGreaterThan(0);
     }
