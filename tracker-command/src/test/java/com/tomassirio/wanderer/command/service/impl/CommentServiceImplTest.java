@@ -12,10 +12,12 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.command.controller.request.CommentCreationRequest;
 import com.tomassirio.wanderer.command.event.CommentAddedEvent;
 import com.tomassirio.wanderer.command.event.CommentReactionEvent;
+import com.tomassirio.wanderer.command.repository.CommentReactionRepository;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.commons.domain.Comment;
+import com.tomassirio.wanderer.commons.domain.CommentReaction;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.Reactions;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -48,6 +50,8 @@ class CommentServiceImplTest {
     @Mock private TripRepository tripRepository;
 
     @Mock private UserRepository userRepository;
+
+    @Mock private CommentReactionRepository commentReactionRepository;
 
     @Mock private ApplicationEventPublisher eventPublisher;
 
@@ -199,6 +203,8 @@ class CommentServiceImplTest {
     void addReactionToComment_whenValidRequest_shouldPublishEventAndReturnCommentId() {
         // Given
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
+        when(commentReactionRepository.findByCommentIdAndUserId(COMMENT_ID, USER_ID))
+                .thenReturn(Optional.empty());
 
         // When
         UUID result = commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.HEART);
@@ -239,6 +245,8 @@ class CommentServiceImplTest {
     void addReactionToComment_withAllReactionTypes_shouldPublishEventsCorrectly() {
         // Given
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
+        when(commentReactionRepository.findByCommentIdAndUserId(COMMENT_ID, USER_ID))
+                .thenReturn(Optional.empty());
 
         // Test all reaction types
         ReactionType[] reactionTypes =
@@ -262,6 +270,70 @@ class CommentServiceImplTest {
         // Verify events were published for each reaction type
         verify(eventPublisher, org.mockito.Mockito.times(5))
                 .publishEvent(any(CommentReactionEvent.class));
+    }
+
+    @Test
+    void addReactionToComment_whenUserAlreadyHasSameReaction_shouldThrowIllegalStateException() {
+        // Given - User already has a HEART reaction
+        CommentReaction existingReaction =
+                CommentReaction.builder()
+                        .id(UUID.randomUUID())
+                        .comment(topLevelComment)
+                        .user(user)
+                        .reactionType(ReactionType.HEART)
+                        .timestamp(Instant.now())
+                        .build();
+
+        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
+        when(commentReactionRepository.findByCommentIdAndUserId(COMMENT_ID, USER_ID))
+                .thenReturn(Optional.of(existingReaction));
+
+        // When & Then
+        assertThatThrownBy(
+                        () ->
+                                commentService.addReactionToComment(
+                                        USER_ID, COMMENT_ID, ReactionType.HEART))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("User already has this reaction on the comment");
+
+        // Verify no event was published
+        verify(eventPublisher, never()).publishEvent(any(CommentReactionEvent.class));
+    }
+
+    @Test
+    void addReactionToComment_whenUserChangesReaction_shouldPublishReplaceEvent() {
+        // Given - User already has a HEART reaction, changing to SMILEY
+        CommentReaction existingReaction =
+                CommentReaction.builder()
+                        .id(UUID.randomUUID())
+                        .comment(topLevelComment)
+                        .user(user)
+                        .reactionType(ReactionType.HEART)
+                        .timestamp(Instant.now())
+                        .build();
+
+        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(topLevelComment));
+        when(commentReactionRepository.findByCommentIdAndUserId(COMMENT_ID, USER_ID))
+                .thenReturn(Optional.of(existingReaction));
+
+        // When
+        UUID result = commentService.addReactionToComment(USER_ID, COMMENT_ID, ReactionType.SMILEY);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result).isEqualTo(COMMENT_ID);
+
+        ArgumentCaptor<CommentReactionEvent> eventCaptor =
+                ArgumentCaptor.forClass(CommentReactionEvent.class);
+        verify(eventPublisher, org.mockito.Mockito.times(1)).publishEvent(eventCaptor.capture());
+
+        CommentReactionEvent replaceEvent = eventCaptor.getValue();
+
+        // Should be a single REPLACED event with both old and new reaction types
+        assertThat(replaceEvent.getCommentId()).isEqualTo(COMMENT_ID);
+        assertThat(replaceEvent.getReactionType()).isEqualTo(ReactionType.SMILEY.name());
+        assertThat(replaceEvent.getPreviousReactionType()).isEqualTo(ReactionType.HEART.name());
+        assertThat(replaceEvent.isAdded()).isTrue();
     }
 
     // ============ REMOVE REACTION FROM COMMENT TESTS ============

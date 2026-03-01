@@ -37,3 +37,5 @@ databaseChangeLog:
       file: db/changelog/018-add-user-details-columns.yaml
   - include:
       file: db/changelog/019-add-on-delete-set-null-to-user-achievements-trip-id.yaml
+  - include:
+      file: db/changelog/020-create-comment-reactions-table.yaml
