@@ -39,3 +39,5 @@ databaseChangeLog:
       file: db/changelog/019-add-on-delete-set-null-to-user-achievements-trip-id.yaml
   - include:
       file: db/changelog/020-create-comment-reactions-table.yaml
+  - include:
+      file: db/changelog/021-add-polyline-to-trips.yaml

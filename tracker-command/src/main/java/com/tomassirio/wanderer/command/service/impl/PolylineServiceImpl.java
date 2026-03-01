@@ -1,0 +1,125 @@
+package com.tomassirio.wanderer.command.service.impl;
+
+import com.google.maps.model.LatLng;
+import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
+import com.tomassirio.wanderer.command.service.GoogleRoutesService;
+import com.tomassirio.wanderer.command.service.PolylineService;
+import com.tomassirio.wanderer.commons.domain.GeoLocation;
+import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripUpdate;
+import jakarta.persistence.EntityNotFoundException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * Implementation of {@link PolylineService} that computes encoded polylines for trips using Google
+ * Directions API (walking mode).
+ *
+ * <p>Supports incremental segment appending for optimal performance when new trip updates are
+ * added, and full recomputation when trip updates are deleted.
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class PolylineServiceImpl implements PolylineService {
+
+    private final TripRepository tripRepository;
+    private final TripUpdateRepository tripUpdateRepository;
+    private final GoogleRoutesService googleRoutesService;
+
+    @Override
+    @Transactional
+    public void appendSegment(UUID tripId) {
+        Trip trip =
+                tripRepository
+                        .findById(tripId)
+                        .orElseThrow(
+                                () -> new EntityNotFoundException("Trip not found: " + tripId));
+
+        List<TripUpdate> updates = tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId);
+
+        if (updates.size() < 2) {
+            // Not enough locations to compute a polyline
+            trip.setEncodedPolyline(null);
+            trip.setPolylineUpdatedAt(null);
+            tripRepository.save(trip);
+            log.debug("Trip {} has fewer than 2 updates, polyline cleared", tripId);
+            return;
+        }
+
+        GeoLocation previousLast = updates.get(updates.size() - 2).getLocation();
+        GeoLocation newLast = updates.getLast().getLocation();
+
+        if (trip.getEncodedPolyline() != null && !trip.getEncodedPolyline().isEmpty()) {
+            // Incremental: decode existing, fetch new segment, append, re-encode
+            List<LatLng> existingPoints =
+                    new ArrayList<>(googleRoutesService.decodePolyline(trip.getEncodedPolyline()));
+
+            List<LatLng> newSegmentPoints =
+                    googleRoutesService.getRoutePoints(previousLast, newLast);
+
+            if (!newSegmentPoints.isEmpty()) {
+                // Skip first point to avoid duplicate with last point of existing polyline
+                existingPoints.addAll(newSegmentPoints.subList(1, newSegmentPoints.size()));
+            }
+
+            String encoded = googleRoutesService.encodePolyline(existingPoints);
+            trip.setEncodedPolyline(encoded);
+            trip.setPolylineUpdatedAt(Instant.now());
+            tripRepository.save(trip);
+
+            log.info(
+                    "Polyline incrementally updated for trip {}. Total points: {}",
+                    tripId,
+                    existingPoints.size());
+        } else {
+            // No existing polyline — full recompute
+            recomputePolylineInternal(trip, updates);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void recomputePolyline(UUID tripId) {
+        Trip trip =
+                tripRepository
+                        .findById(tripId)
+                        .orElseThrow(
+                                () -> new EntityNotFoundException("Trip not found: " + tripId));
+
+        List<TripUpdate> updates = tripUpdateRepository.findByTripIdOrderByTimestampAsc(tripId);
+        recomputePolylineInternal(trip, updates);
+    }
+
+    private void recomputePolylineInternal(Trip trip, List<TripUpdate> updates) {
+        if (updates.size() < 2) {
+            trip.setEncodedPolyline(null);
+            trip.setPolylineUpdatedAt(null);
+            tripRepository.save(trip);
+            log.debug("Trip {} has fewer than 2 updates, polyline cleared", trip.getId());
+            return;
+        }
+
+        List<GeoLocation> locations = updates.stream().map(TripUpdate::getLocation).toList();
+
+        List<LatLng> routePoints = googleRoutesService.getFullRoutePoints(locations);
+        String encoded = googleRoutesService.encodePolyline(routePoints);
+
+        trip.setEncodedPolyline(encoded);
+        trip.setPolylineUpdatedAt(Instant.now());
+        tripRepository.save(trip);
+
+        log.info(
+                "Polyline fully recomputed for trip {}. Locations: {}, Points: {}",
+                trip.getId(),
+                locations.size(),
+                routePoints.size());
+    }
+}

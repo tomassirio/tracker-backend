@@ -466,6 +466,8 @@ class TripControllerTest {
                 null, // tripPlanId
                 List.of(), // comments
                 List.of(), // tripUpdates
+                null, // encodedPolyline
+                null, // polylineUpdatedAt
                 Instant.now(),
                 true);
     }
@@ -485,6 +487,8 @@ class TripControllerTest {
                 null, // tripPlanId
                 List.of(), // comments
                 List.of(), // tripUpdates
+                null, // encodedPolyline
+                null, // polylineUpdatedAt
                 Instant.now(),
                 true);
     }
