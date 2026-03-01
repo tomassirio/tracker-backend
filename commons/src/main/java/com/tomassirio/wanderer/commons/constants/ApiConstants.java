@@ -58,6 +58,11 @@ public final class ApiConstants {
     public static final String ADMIN_USER_ROLES_ENDPOINT = "/{userId}/roles";
     public static final String ADMIN_USER_BY_ID_ENDPOINT = "/{userId}";
     public static final String ADMIN_USER_CREDENTIALS_ENDPOINT = "/{userId}/credentials";
+    public static final String ADMIN_TRIPS_PATH = ADMIN_PATH + "/trips";
+    public static final String ADMIN_TRIP_RECOMPUTE_POLYLINE_ENDPOINT =
+            "/{tripId}/recompute-polyline";
+    public static final String ADMIN_TRIP_PROMOTE_ENDPOINT = "/{tripId}/promote";
+    public static final String ADMIN_TRIP_DONATION_LINK_ENDPOINT = "/{tripId}/promote";
 
     // ============================================================
     // User endpoints
@@ -119,9 +124,6 @@ public final class ApiConstants {
     public static final String TRIP_VISIBILITY_ENDPOINT = "/{id}/visibility";
     public static final String TRIP_STATUS_ENDPOINT = "/{id}/status";
     public static final String TRIP_SETTINGS_ENDPOINT = "/{id}/settings";
-    public static final String TRIP_PROMOTE_ENDPOINT = "/{id}/promote";
-    public static final String TRIP_UNPROMOTE_ENDPOINT = "/{id}/promote";
-    public static final String TRIP_UPDATE_DONATION_LINK_ENDPOINT = "/{id}/promote";
     public static final String TRIP_PROMOTION_INFO_ENDPOINT = "/{id}/promotion";
     public static final String TRIP_UPDATES_ENDPOINT = "/{tripId}/updates";
     public static final String TRIP_UPDATE_BY_ID_ENDPOINT = "/updates" + UUID_PATH_VARIABLE;
