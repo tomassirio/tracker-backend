@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tomassirio.wanderer.command.event.CommentAddedEvent;
 import com.tomassirio.wanderer.command.event.CommentReactionEvent;
 import com.tomassirio.wanderer.command.event.FriendRequestSentEvent;
+import com.tomassirio.wanderer.command.event.PolylineUpdatedEvent;
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.event.UserFollowedEvent;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
@@ -169,5 +170,23 @@ class WebSocketEventServiceTest {
 
         // Then
         verify(sessionManager).broadcast(eq("/topic/users/" + followedId), anyString());
+    }
+
+    @Test
+    void broadcast_withPolylineUpdatedEvent_shouldBroadcastToTripTopic() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+
+        PolylineUpdatedEvent event =
+                PolylineUpdatedEvent.builder()
+                        .tripId(tripId)
+                        .encodedPolyline("encodedPolylineString")
+                        .build();
+
+        // When
+        service.broadcast(event);
+
+        // Then
+        verify(sessionManager).broadcast(eq("/topic/trips/" + tripId), anyString());
     }
 }
