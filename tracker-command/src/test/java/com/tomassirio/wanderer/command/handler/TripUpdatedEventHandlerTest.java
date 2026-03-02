@@ -8,7 +8,6 @@ import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.AchievementService;
-import com.tomassirio.wanderer.command.service.GeocodingService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
@@ -30,8 +29,6 @@ class TripUpdatedEventHandlerTest {
 
     @Mock private AchievementService achievementCalculationService;
 
-    @Mock private GeocodingService geocodingService;
-
     @InjectMocks private TripUpdatedEventHandler handler;
 
     @Test
@@ -51,13 +48,12 @@ class TripUpdatedEventHandlerTest {
                         .location(location)
                         .batteryLevel(85)
                         .message("Arrived at Santiago!")
+                        .city("Santiago de Compostela")
+                        .country("Spain")
                         .timestamp(timestamp)
                         .build();
 
         when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
-        when(geocodingService.reverseGeocode(location))
-                .thenReturn(
-                        new GeocodingService.GeocodingResult("Santiago de Compostela", "Spain"));
 
         // When
         handler.handle(event);
@@ -101,7 +97,6 @@ class TripUpdatedEventHandlerTest {
                         .build();
 
         when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
-        when(geocodingService.reverseGeocode(location)).thenReturn(null);
 
         // When
         handler.handle(event);

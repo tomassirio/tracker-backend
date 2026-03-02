@@ -20,6 +20,8 @@ public class TripUpdatedEvent implements DomainEvent, Broadcastable {
     private GeoLocation location;
     private Integer batteryLevel;
     private String message;
+    private String city;
+    private String country;
     private Instant timestamp;
 
     @Override

@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.service.impl;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateCreationRequest;
 import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.service.GeocodingService;
 import com.tomassirio.wanderer.command.service.TripUpdateService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -22,6 +23,7 @@ public class TripUpdateServiceImpl implements TripUpdateService {
     private final TripRepository tripRepository;
     private final OwnershipValidator ownershipValidator;
     private final ApplicationEventPublisher eventPublisher;
+    private final GeocodingService geocodingService;
 
     @Override
     public UUID createTripUpdate(UUID userId, UUID tripId, TripUpdateCreationRequest request) {
@@ -36,6 +38,16 @@ public class TripUpdateServiceImpl implements TripUpdateService {
         UUID tripUpdateId = UUID.randomUUID();
         Instant timestamp = Instant.now();
 
+        // Reverse-geocode coordinates into city/country
+        String city = null;
+        String country = null;
+        GeocodingService.GeocodingResult geocodingResult =
+                geocodingService.reverseGeocode(request.location());
+        if (geocodingResult != null) {
+            city = geocodingResult.city();
+            country = geocodingResult.country();
+        }
+
         // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 TripUpdatedEvent.builder()
@@ -44,6 +56,8 @@ public class TripUpdateServiceImpl implements TripUpdateService {
                         .location(request.location())
                         .batteryLevel(request.battery())
                         .message(request.message())
+                        .city(city)
+                        .country(country)
                         .timestamp(timestamp)
                         .build());
 
