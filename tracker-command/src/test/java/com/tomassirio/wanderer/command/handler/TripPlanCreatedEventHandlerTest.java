@@ -5,6 +5,7 @@ import static org.mockito.Mockito.verify;
 
 import com.tomassirio.wanderer.command.event.TripPlanCreatedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
+import com.tomassirio.wanderer.command.service.TripPlanPolylineService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
@@ -24,6 +25,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class TripPlanCreatedEventHandlerTest {
 
     @Mock private TripPlanRepository tripPlanRepository;
+
+    @Mock private TripPlanPolylineService tripPlanPolylineService;
 
     @InjectMocks private TripPlanCreatedEventHandler handler;
 
@@ -70,5 +73,43 @@ class TripPlanCreatedEventHandlerTest {
         assertThat(saved.getStartLocation()).isEqualTo(startLocation);
         assertThat(saved.getEndLocation()).isEqualTo(endLocation);
         assertThat(saved.getCreatedTimestamp()).isEqualTo(createdTimestamp);
+
+        // Verify polyline computation was triggered
+        verify(tripPlanPolylineService).computePolyline(tripPlanId);
+    }
+
+    @Test
+    void handle_whenWaypointsAndMetadataAreNull_shouldDefaultToEmptyCollections() {
+        // Given
+        UUID tripPlanId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        TripPlanCreatedEvent event =
+                TripPlanCreatedEvent.builder()
+                        .tripPlanId(tripPlanId)
+                        .userId(userId)
+                        .name("Null Collections Trip")
+                        .planType(TripPlanType.SIMPLE)
+                        .startDate(LocalDate.now())
+                        .endDate(LocalDate.now().plusDays(7))
+                        .startLocation(GeoLocation.builder().lat(40.0).lon(-74.0).build())
+                        .endLocation(GeoLocation.builder().lat(34.0).lon(-118.0).build())
+                        .waypoints(null)
+                        .metadata(null)
+                        .createdTimestamp(Instant.now())
+                        .build();
+
+        // When
+        handler.handle(event);
+
+        // Then
+        ArgumentCaptor<TripPlan> captor = ArgumentCaptor.forClass(TripPlan.class);
+        verify(tripPlanRepository).save(captor.capture());
+
+        TripPlan saved = captor.getValue();
+        assertThat(saved.getWaypoints()).isNotNull().isEmpty();
+        assertThat(saved.getMetadata()).isNotNull().isEmpty();
+
+        verify(tripPlanPolylineService).computePolyline(tripPlanId);
     }
 }

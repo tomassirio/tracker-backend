@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.handler;
 import com.tomassirio.wanderer.command.event.TripPlanUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
+import com.tomassirio.wanderer.command.service.TripPlanPolylineService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdated
 
     private final TripPlanRepository tripPlanRepository;
     private final TripPlanMetadataProcessor metadataProcessor;
+    private final TripPlanPolylineService tripPlanPolylineService;
 
     @Override
     @EventListener
@@ -52,5 +54,8 @@ public class TripPlanUpdatedEventHandler implements EventHandler<TripPlanUpdated
                             // automatically
                             log.info("Trip plan updated and persisted: {}", event.getTripPlanId());
                         });
+
+        // Recompute polyline since locations/waypoints may have changed
+        tripPlanPolylineService.computePolyline(event.getTripPlanId());
     }
 }

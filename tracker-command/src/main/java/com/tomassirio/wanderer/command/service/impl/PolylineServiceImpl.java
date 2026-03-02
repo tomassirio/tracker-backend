@@ -6,6 +6,7 @@ import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.PolylineService;
 import com.tomassirio.wanderer.command.service.RouteService;
 import com.tomassirio.wanderer.command.service.helper.PolylineCodec;
+import com.tomassirio.wanderer.command.service.helper.PolylineComputer;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
@@ -33,6 +34,7 @@ public class PolylineServiceImpl implements PolylineService {
     private final TripRepository tripRepository;
     private final TripUpdateRepository tripUpdateRepository;
     private final RouteService routeService;
+    private final PolylineComputer polylineComputer;
 
     @Override
     @Transactional
@@ -107,31 +109,8 @@ public class PolylineServiceImpl implements PolylineService {
     }
 
     private void recomputePolylineInternal(Trip trip, List<TripUpdate> updates) {
-        List<GeoLocation> locations =
-                updates.stream()
-                        .map(TripUpdate::getLocation)
-                        .filter(loc -> loc != null && loc.getLat() != null && loc.getLon() != null)
-                        .toList();
+        List<GeoLocation> locations = updates.stream().map(TripUpdate::getLocation).toList();
 
-        if (locations.size() < 2) {
-            trip.setEncodedPolyline(null);
-            trip.setPolylineUpdatedAt(null);
-            tripRepository.save(trip);
-            log.debug("Trip {} has fewer than 2 valid locations, polyline cleared", trip.getId());
-            return;
-        }
-
-        List<LatLng> routePoints = routeService.getFullRoutePoints(locations);
-        String encoded = PolylineCodec.encode(routePoints);
-
-        trip.setEncodedPolyline(encoded);
-        trip.setPolylineUpdatedAt(Instant.now());
-        tripRepository.save(trip);
-
-        log.info(
-                "Polyline fully recomputed for trip {}. Locations: {}, Points: {}",
-                trip.getId(),
-                locations.size(),
-                routePoints.size());
+        polylineComputer.computeAndApply(trip, locations, tripRepository::save);
     }
 }

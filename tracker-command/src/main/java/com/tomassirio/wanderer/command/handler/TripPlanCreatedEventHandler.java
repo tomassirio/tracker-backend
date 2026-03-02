@@ -2,7 +2,11 @@ package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.TripPlanCreatedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
+import com.tomassirio.wanderer.command.service.TripPlanPolylineService;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -16,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TripPlanCreatedEventHandler implements EventHandler<TripPlanCreatedEvent> {
 
     private final TripPlanRepository tripPlanRepository;
+    private final TripPlanPolylineService tripPlanPolylineService;
 
     @Override
     @EventListener
@@ -34,11 +39,15 @@ public class TripPlanCreatedEventHandler implements EventHandler<TripPlanCreated
                         .endDate(event.getEndDate())
                         .startLocation(event.getStartLocation())
                         .endLocation(event.getEndLocation())
-                        .waypoints(event.getWaypoints())
-                        .metadata(event.getMetadata())
+                        .waypoints(
+                                Optional.ofNullable(event.getWaypoints()).orElseGet(ArrayList::new))
+                        .metadata(Optional.ofNullable(event.getMetadata()).orElseGet(HashMap::new))
                         .build();
 
         tripPlanRepository.save(tripPlan);
         log.info("Trip plan created and persisted: {}", event.getTripPlanId());
+
+        // Compute polyline from planned route (start → waypoints → end)
+        tripPlanPolylineService.computePolyline(event.getTripPlanId());
     }
 }

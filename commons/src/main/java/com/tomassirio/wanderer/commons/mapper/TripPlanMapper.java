@@ -30,5 +30,7 @@ public interface TripPlanMapper {
             expression =
                     "java(tripPlanDTO.userId() != null ? java.util.UUID.fromString(tripPlanDTO.userId()) : null)")
     @Mapping(target = "metadata", ignore = true)
+    @Mapping(target = "encodedPolyline", ignore = true)
+    @Mapping(target = "polylineUpdatedAt", ignore = true)
     TripPlan toEntity(TripPlanDTO tripPlanDTO);
 }

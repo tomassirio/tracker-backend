@@ -10,6 +10,7 @@ import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.RouteService;
 import com.tomassirio.wanderer.command.service.helper.PolylineCodec;
+import com.tomassirio.wanderer.command.service.helper.PolylineComputer;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
@@ -18,10 +19,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -34,7 +35,15 @@ class PolylineServiceImplTest {
 
     @Mock private RouteService routeService;
 
-    @InjectMocks private PolylineServiceImpl polylineService;
+    private PolylineServiceImpl polylineService;
+
+    @BeforeEach
+    void setUp() {
+        PolylineComputer polylineComputer = new PolylineComputer(routeService);
+        polylineService =
+                new PolylineServiceImpl(
+                        tripRepository, tripUpdateRepository, routeService, polylineComputer);
+    }
 
     @Test
     void appendSegment_whenTripNotFound_shouldThrowEntityNotFoundException() {
