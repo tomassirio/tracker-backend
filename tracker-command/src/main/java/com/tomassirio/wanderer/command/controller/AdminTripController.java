@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.controller;
 import com.tomassirio.wanderer.command.controller.request.PromoteTripRequest;
 import com.tomassirio.wanderer.command.service.PolylineService;
 import com.tomassirio.wanderer.command.service.PromotedTripService;
+import com.tomassirio.wanderer.command.service.TripUpdateGeocodingService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
 import com.tomassirio.wanderer.commons.security.CurrentUserId;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,6 +46,7 @@ public class AdminTripController {
 
     private final PolylineService polylineService;
     private final PromotedTripService promotedTripService;
+    private final TripUpdateGeocodingService tripUpdateGeocodingService;
 
     /**
      * Recomputes the encoded polyline for a trip from all its trip updates.
@@ -81,6 +83,44 @@ public class AdminTripController {
                     UUID tripId) {
         log.info("Admin recomputing polyline for trip {}", tripId);
         polylineService.recomputePolyline(tripId);
+        return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Recomputes the reverse-geocoded city and country for every trip update belonging to a trip.
+     *
+     * <p>This is an admin-only maintenance operation, useful when geocoding data is missing or
+     * needs to be refreshed (e.g. after a provider change or after backfilling existing records).
+     *
+     * @param tripId the ID of the trip whose updates should be re-geocoded
+     * @return 204 No Content on success
+     */
+    @PostMapping(ApiConstants.ADMIN_TRIP_RECOMPUTE_GEOCODING_ENDPOINT)
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(
+            summary = "Recompute trip update geocoding",
+            description =
+                    "Re-runs reverse geocoding on every trip update for the given trip, "
+                            + "updating only city and country. Admin-only maintenance endpoint.")
+    @ApiResponse(responseCode = "204", description = "Geocoding recomputed successfully")
+    @ApiResponse(
+            responseCode = "404",
+            description = "Trip not found",
+            content = @Content(schema = @Schema(implementation = Map.class)))
+    @ApiResponse(
+            responseCode = "401",
+            description = "Unauthorized - valid JWT required",
+            content = @Content)
+    @ApiResponse(
+            responseCode = "403",
+            description = "Forbidden - ADMIN role required",
+            content = @Content)
+    public ResponseEntity<Void> recomputeGeocoding(
+            @Parameter(description = "Trip ID to recompute geocoding for", required = true)
+                    @PathVariable
+                    UUID tripId) {
+        log.info("Admin recomputing geocoding for trip {}", tripId);
+        tripUpdateGeocodingService.recomputeGeocoding(tripId);
         return ResponseEntity.noContent().build();
     }
 
