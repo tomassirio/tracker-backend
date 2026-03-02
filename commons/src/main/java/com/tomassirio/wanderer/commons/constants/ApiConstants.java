@@ -63,6 +63,7 @@ public final class ApiConstants {
             "/{tripId}/recompute-polyline";
     public static final String ADMIN_TRIP_RECOMPUTE_GEOCODING_ENDPOINT =
             "/{tripId}/recompute-geocoding";
+    public static final String ADMIN_TRIPS_STATS_ENDPOINT = "/stats";
     public static final String ADMIN_TRIP_PROMOTE_ENDPOINT = "/{tripId}/promote";
     public static final String ADMIN_TRIP_DONATION_LINK_ENDPOINT = "/{tripId}/promote";
     public static final String ADMIN_TRIP_PLANS_PATH = ADMIN_PATH + "/trip-plans";

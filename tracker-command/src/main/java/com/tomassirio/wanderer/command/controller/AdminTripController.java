@@ -41,7 +41,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(value = ApiConstants.ADMIN_TRIPS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 @Slf4j
-@Tag(name = "Admin Trips", description = "Admin-only endpoints for trip maintenance and promotion")
+@Tag(
+        name = "Admin Trip Maintenance",
+        description =
+                "Admin-only endpoints for trip data maintenance"
+                        + " (polyline, geocoding, promotion)")
 public class AdminTripController {
 
     private final PolylineService polylineService;

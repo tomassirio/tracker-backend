@@ -7,6 +7,7 @@ import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripMaintenanceStatsDTO;
 import com.tomassirio.wanderer.commons.mapper.TripMapper;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
@@ -205,5 +206,56 @@ public class TripServiceImpl implements TripService {
                 trip.polylineUpdatedAt(),
                 trip.creationTimestamp(),
                 trip.enabled());
+    }
+
+    @Override
+    public TripMaintenanceStatsDTO getTripMaintenanceStats() {
+        List<Trip> trips = tripRepository.findAll();
+
+        long totalTrips = trips.size();
+        long tripsWithPolyline =
+                trips.stream()
+                        .filter(
+                                t ->
+                                        t.getEncodedPolyline() != null
+                                                && !t.getEncodedPolyline().isBlank())
+                        .count();
+        long tripsWithMultipleLocations =
+                trips.stream()
+                        .filter(t -> t.getTripUpdates() != null && t.getTripUpdates().size() >= 2)
+                        .count();
+        long tripsMissingPolyline =
+                trips.stream()
+                        .filter(
+                                t ->
+                                        t.getTripUpdates() != null
+                                                && t.getTripUpdates().size() >= 2
+                                                && (t.getEncodedPolyline() == null
+                                                        || t.getEncodedPolyline().isBlank()))
+                        .count();
+
+        long totalUpdates =
+                trips.stream()
+                        .mapToLong(t -> t.getTripUpdates() != null ? t.getTripUpdates().size() : 0)
+                        .sum();
+        long updatesWithGeocoding =
+                trips.stream()
+                        .flatMap(
+                                t ->
+                                        t.getTripUpdates() != null
+                                                ? t.getTripUpdates().stream()
+                                                : Stream.empty())
+                        .filter(u -> u.getCity() != null && !u.getCity().isBlank())
+                        .count();
+        long updatesMissingGeocoding = totalUpdates - updatesWithGeocoding;
+
+        return new TripMaintenanceStatsDTO(
+                totalTrips,
+                tripsWithPolyline,
+                tripsWithMultipleLocations,
+                tripsMissingPolyline,
+                totalUpdates,
+                updatesWithGeocoding,
+                updatesMissingGeocoding);
     }
 }
