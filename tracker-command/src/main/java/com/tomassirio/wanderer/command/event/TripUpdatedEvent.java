@@ -47,6 +47,8 @@ public class TripUpdatedEvent implements DomainEvent, Broadcastable {
                 .longitude(location != null ? location.getLon() : null)
                 .batteryLevel(batteryLevel)
                 .message(message)
+                .city(city)
+                .country(country)
                 .build();
     }
 }
