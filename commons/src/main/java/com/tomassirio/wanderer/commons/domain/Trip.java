@@ -24,7 +24,7 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Trip {
+public class Trip implements Polylineable {
 
     @Id private UUID id;
 

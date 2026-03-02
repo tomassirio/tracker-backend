@@ -12,8 +12,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,7 +27,7 @@ import org.hibernate.annotations.Type;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TripPlan {
+public class TripPlan implements Polylineable {
 
     @Id private UUID id;
 
@@ -71,11 +69,15 @@ public class TripPlan {
 
     @Type(JsonBinaryType.class)
     @Column(name = "waypoints", columnDefinition = "jsonb")
-    @Builder.Default
-    private List<GeoLocation> waypoints = new ArrayList<>();
+    private List<GeoLocation> waypoints;
 
     @Type(JsonBinaryType.class)
     @Column(name = "metadata", columnDefinition = "jsonb")
-    @Builder.Default
-    private Map<String, Object> metadata = new HashMap<>();
+    private Map<String, Object> metadata;
+
+    @Column(name = "encoded_polyline", columnDefinition = "TEXT")
+    private String encodedPolyline;
+
+    @Column(name = "polyline_updated_at")
+    private Instant polylineUpdatedAt;
 }

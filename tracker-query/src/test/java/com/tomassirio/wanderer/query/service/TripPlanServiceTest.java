@@ -237,6 +237,74 @@ class TripPlanServiceTest {
         verify(tripPlanRepository).findByUserId(userId);
     }
 
+    @Test
+    void getTripPlan_withPolylineData_shouldMapPolylineFieldsCorrectly() {
+        // Given
+        UUID planId = UUID.randomUUID();
+        Instant polylineUpdatedAt = Instant.now();
+        String encodedPolyline = "a~l~Fjk~uOwHJy@P??fHzR";
+
+        TripPlan tripPlan =
+                TripPlan.builder()
+                        .id(planId)
+                        .userId(TestEntityFactory.USER_ID)
+                        .name("Plan With Polyline")
+                        .planType(TripPlanType.MULTI_DAY)
+                        .startDate(LocalDate.now())
+                        .endDate(LocalDate.now().plusDays(7))
+                        .startLocation(TestEntityFactory.createGeoLocation())
+                        .endLocation(TestEntityFactory.createGeoLocation())
+                        .waypoints(List.of())
+                        .encodedPolyline(encodedPolyline)
+                        .polylineUpdatedAt(polylineUpdatedAt)
+                        .createdTimestamp(Instant.now())
+                        .build();
+
+        when(tripPlanRepository.findById(planId)).thenReturn(Optional.of(tripPlan));
+
+        // When
+        TripPlanDTO result = tripPlanService.getTripPlan(planId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.encodedPolyline()).isEqualTo(encodedPolyline);
+        assertThat(result.polylineUpdatedAt()).isEqualTo(polylineUpdatedAt);
+
+        verify(tripPlanRepository).findById(planId);
+    }
+
+    @Test
+    void getTripPlan_withoutPolylineData_shouldReturnNullPolylineFields() {
+        // Given
+        UUID planId = UUID.randomUUID();
+
+        TripPlan tripPlan =
+                TripPlan.builder()
+                        .id(planId)
+                        .userId(TestEntityFactory.USER_ID)
+                        .name("Plan Without Polyline")
+                        .planType(TripPlanType.SIMPLE)
+                        .startDate(LocalDate.now())
+                        .endDate(LocalDate.now().plusDays(3))
+                        .startLocation(TestEntityFactory.createGeoLocation())
+                        .endLocation(TestEntityFactory.createGeoLocation())
+                        .waypoints(List.of())
+                        .createdTimestamp(Instant.now())
+                        .build();
+
+        when(tripPlanRepository.findById(planId)).thenReturn(Optional.of(tripPlan));
+
+        // When
+        TripPlanDTO result = tripPlanService.getTripPlan(planId);
+
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.encodedPolyline()).isNull();
+        assertThat(result.polylineUpdatedAt()).isNull();
+
+        verify(tripPlanRepository).findById(planId);
+    }
+
     private TripPlan createTripPlan(UUID planId, String name, TripPlanType planType) {
         return TripPlan.builder()
                 .id(planId)
