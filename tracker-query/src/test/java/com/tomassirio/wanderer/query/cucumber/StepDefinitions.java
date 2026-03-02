@@ -40,6 +40,7 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -301,8 +302,10 @@ public class StepDefinitions {
                         .userId(owner.getId())
                         .planType(TripPlanType.SIMPLE)
                         .createdTimestamp(Instant.now())
-                        .startDate(java.time.LocalDate.now())
-                        .endDate(java.time.LocalDate.now().plusDays(7))
+                        .startDate(LocalDate.now())
+                        .endDate(LocalDate.now().plusDays(7))
+                        .waypoints(List.of())
+                        .metadata(Map.of())
                         .build();
         tripPlans.put(tripPlan.getId(), tripPlan);
         setLastCreatedTripPlanId(tripPlan.getId());

@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.command.event.TripPlanUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripPlanRepository;
 import com.tomassirio.wanderer.command.service.TripPlanMetadataProcessor;
+import com.tomassirio.wanderer.command.service.TripPlanPolylineService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
@@ -27,6 +28,7 @@ class TripPlanUpdatedEventHandlerTest {
 
     @Mock private TripPlanRepository tripPlanRepository;
     @Mock private TripPlanMetadataProcessor metadataProcessor;
+    @Mock private TripPlanPolylineService tripPlanPolylineService;
 
     @InjectMocks private TripPlanUpdatedEventHandler handler;
 
@@ -72,5 +74,8 @@ class TripPlanUpdatedEventHandlerTest {
         assertThat(existingPlan.getName()).isEqualTo("Updated Name");
         assertThat(existingPlan.getStartDate()).isEqualTo(newStartDate);
         assertThat(existingPlan.getEndDate()).isEqualTo(newEndDate);
+
+        // Verify polyline recomputation was triggered
+        verify(tripPlanPolylineService).computePolyline(tripPlanId);
     }
 }

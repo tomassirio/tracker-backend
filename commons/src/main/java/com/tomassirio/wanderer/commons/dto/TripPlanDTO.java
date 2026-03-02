@@ -16,4 +16,6 @@ public record TripPlanDTO(
         GeoLocation startLocation,
         GeoLocation endLocation,
         List<GeoLocation> waypoints,
+        String encodedPolyline,
+        Instant polylineUpdatedAt,
         Instant createdTimestamp) {}
