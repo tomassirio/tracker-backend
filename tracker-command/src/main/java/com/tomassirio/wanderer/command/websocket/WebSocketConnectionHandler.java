@@ -91,14 +91,9 @@ public class WebSocketConnectionHandler extends TextWebSocketHandler {
     @Override
     public void handleTransportError(WebSocketSession session, Throwable exception) {
         if (exception instanceof java.io.EOFException) {
-            log.warn(
-                    "WebSocket client disconnected abruptly: sessionId={}",
-                    session.getId());
+            log.warn("WebSocket client disconnected abruptly: sessionId={}", session.getId());
         } else {
-            log.error(
-                    "WebSocket transport error: sessionId={}",
-                    session.getId(),
-                    exception);
+            log.error("WebSocket transport error: sessionId={}", session.getId(), exception);
         }
         sessionManager.unregisterSession(session);
     }

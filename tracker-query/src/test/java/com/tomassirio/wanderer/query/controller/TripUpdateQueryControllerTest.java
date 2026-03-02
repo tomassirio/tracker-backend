@@ -246,6 +246,8 @@ class TripUpdateQueryControllerTest {
                         85,
                         "Boston",
                         new Reactions(),
+                        null,
+                        null,
                         Instant.now());
 
         TripUpdateDTO update2 =
@@ -256,6 +258,8 @@ class TripUpdateQueryControllerTest {
                         80,
                         "New York",
                         new Reactions(),
+                        null,
+                        null,
                         Instant.now());
 
         when(tripUpdateService.getTripUpdatesForTrip(tripId)).thenReturn(List.of(update1, update2));
@@ -284,6 +288,8 @@ class TripUpdateQueryControllerTest {
                 battery,
                 message,
                 new Reactions(),
+                null,
+                null,
                 Instant.now());
     }
 
@@ -298,6 +304,8 @@ class TripUpdateQueryControllerTest {
                 battery,
                 message,
                 new Reactions(),
+                null,
+                null,
                 timestamp);
     }
 }

@@ -3,10 +3,13 @@ package com.tomassirio.wanderer.command.config;
 import com.google.maps.GeoApiContext;
 import com.tomassirio.wanderer.command.config.properties.GoogleMapsProperties;
 import com.tomassirio.wanderer.command.service.DistanceCalculationStrategy;
+import com.tomassirio.wanderer.command.service.GeocodingService;
 import com.tomassirio.wanderer.command.service.RouteService;
 import com.tomassirio.wanderer.command.service.impl.GoogleDirectionsRouteStrategy;
+import com.tomassirio.wanderer.command.service.impl.GoogleGeocodingServiceImpl;
 import com.tomassirio.wanderer.command.service.impl.GoogleMapsDistanceStrategy;
 import com.tomassirio.wanderer.command.service.impl.HaversineDistanceStrategy;
+import com.tomassirio.wanderer.command.service.impl.NoOpGeocodingServiceImpl;
 import com.tomassirio.wanderer.command.service.impl.StraightLineRouteStrategy;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
@@ -95,6 +98,25 @@ public class GeoApiContextConfig {
         }
         log.info("Using straight-line fallback for route computation");
         return straightLine;
+    }
+
+    /**
+     * Selects the geocoding service based on whether the Google Maps API is available.
+     *
+     * <p>When the API is configured, uses {@link GoogleGeocodingServiceImpl} for reverse geocoding.
+     * Otherwise, uses a no-op implementation that always returns {@code null}.
+     *
+     * @param geoApiContext the Google Maps API context (nullable)
+     * @return the selected geocoding service
+     */
+    @Bean
+    public GeocodingService geocodingService(GeoApiContext geoApiContext) {
+        if (geoApiContext != null) {
+            log.info("Using Google Geocoding API for reverse geocoding");
+            return new GoogleGeocodingServiceImpl(geoApiContext);
+        }
+        log.info("Geocoding disabled — no API key configured");
+        return new NoOpGeocodingServiceImpl();
     }
 
     @PreDestroy

@@ -11,4 +11,6 @@ public record TripUpdateDTO(
         Integer battery,
         String message,
         Reactions reactions,
+        String city,
+        String country,
         Instant timestamp) {}

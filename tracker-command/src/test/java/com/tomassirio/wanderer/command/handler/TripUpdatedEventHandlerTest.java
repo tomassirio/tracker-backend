@@ -8,6 +8,7 @@ import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.AchievementService;
+import com.tomassirio.wanderer.command.service.GeocodingService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
@@ -28,6 +29,8 @@ class TripUpdatedEventHandlerTest {
     @Mock private TripUpdateRepository tripUpdateRepository;
 
     @Mock private AchievementService achievementCalculationService;
+
+    @Mock private GeocodingService geocodingService;
 
     @InjectMocks private TripUpdatedEventHandler handler;
 
@@ -52,6 +55,9 @@ class TripUpdatedEventHandlerTest {
                         .build();
 
         when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+        when(geocodingService.reverseGeocode(location))
+                .thenReturn(
+                        new GeocodingService.GeocodingResult("Santiago de Compostela", "Spain"));
 
         // When
         handler.handle(event);
@@ -66,9 +72,49 @@ class TripUpdatedEventHandlerTest {
         assertThat(saved.getLocation()).isEqualTo(location);
         assertThat(saved.getBattery()).isEqualTo(85);
         assertThat(saved.getMessage()).isEqualTo("Arrived at Santiago!");
+        assertThat(saved.getCity()).isEqualTo("Santiago de Compostela");
+        assertThat(saved.getCountry()).isEqualTo("Spain");
         assertThat(saved.getTimestamp()).isEqualTo(timestamp);
 
         // Verify achievement calculation was triggered
+        verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
+    }
+
+    @Test
+    void handle_whenGeocodingReturnsNull_shouldPersistWithoutCityCountry() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID tripUpdateId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(0.0).lon(0.0).build();
+        Instant timestamp = Instant.now();
+
+        Trip trip = Trip.builder().id(tripId).name("Camino").build();
+
+        TripUpdatedEvent event =
+                TripUpdatedEvent.builder()
+                        .tripUpdateId(tripUpdateId)
+                        .tripId(tripId)
+                        .location(location)
+                        .batteryLevel(50)
+                        .message("In the middle of nowhere")
+                        .timestamp(timestamp)
+                        .build();
+
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+        when(geocodingService.reverseGeocode(location)).thenReturn(null);
+
+        // When
+        handler.handle(event);
+
+        // Then
+        ArgumentCaptor<TripUpdate> captor = ArgumentCaptor.forClass(TripUpdate.class);
+        verify(tripUpdateRepository).save(captor.capture());
+
+        TripUpdate saved = captor.getValue();
+        assertThat(saved.getId()).isEqualTo(tripUpdateId);
+        assertThat(saved.getCity()).isNull();
+        assertThat(saved.getCountry()).isNull();
+
         verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
     }
 }

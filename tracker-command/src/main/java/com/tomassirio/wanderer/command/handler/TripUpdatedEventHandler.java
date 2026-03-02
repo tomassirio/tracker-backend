@@ -4,6 +4,7 @@ import com.tomassirio.wanderer.command.event.TripUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.AchievementService;
+import com.tomassirio.wanderer.command.service.GeocodingService;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
     private final TripRepository tripRepository;
     private final TripUpdateRepository tripUpdateRepository;
     private final AchievementService achievementCalculationService;
+    private final GeocodingService geocodingService;
 
     @Override
     @EventListener
@@ -39,6 +41,16 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
         // Use repository.getReferenceById() to get a proxy without loading the entity
         Trip trip = tripRepository.getReferenceById(event.getTripId());
 
+        // Reverse-geocode coordinates into city/country
+        String city = null;
+        String country = null;
+        GeocodingService.GeocodingResult geocodingResult =
+                geocodingService.reverseGeocode(event.getLocation());
+        if (geocodingResult != null) {
+            city = geocodingResult.city();
+            country = geocodingResult.country();
+        }
+
         TripUpdate tripUpdate =
                 TripUpdate.builder()
                         .id(event.getTripUpdateId())
@@ -46,6 +58,8 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
                         .location(event.getLocation())
                         .battery(event.getBatteryLevel())
                         .message(event.getMessage())
+                        .city(city)
+                        .country(country)
                         .timestamp(event.getTimestamp())
                         .build();
 
