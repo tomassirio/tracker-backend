@@ -245,7 +245,12 @@ public class TripServiceImpl implements TripService {
                                         t.getTripUpdates() != null
                                                 ? t.getTripUpdates().stream()
                                                 : Stream.empty())
-                        .filter(u -> u.getCity() != null && !u.getCity().isBlank())
+                        .filter(
+                                u ->
+                                        u.getCity() != null
+                                                && !u.getCity().isBlank()
+                                                && u.getCountry() != null
+                                                && !u.getCountry().isBlank())
                         .count();
         long updatesMissingGeocoding = totalUpdates - updatesWithGeocoding;
 
