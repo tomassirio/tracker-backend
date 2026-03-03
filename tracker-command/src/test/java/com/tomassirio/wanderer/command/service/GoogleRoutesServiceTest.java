@@ -3,7 +3,7 @@ package com.tomassirio.wanderer.command.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.maps.model.LatLng;
-import com.tomassirio.wanderer.command.service.impl.StraightLineRouteStrategy;
+import com.tomassirio.wanderer.command.service.impl.strategy.StraightLineRouteStrategy;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;

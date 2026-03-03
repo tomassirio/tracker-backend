@@ -1,58 +1,37 @@
 package com.tomassirio.wanderer.command.service.impl;
 
+import com.tomassirio.wanderer.command.client.GoogleWeatherClient;
 import com.tomassirio.wanderer.command.service.WeatherService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.WeatherCondition;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.client.RestClient;
 
 /**
- * Weather service implementation that calls the Google Weather API (v1) to retrieve current
+ * Weather service implementation that uses the {@link GoogleWeatherClient} to retrieve current
  * conditions at a given location.
  *
- * <p>Uses the {@code currentConditions:lookup} endpoint and extracts the temperature (Celsius) and
- * the weather condition type from the response, mapping it to our {@link WeatherCondition} enum.
+ * <p>Extracts the temperature (Celsius) and weather condition type from the response, mapping it to
+ * our {@link WeatherCondition} enum.
  *
  * <p>Returns {@code null} on any API or parsing failure so that callers can gracefully degrade.
- *
- * @see <a href="https://developers.google.com/maps/documentation/weather/current-conditions">Google
- *     Weather API</a>
  */
 @Slf4j
 @RequiredArgsConstructor
 public class GoogleWeatherServiceImpl implements WeatherService {
 
-    private static final String WEATHER_API_URL =
-            "https://weather.googleapis.com/v1/currentConditions:lookup";
-
-    private final String apiKey;
-    private final RestClient restClient;
+    private final GoogleWeatherClient weatherClient;
 
     @Override
-    @SuppressWarnings("unchecked")
     public WeatherResult lookupCurrentWeather(GeoLocation location) {
         if (location == null || location.getLat() == null || location.getLon() == null) {
             return null;
         }
 
         try {
-            Map<String, Object> requestBody =
-                    Map.of(
-                            "location",
-                            Map.of(
-                                    "latitude", location.getLat(),
-                                    "longitude", location.getLon()));
-
             Map<String, Object> response =
-                    restClient
-                            .post()
-                            .uri(WEATHER_API_URL)
-                            .header("X-Goog-Api-Key", apiKey)
-                            .body(requestBody)
-                            .retrieve()
-                            .body(Map.class);
+                    weatherClient.getCurrentConditions(location.getLat(), location.getLon());
 
             if (response == null) {
                 log.debug(
@@ -64,16 +43,11 @@ public class GoogleWeatherServiceImpl implements WeatherService {
 
             return extractWeatherResult(response);
         } catch (Exception e) {
-            String errorMsg = e.getMessage();
-            // Truncate long error messages (e.g. full HTML responses) to avoid log noise
-            if (errorMsg != null && errorMsg.length() > 200) {
-                errorMsg = errorMsg.substring(0, 200) + "...";
-            }
             log.warn(
                     "Weather lookup failed for ({}, {}): {}",
                     location.getLat(),
                     location.getLon(),
-                    errorMsg);
+                    weatherClient.sanitize(e.getMessage()));
             return null;
         }
     }

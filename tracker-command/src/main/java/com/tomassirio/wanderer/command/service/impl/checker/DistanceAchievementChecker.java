@@ -1,9 +1,8 @@
-package com.tomassirio.wanderer.command.service.impl;
+package com.tomassirio.wanderer.command.service.impl.checker;
 
 import com.google.maps.model.LatLng;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.DistanceCalculationStrategy;
-import com.tomassirio.wanderer.command.service.TripAchievementChecker;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;

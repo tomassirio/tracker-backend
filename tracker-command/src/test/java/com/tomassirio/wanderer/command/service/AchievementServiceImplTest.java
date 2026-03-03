@@ -10,7 +10,9 @@ import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
 import com.tomassirio.wanderer.command.repository.AchievementRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserAchievementRepository;
-import com.tomassirio.wanderer.command.service.impl.AchievementCalculationService;
+import com.tomassirio.wanderer.command.service.impl.AchievementServiceImpl;
+import com.tomassirio.wanderer.command.service.impl.checker.SocialAchievementChecker;
+import com.tomassirio.wanderer.command.service.impl.checker.TripAchievementChecker;
 import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -25,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
-class AchievementCalculationServiceTest {
+class AchievementServiceImplTest {
 
     @Mock private TripRepository tripRepository;
 
@@ -39,11 +41,11 @@ class AchievementCalculationServiceTest {
 
     @Mock private SocialAchievementChecker socialChecker;
 
-    private AchievementCalculationService service;
+    private AchievementServiceImpl service;
 
     private void initService() {
         service =
-                new AchievementCalculationService(
+                new AchievementServiceImpl(
                         tripRepository,
                         userAchievementRepository,
                         achievementRepository,
@@ -139,7 +141,7 @@ class AchievementCalculationServiceTest {
                 };
 
         service =
-                new AchievementCalculationService(
+                new AchievementServiceImpl(
                         tripRepository,
                         userAchievementRepository,
                         achievementRepository,

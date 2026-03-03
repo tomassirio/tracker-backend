@@ -3,7 +3,7 @@ package com.tomassirio.wanderer.command.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.maps.model.LatLng;
-import com.tomassirio.wanderer.command.service.impl.HaversineDistanceStrategy;
+import com.tomassirio.wanderer.command.service.impl.strategy.HaversineDistanceStrategy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;

@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.service;
+package com.tomassirio.wanderer.command.service.impl.checker;
 
 import com.tomassirio.wanderer.commons.domain.Trip;
 

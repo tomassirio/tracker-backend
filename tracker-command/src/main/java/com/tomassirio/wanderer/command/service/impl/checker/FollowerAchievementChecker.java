@@ -1,7 +1,6 @@
-package com.tomassirio.wanderer.command.service.impl;
+package com.tomassirio.wanderer.command.service.impl.checker;
 
 import com.tomassirio.wanderer.command.repository.UserFollowRepository;
-import com.tomassirio.wanderer.command.service.SocialAchievementChecker;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import java.util.List;
 import java.util.UUID;

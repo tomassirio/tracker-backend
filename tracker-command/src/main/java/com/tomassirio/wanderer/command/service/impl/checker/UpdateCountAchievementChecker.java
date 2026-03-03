@@ -1,7 +1,6 @@
-package com.tomassirio.wanderer.command.service.impl;
+package com.tomassirio.wanderer.command.service.impl.checker;
 
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
-import com.tomassirio.wanderer.command.service.TripAchievementChecker;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import java.util.List;

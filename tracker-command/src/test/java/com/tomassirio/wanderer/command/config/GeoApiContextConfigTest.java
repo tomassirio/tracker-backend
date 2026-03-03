@@ -6,10 +6,10 @@ import com.google.maps.GeoApiContext;
 import com.tomassirio.wanderer.command.config.properties.GoogleMapsProperties;
 import com.tomassirio.wanderer.command.service.DistanceCalculationStrategy;
 import com.tomassirio.wanderer.command.service.RouteService;
-import com.tomassirio.wanderer.command.service.impl.GoogleDirectionsRouteStrategy;
-import com.tomassirio.wanderer.command.service.impl.GoogleMapsDistanceStrategy;
-import com.tomassirio.wanderer.command.service.impl.HaversineDistanceStrategy;
-import com.tomassirio.wanderer.command.service.impl.StraightLineRouteStrategy;
+import com.tomassirio.wanderer.command.service.impl.strategy.GoogleDirectionsRouteStrategy;
+import com.tomassirio.wanderer.command.service.impl.strategy.GoogleMapsDistanceStrategy;
+import com.tomassirio.wanderer.command.service.impl.strategy.HaversineDistanceStrategy;
+import com.tomassirio.wanderer.command.service.impl.strategy.StraightLineRouteStrategy;
 import org.junit.jupiter.api.Test;
 
 class GeoApiContextConfigTest {

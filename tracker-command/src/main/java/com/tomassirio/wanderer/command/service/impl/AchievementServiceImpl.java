@@ -4,10 +4,10 @@ import com.tomassirio.wanderer.command.event.AchievementUnlockedEvent;
 import com.tomassirio.wanderer.command.repository.AchievementRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserAchievementRepository;
-import com.tomassirio.wanderer.command.service.AchievementChecker;
+import com.tomassirio.wanderer.command.service.impl.checker.AchievementChecker;
 import com.tomassirio.wanderer.command.service.AchievementService;
-import com.tomassirio.wanderer.command.service.SocialAchievementChecker;
-import com.tomassirio.wanderer.command.service.TripAchievementChecker;
+import com.tomassirio.wanderer.command.service.impl.checker.SocialAchievementChecker;
+import com.tomassirio.wanderer.command.service.impl.checker.TripAchievementChecker;
 import com.tomassirio.wanderer.commons.domain.Achievement;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class AchievementCalculationService implements AchievementService {
+public class AchievementServiceImpl implements AchievementService {
 
     private final TripRepository tripRepository;
     private final UserAchievementRepository userAchievementRepository;
