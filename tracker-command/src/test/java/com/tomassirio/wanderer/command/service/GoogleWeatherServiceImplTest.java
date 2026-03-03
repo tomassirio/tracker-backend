@@ -76,7 +76,7 @@ class GoogleWeatherServiceImplTest {
     void lookupCurrentWeather_whenApiThrows_shouldReturnNull() {
         GeoLocation loc = GeoLocation.builder().lat(42.88).lon(-8.54).build();
         when(restClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(any(String.class), any(Object[].class)))
+        when(requestBodyUriSpec.uri(any(String.class)))
                 .thenThrow(new RuntimeException("timeout"));
         assertThat(service.lookupCurrentWeather(loc)).isNull();
     }
@@ -116,7 +116,8 @@ class GoogleWeatherServiceImplTest {
     @SuppressWarnings("unchecked")
     private void stubRestClientChain(Map<String, Object> responseBody) {
         when(restClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(any(String.class), any(Object[].class)))
+        when(requestBodyUriSpec.uri(any(String.class))).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(any(String.class), any(String[].class)))
                 .thenReturn(requestBodySpec);
         when(requestBodySpec.body(any(Object.class))).thenReturn(requestBodySpec);
         when(requestBodySpec.retrieve()).thenReturn(responseSpec);

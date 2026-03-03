@@ -48,7 +48,8 @@ public class GoogleWeatherServiceImpl implements WeatherService {
             Map<String, Object> response =
                     restClient
                             .post()
-                            .uri(WEATHER_API_URL + "?key={key}", apiKey)
+                            .uri(WEATHER_API_URL)
+                            .header("X-Goog-Api-Key", apiKey)
                             .body(requestBody)
                             .retrieve()
                             .body(Map.class);
@@ -63,11 +64,16 @@ public class GoogleWeatherServiceImpl implements WeatherService {
 
             return extractWeatherResult(response);
         } catch (Exception e) {
+            String errorMsg = e.getMessage();
+            // Truncate long error messages (e.g. full HTML responses) to avoid log noise
+            if (errorMsg != null && errorMsg.length() > 200) {
+                errorMsg = errorMsg.substring(0, 200) + "...";
+            }
             log.warn(
                     "Weather lookup failed for ({}, {}): {}",
                     location.getLat(),
                     location.getLon(),
-                    e.getMessage());
+                    errorMsg);
             return null;
         }
     }
