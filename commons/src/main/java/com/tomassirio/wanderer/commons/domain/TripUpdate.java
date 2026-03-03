@@ -47,6 +47,12 @@ public class TripUpdate {
     @Column(name = "reactions", columnDefinition = "jsonb")
     private Reactions reactions;
 
+    @Column(name = "city")
+    private String city;
+
+    @Column(name = "country")
+    private String country;
+
     @NotNull
     @Column(nullable = false)
     private Instant timestamp;

@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.google.maps.model.LatLng;
+import com.tomassirio.wanderer.command.event.PolylineUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.RouteService;
@@ -25,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 @ExtendWith(MockitoExtension.class)
 class PolylineServiceImplTest {
@@ -35,6 +37,8 @@ class PolylineServiceImplTest {
 
     @Mock private RouteService routeService;
 
+    @Mock private ApplicationEventPublisher eventPublisher;
+
     private PolylineServiceImpl polylineService;
 
     @BeforeEach
@@ -42,7 +46,11 @@ class PolylineServiceImplTest {
         PolylineComputer polylineComputer = new PolylineComputer(routeService);
         polylineService =
                 new PolylineServiceImpl(
-                        tripRepository, tripUpdateRepository, routeService, polylineComputer);
+                        tripRepository,
+                        tripUpdateRepository,
+                        routeService,
+                        polylineComputer,
+                        eventPublisher);
     }
 
     @Test
@@ -82,6 +90,13 @@ class PolylineServiceImplTest {
         Trip saved = captor.getValue();
         assertThat(saved.getEncodedPolyline()).isNull();
         assertThat(saved.getPolylineUpdatedAt()).isNull();
+
+        // Verify polyline updated event was published
+        ArgumentCaptor<PolylineUpdatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(PolylineUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getTripId()).isEqualTo(tripId);
+        assertThat(eventCaptor.getValue().getEncodedPolyline()).isNull();
     }
 
     @Test
@@ -156,6 +171,13 @@ class PolylineServiceImplTest {
         // (2 existing + 2 new, duplicate skipped)
         List<LatLng> decodedResult = PolylineCodec.decode(saved.getEncodedPolyline());
         assertThat(decodedResult).hasSize(4);
+
+        // Verify polyline updated event was published with encoded polyline
+        ArgumentCaptor<PolylineUpdatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(PolylineUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getTripId()).isEqualTo(tripId);
+        assertThat(eventCaptor.getValue().getEncodedPolyline()).isNotNull();
     }
 
     @Test
@@ -262,6 +284,13 @@ class PolylineServiceImplTest {
 
         List<LatLng> decodedResult = PolylineCodec.decode(saved.getEncodedPolyline());
         assertThat(decodedResult).hasSize(3);
+
+        // Verify polyline updated event was published
+        ArgumentCaptor<PolylineUpdatedEvent> eventCaptor =
+                ArgumentCaptor.forClass(PolylineUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getTripId()).isEqualTo(tripId);
+        assertThat(eventCaptor.getValue().getEncodedPolyline()).isNotNull();
     }
 
     @Test

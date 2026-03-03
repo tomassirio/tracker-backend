@@ -20,6 +20,8 @@ public class TripUpdatedEvent implements DomainEvent, Broadcastable {
     private GeoLocation location;
     private Integer batteryLevel;
     private String message;
+    private String city;
+    private String country;
     private Instant timestamp;
 
     @Override
@@ -45,6 +47,8 @@ public class TripUpdatedEvent implements DomainEvent, Broadcastable {
                 .longitude(location != null ? location.getLon() : null)
                 .batteryLevel(batteryLevel)
                 .message(message)
+                .city(city)
+                .country(country)
                 .build();
     }
 }

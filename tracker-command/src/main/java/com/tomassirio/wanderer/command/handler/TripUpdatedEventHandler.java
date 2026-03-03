@@ -46,6 +46,8 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
                         .location(event.getLocation())
                         .battery(event.getBatteryLevel())
                         .message(event.getMessage())
+                        .city(event.getCity())
+                        .country(event.getCountry())
                         .timestamp(event.getTimestamp())
                         .build();
 

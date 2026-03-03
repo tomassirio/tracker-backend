@@ -61,6 +61,8 @@ class TripUpdateQueryControllerTest {
                 .andExpect(jsonPath("$.location.lon").value(-71.0589))
                 .andExpect(jsonPath("$.battery").value(85))
                 .andExpect(jsonPath("$.message").value("Great location!"))
+                .andExpect(jsonPath("$.city").value("Santiago de Compostela"))
+                .andExpect(jsonPath("$.country").value("Spain"))
                 .andExpect(jsonPath("$.timestamp").exists());
     }
 
@@ -134,6 +136,8 @@ class TripUpdateQueryControllerTest {
                 .andExpect(jsonPath("$[0].id").value(updateId1.toString()))
                 .andExpect(jsonPath("$[0].message").value("First update"))
                 .andExpect(jsonPath("$[0].battery").value(90))
+                .andExpect(jsonPath("$[0].city").value("Santiago de Compostela"))
+                .andExpect(jsonPath("$[0].country").value("Spain"))
                 .andExpect(jsonPath("$[1].id").value(updateId2.toString()))
                 .andExpect(jsonPath("$[1].message").value("Second update"))
                 .andExpect(jsonPath("$[1].battery").value(85))
@@ -246,6 +250,8 @@ class TripUpdateQueryControllerTest {
                         85,
                         "Boston",
                         new Reactions(),
+                        null,
+                        null,
                         Instant.now());
 
         TripUpdateDTO update2 =
@@ -256,6 +262,8 @@ class TripUpdateQueryControllerTest {
                         80,
                         "New York",
                         new Reactions(),
+                        null,
+                        null,
                         Instant.now());
 
         when(tripUpdateService.getTripUpdatesForTrip(tripId)).thenReturn(List.of(update1, update2));
@@ -284,6 +292,8 @@ class TripUpdateQueryControllerTest {
                 battery,
                 message,
                 new Reactions(),
+                "Santiago de Compostela",
+                "Spain",
                 Instant.now());
     }
 
@@ -298,6 +308,8 @@ class TripUpdateQueryControllerTest {
                 battery,
                 message,
                 new Reactions(),
+                "Santiago de Compostela",
+                "Spain",
                 timestamp);
     }
 }

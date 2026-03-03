@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.tomassirio.wanderer.command.service.PolylineService;
 import com.tomassirio.wanderer.command.service.PromotedTripService;
+import com.tomassirio.wanderer.command.service.TripUpdateGeocodingService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
 import jakarta.persistence.EntityNotFoundException;
@@ -37,6 +38,8 @@ class AdminTripControllerTest {
     @Mock private PolylineService polylineService;
 
     @Mock private PromotedTripService promotedTripService;
+
+    @Mock private TripUpdateGeocodingService tripUpdateGeocodingService;
 
     @InjectMocks private AdminTripController adminTripController;
 
@@ -81,6 +84,43 @@ class AdminTripControllerTest {
                 .recomputePolyline(tripId);
 
         mockMvc.perform(post(ADMIN_TRIPS_URL + "/{tripId}/recompute-polyline", tripId))
+                .andExpect(status().isInternalServerError());
+    }
+
+    // ================================================================
+    // Recompute geocoding
+    // ================================================================
+
+    @Test
+    void recomputeGeocoding_shouldReturnNoContent() throws Exception {
+        UUID tripId = UUID.randomUUID();
+        doNothing().when(tripUpdateGeocodingService).recomputeGeocoding(tripId);
+
+        mockMvc.perform(post(ADMIN_TRIPS_URL + "/{tripId}/recompute-geocoding", tripId))
+                .andExpect(status().isNoContent());
+
+        verify(tripUpdateGeocodingService).recomputeGeocoding(tripId);
+    }
+
+    @Test
+    void recomputeGeocoding_whenTripNotFound_shouldReturnNotFound() throws Exception {
+        UUID tripId = UUID.randomUUID();
+        doThrow(new EntityNotFoundException("Trip not found: " + tripId))
+                .when(tripUpdateGeocodingService)
+                .recomputeGeocoding(tripId);
+
+        mockMvc.perform(post(ADMIN_TRIPS_URL + "/{tripId}/recompute-geocoding", tripId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void recomputeGeocoding_whenServiceFails_shouldReturnInternalServerError() throws Exception {
+        UUID tripId = UUID.randomUUID();
+        doThrow(new RuntimeException("Geocoding API unavailable"))
+                .when(tripUpdateGeocodingService)
+                .recomputeGeocoding(tripId);
+
+        mockMvc.perform(post(ADMIN_TRIPS_URL + "/{tripId}/recompute-geocoding", tripId))
                 .andExpect(status().isInternalServerError());
     }
 

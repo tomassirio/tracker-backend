@@ -51,6 +51,8 @@ class TripUpdateServiceTest {
         assertThat(result.location().getLon()).isEqualTo(TestEntityFactory.LONGITUDE);
         assertThat(result.battery()).isEqualTo(85);
         assertThat(result.message()).isEqualTo("Test update");
+        assertThat(result.city()).isEqualTo("Santiago de Compostela");
+        assertThat(result.country()).isEqualTo("Spain");
         assertThat(result.timestamp()).isNotNull();
 
         verify(tripUpdateRepository).findById(tripUpdateId);
@@ -188,6 +190,8 @@ class TripUpdateServiceTest {
         assertThat(dto.location()).isNotNull();
         assertThat(dto.battery()).isEqualTo(85);
         assertThat(dto.message()).isEqualTo("Test update");
+        assertThat(dto.city()).isEqualTo("Santiago de Compostela");
+        assertThat(dto.country()).isEqualTo("Spain");
         assertThat(dto.timestamp()).isNotNull();
     }
 }

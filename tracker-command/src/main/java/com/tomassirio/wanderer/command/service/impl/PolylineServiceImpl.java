@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.service.impl;
 
 import com.google.maps.model.LatLng;
+import com.tomassirio.wanderer.command.event.PolylineUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.TripUpdateRepository;
 import com.tomassirio.wanderer.command.service.PolylineService;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,6 +37,7 @@ public class PolylineServiceImpl implements PolylineService {
     private final TripUpdateRepository tripUpdateRepository;
     private final RouteService routeService;
     private final PolylineComputer polylineComputer;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     @Transactional
@@ -63,6 +66,7 @@ public class PolylineServiceImpl implements PolylineService {
             trip.setPolylineUpdatedAt(null);
             tripRepository.save(trip);
             log.debug("Trip {} has fewer than 2 valid locations, polyline cleared", tripId);
+            publishPolylineUpdatedEvent(tripId, null);
             return;
         }
 
@@ -89,6 +93,7 @@ public class PolylineServiceImpl implements PolylineService {
                     "Polyline incrementally updated for trip {}. Total points: {}",
                     tripId,
                     existingPoints.size());
+            publishPolylineUpdatedEvent(tripId, encoded);
         } else {
             // No existing polyline — full recompute
             recomputePolylineInternal(trip, updates);
@@ -112,5 +117,14 @@ public class PolylineServiceImpl implements PolylineService {
         List<GeoLocation> locations = updates.stream().map(TripUpdate::getLocation).toList();
 
         polylineComputer.computeAndApply(trip, locations, tripRepository::save);
+        publishPolylineUpdatedEvent(trip.getId(), trip.getEncodedPolyline());
+    }
+
+    private void publishPolylineUpdatedEvent(UUID tripId, String encodedPolyline) {
+        eventPublisher.publishEvent(
+                PolylineUpdatedEvent.builder()
+                        .tripId(tripId)
+                        .encodedPolyline(encodedPolyline)
+                        .build());
     }
 }

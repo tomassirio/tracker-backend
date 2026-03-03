@@ -48,6 +48,8 @@ class TripUpdatedEventHandlerTest {
                         .location(location)
                         .batteryLevel(85)
                         .message("Arrived at Santiago!")
+                        .city("Santiago de Compostela")
+                        .country("Spain")
                         .timestamp(timestamp)
                         .build();
 
@@ -66,9 +68,48 @@ class TripUpdatedEventHandlerTest {
         assertThat(saved.getLocation()).isEqualTo(location);
         assertThat(saved.getBattery()).isEqualTo(85);
         assertThat(saved.getMessage()).isEqualTo("Arrived at Santiago!");
+        assertThat(saved.getCity()).isEqualTo("Santiago de Compostela");
+        assertThat(saved.getCountry()).isEqualTo("Spain");
         assertThat(saved.getTimestamp()).isEqualTo(timestamp);
 
         // Verify achievement calculation was triggered
+        verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
+    }
+
+    @Test
+    void handle_whenGeocodingReturnsNull_shouldPersistWithoutCityCountry() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID tripUpdateId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(0.0).lon(0.0).build();
+        Instant timestamp = Instant.now();
+
+        Trip trip = Trip.builder().id(tripId).name("Camino").build();
+
+        TripUpdatedEvent event =
+                TripUpdatedEvent.builder()
+                        .tripUpdateId(tripUpdateId)
+                        .tripId(tripId)
+                        .location(location)
+                        .batteryLevel(50)
+                        .message("In the middle of nowhere")
+                        .timestamp(timestamp)
+                        .build();
+
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+
+        // When
+        handler.handle(event);
+
+        // Then
+        ArgumentCaptor<TripUpdate> captor = ArgumentCaptor.forClass(TripUpdate.class);
+        verify(tripUpdateRepository).save(captor.capture());
+
+        TripUpdate saved = captor.getValue();
+        assertThat(saved.getId()).isEqualTo(tripUpdateId);
+        assertThat(saved.getCity()).isNull();
+        assertThat(saved.getCountry()).isNull();
+
         verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
     }
 }

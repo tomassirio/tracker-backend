@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.query.service;
 
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripMaintenanceStatsDTO;
 import java.util.List;
 import java.util.UUID;
 
@@ -83,4 +84,12 @@ public interface TripService {
      * @return a list of {@link TripDTO} objects representing all available trips for the user
      */
     List<TripDTO> getAllAvailableTripsForUser(UUID userId);
+
+    /**
+     * Returns maintenance statistics for all trips in the system, including polyline coverage and
+     * geocoding coverage metrics.
+     *
+     * @return a {@link TripMaintenanceStatsDTO} containing the computed statistics
+     */
+    TripMaintenanceStatsDTO getTripMaintenanceStats();
 }
