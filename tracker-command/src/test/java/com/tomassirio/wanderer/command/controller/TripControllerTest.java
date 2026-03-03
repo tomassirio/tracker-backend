@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
-import com.tomassirio.wanderer.command.service.PromotedTripService;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
@@ -47,8 +46,6 @@ class TripControllerTest {
     private ObjectMapper objectMapper;
 
     @Mock private TripService tripService;
-
-    @Mock private PromotedTripService promotedTripService;
 
     @InjectMocks private TripController tripController;
 
@@ -391,81 +388,6 @@ class TripControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(visibility)))
                 .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void promoteTrip_whenAdminPromotesWithDonationLink_shouldReturnAccepted() throws Exception {
-        // Given
-        UUID tripId = UUID.randomUUID();
-        UUID promotedTripId = UUID.randomUUID();
-        String donationLink = "https://example.com/donate";
-
-        String requestBody = String.format("{\"donationLink\":\"%s\"}", donationLink);
-
-        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), eq(donationLink)))
-                .thenReturn(promotedTripId);
-
-        // When & Then
-        mockMvc.perform(
-                        post(TRIPS_BASE_URL + "/{id}/promote", tripId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
-                .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$").value(promotedTripId.toString()));
-    }
-
-    @Test
-    void promoteTrip_whenAdminPromotesWithoutDonationLink_shouldReturnAccepted() throws Exception {
-        // Given
-        UUID tripId = UUID.randomUUID();
-        UUID promotedTripId = UUID.randomUUID();
-
-        String requestBody = "{}";
-
-        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), eq(null)))
-                .thenReturn(promotedTripId);
-
-        // When & Then
-        mockMvc.perform(
-                        post(TRIPS_BASE_URL + "/{id}/promote", tripId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
-                .andExpect(status().isAccepted())
-                .andExpect(jsonPath("$").value(promotedTripId.toString()));
-    }
-
-    @Test
-    void promoteTrip_whenTripNotFound_shouldReturnNotFound() throws Exception {
-        // Given
-        UUID tripId = UUID.randomUUID();
-        String requestBody = "{\"donationLink\":\"https://example.com/donate\"}";
-
-        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), any()))
-                .thenThrow(new EntityNotFoundException("Trip not found"));
-
-        // When & Then
-        mockMvc.perform(
-                        post(TRIPS_BASE_URL + "/{id}/promote", tripId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void promoteTrip_whenTripAlreadyPromoted_shouldReturnConflict() throws Exception {
-        // Given
-        UUID tripId = UUID.randomUUID();
-        String requestBody = "{\"donationLink\":\"https://example.com/donate\"}";
-
-        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), any()))
-                .thenThrow(new IllegalStateException("Trip is already promoted"));
-
-        // When & Then
-        mockMvc.perform(
-                        post(TRIPS_BASE_URL + "/{id}/promote", tripId)
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content(requestBody))
-                .andExpect(status().isConflict());
     }
 
     @Test

@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-add-city-country-to-trip-updates
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: trip_updates
+                columnName: city
+      changes:
+        - addColumn:
+            tableName: trip_updates
+            columns:
+              - column:
+                  name: city
+                  type: varchar(255)
+              - column:
+                  name: country
+                  type: varchar(255)
+      rollback:
+        - dropColumn:
+            tableName: trip_updates
+            columnName: city
+        - dropColumn:
+            tableName: trip_updates
+            columnName: country

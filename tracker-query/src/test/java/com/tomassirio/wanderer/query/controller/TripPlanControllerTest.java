@@ -94,6 +94,8 @@ class TripPlanControllerTest {
                         waypoint1,
                         waypoint3,
                         List.of(waypoint1, waypoint2, waypoint3),
+                        null,
+                        null,
                         Instant.now());
 
         when(tripPlanService.getTripPlan(planId)).thenReturn(tripPlan);
@@ -216,6 +218,8 @@ class TripPlanControllerTest {
                         new GeoLocation(40.7128, -74.0060),
                         new GeoLocation(34.0522, -118.2437),
                         List.of(),
+                        null,
+                        null,
                         Instant.now());
 
         when(tripPlanService.getTripPlan(planId)).thenReturn(tripPlan);
@@ -249,6 +253,8 @@ class TripPlanControllerTest {
                         startLocation,
                         endLocation,
                         List.of(),
+                        null,
+                        null,
                         Instant.now());
 
         when(tripPlanService.getTripPlan(planId)).thenReturn(tripPlan);
@@ -276,6 +282,36 @@ class TripPlanControllerTest {
                 .andExpect(jsonPath("$.planType").value("SIMPLE"));
     }
 
+    @Test
+    void getTripPlan_withPolylineData_shouldReturnPolylineInResponse() throws Exception {
+        // Given
+        UUID planId = UUID.randomUUID();
+        Instant polylineUpdatedAt = Instant.parse("2026-03-01T14:30:00Z");
+
+        TripPlanDTO tripPlan =
+                new TripPlanDTO(
+                        planId.toString(),
+                        USER_ID.toString(),
+                        "Polyline Plan",
+                        TripPlanType.MULTI_DAY,
+                        LocalDate.now(),
+                        LocalDate.now().plusDays(7),
+                        new GeoLocation(42.88, -8.54),
+                        new GeoLocation(43.01, -8.55),
+                        List.of(),
+                        "a~l~Fjk~uOwHJy@P",
+                        polylineUpdatedAt,
+                        Instant.now());
+
+        when(tripPlanService.getTripPlan(planId)).thenReturn(tripPlan);
+
+        // When & Then
+        mockMvc.perform(get(TRIP_PLANS_BASE_URL + "/{planId}", planId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.encodedPolyline").value("a~l~Fjk~uOwHJy@P"))
+                .andExpect(jsonPath("$.polylineUpdatedAt").exists());
+    }
+
     private TripPlanDTO createTripPlanDTO(UUID planId, String name, TripPlanType planType) {
         return new TripPlanDTO(
                 planId.toString(),
@@ -287,6 +323,8 @@ class TripPlanControllerTest {
                 new GeoLocation(0.0, 0.0),
                 new GeoLocation(0.0, 0.0),
                 List.of(),
+                null,
+                null,
                 Instant.now());
     }
 }

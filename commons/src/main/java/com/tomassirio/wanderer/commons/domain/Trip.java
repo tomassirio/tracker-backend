@@ -24,7 +24,7 @@ import org.hibernate.annotations.SQLRestriction;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Trip {
+public class Trip implements Polylineable {
 
     @Id private UUID id;
 
@@ -49,6 +49,12 @@ public class Trip {
 
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<TripUpdate> tripUpdates;
+
+    @Column(name = "encoded_polyline", columnDefinition = "TEXT")
+    private String encodedPolyline;
+
+    @Column(name = "polyline_updated_at")
+    private Instant polylineUpdatedAt;
 
     @NotNull
     @Column(name = "creation_timestamp", nullable = false)

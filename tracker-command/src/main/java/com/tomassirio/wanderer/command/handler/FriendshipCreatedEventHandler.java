@@ -2,7 +2,7 @@ package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
 import com.tomassirio.wanderer.command.repository.FriendshipRepository;
-import com.tomassirio.wanderer.command.service.AchievementCalculationService;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.Friendship;
 import java.time.Instant;
 import java.util.UUID;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FriendshipCreatedEventHandler implements EventHandler<FriendshipCreatedEvent> {
 
     private final FriendshipRepository friendshipRepository;
-    private final AchievementCalculationService achievementCalculationService;
+    private final AchievementService achievementCalculationService;
 
     @Override
     @EventListener

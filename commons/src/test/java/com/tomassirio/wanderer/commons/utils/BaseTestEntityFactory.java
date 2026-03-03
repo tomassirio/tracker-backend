@@ -46,6 +46,8 @@ public class BaseTestEntityFactory {
                 .battery(85)
                 .message("Test update")
                 .reactions(new Reactions())
+                .city("Santiago de Compostela")
+                .country("Spain")
                 .timestamp(Instant.now())
                 .build();
     }

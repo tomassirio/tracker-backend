@@ -18,9 +18,13 @@ public class CommentReactionEvent implements DomainEvent, Broadcastable {
     private String reactionType;
     private UUID userId;
     private boolean added; // true for added, false for removed
+    private String previousReactionType; // Set when replacing a reaction
 
     @Override
     public String getEventType() {
+        if (previousReactionType != null) {
+            return WebSocketEventType.COMMENT_REACTION_REPLACED;
+        }
         return added
                 ? WebSocketEventType.COMMENT_REACTION_ADDED
                 : WebSocketEventType.COMMENT_REACTION_REMOVED;
@@ -38,11 +42,17 @@ public class CommentReactionEvent implements DomainEvent, Broadcastable {
 
     @Override
     public Object toWebSocketPayload() {
-        return CommentReactionPayload.builder()
-                .tripId(tripId)
-                .commentId(commentId)
-                .reactionType(reactionType)
-                .userId(userId)
-                .build();
+        CommentReactionPayload.CommentReactionPayloadBuilder builder =
+                CommentReactionPayload.builder()
+                        .tripId(tripId)
+                        .commentId(commentId)
+                        .reactionType(reactionType)
+                        .userId(userId);
+
+        if (previousReactionType != null) {
+            builder.previousReactionType(previousReactionType);
+        }
+
+        return builder.build();
     }
 }

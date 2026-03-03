@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.websocket.payload;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.tomassirio.wanderer.commons.domain.WeatherCondition;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,4 +21,6 @@ public class TripUpdatedPayload {
     private String message;
     private String city;
     private String country;
+    private Double temperatureCelsius;
+    private WeatherCondition weatherCondition;
 }

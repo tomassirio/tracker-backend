@@ -3,15 +3,18 @@ package com.tomassirio.wanderer.command.service.impl;
 import com.tomassirio.wanderer.command.controller.request.CommentCreationRequest;
 import com.tomassirio.wanderer.command.event.CommentAddedEvent;
 import com.tomassirio.wanderer.command.event.CommentReactionEvent;
+import com.tomassirio.wanderer.command.repository.CommentReactionRepository;
 import com.tomassirio.wanderer.command.repository.CommentRepository;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.CommentService;
 import com.tomassirio.wanderer.commons.domain.Comment;
+import com.tomassirio.wanderer.commons.domain.CommentReaction;
 import com.tomassirio.wanderer.commons.domain.ReactionType;
 import com.tomassirio.wanderer.commons.domain.User;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +31,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+    private final CommentReactionRepository commentReactionRepository;
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
@@ -91,7 +95,51 @@ public class CommentServiceImpl implements CommentService {
                         .findById(commentId)
                         .orElseThrow(() -> new EntityNotFoundException("Comment not found"));
 
-        // Publish event - persistence handler will update DB
+        // Check if user already has a reaction on this comment
+        Optional<CommentReaction> existingReaction =
+                commentReactionRepository.findByCommentIdAndUserId(commentId, userId);
+
+        if (existingReaction.isPresent()) {
+            CommentReaction existing = existingReaction.get();
+            if (existing.getReactionType() == reactionType) {
+                // Same reaction type - reject
+                log.warn(
+                        "User {} already has reaction {} on comment {}",
+                        userId,
+                        reactionType,
+                        commentId);
+                throw new IllegalStateException("User already has this reaction on the comment");
+            } else {
+                // Different reaction type - replace old with new (automatic replacement)
+                log.info(
+                        "User {} changing reaction on comment {} from {} to {}",
+                        userId,
+                        commentId,
+                        existing.getReactionType(),
+                        reactionType);
+
+                // Publish single REPLACED event with both old and new reaction types
+                eventPublisher.publishEvent(
+                        CommentReactionEvent.builder()
+                                .tripId(comment.getTrip().getId())
+                                .commentId(commentId)
+                                .reactionType(reactionType.name())
+                                .previousReactionType(existing.getReactionType().name())
+                                .userId(userId)
+                                .added(true) // Still marked as added for the new reaction
+                                .build());
+
+                log.info(
+                        "Successfully replaced reaction {} with {} for comment {}",
+                        existing.getReactionType(),
+                        reactionType,
+                        commentId);
+
+                return commentId;
+            }
+        }
+
+        // No existing reaction - publish add event for new reaction
         eventPublisher.publishEvent(
                 CommentReactionEvent.builder()
                         .tripId(comment.getTrip().getId())

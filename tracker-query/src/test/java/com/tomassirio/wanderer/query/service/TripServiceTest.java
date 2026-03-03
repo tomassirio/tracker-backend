@@ -9,9 +9,11 @@ import static org.mockito.Mockito.when;
 import com.tomassirio.wanderer.commons.domain.Friendship;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
+import com.tomassirio.wanderer.commons.domain.TripUpdate;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import com.tomassirio.wanderer.commons.domain.UserFollow;
 import com.tomassirio.wanderer.commons.dto.TripDTO;
+import com.tomassirio.wanderer.commons.dto.TripMaintenanceStatsDTO;
 import com.tomassirio.wanderer.query.repository.FriendshipRepository;
 import com.tomassirio.wanderer.query.repository.TripRepository;
 import com.tomassirio.wanderer.query.repository.UserFollowRepository;
@@ -1034,5 +1036,106 @@ class TripServiceTest {
 
         verify(friendshipRepository).findByUserId(userId);
         verify(tripRepository).findAllAvailableTripsForUser(userId, Collections.emptyList());
+    }
+
+    // ========================================================================
+    // getTripMaintenanceStats
+    // ========================================================================
+
+    @Test
+    void getTripMaintenanceStats_whenNoTrips_shouldReturnAllZeros() {
+        // Given
+        when(tripRepository.findAll()).thenReturn(List.of());
+
+        // When
+        TripMaintenanceStatsDTO stats = tripService.getTripMaintenanceStats();
+
+        // Then
+        assertThat(stats.totalTrips()).isZero();
+        assertThat(stats.tripsWithPolyline()).isZero();
+        assertThat(stats.tripsWithMultipleLocations()).isZero();
+        assertThat(stats.tripsMissingPolyline()).isZero();
+        assertThat(stats.totalUpdates()).isZero();
+        assertThat(stats.updatesWithGeocoding()).isZero();
+        assertThat(stats.updatesMissingGeocoding()).isZero();
+    }
+
+    @Test
+    void getTripMaintenanceStats_withTripsAndUpdates_shouldComputeCorrectStats() {
+        // Given
+        UUID tripId1 = UUID.randomUUID();
+        UUID tripId2 = UUID.randomUUID();
+
+        Trip trip1 = TestEntityFactory.createTrip(tripId1, "Trip 1");
+        TripUpdate update1a = TestEntityFactory.createTripUpdate(UUID.randomUUID(), trip1);
+        TripUpdate update1b = TestEntityFactory.createTripUpdate(UUID.randomUUID(), trip1);
+        trip1.setTripUpdates(List.of(update1a, update1b));
+        trip1.setEncodedPolyline("encodedPolyline");
+
+        Trip trip2 = TestEntityFactory.createTrip(tripId2, "Trip 2");
+        TripUpdate update2a = TestEntityFactory.createTripUpdate(UUID.randomUUID(), trip2);
+        update2a.setCity(null);
+        update2a.setCountry(null);
+        trip2.setTripUpdates(List.of(update2a));
+
+        when(tripRepository.findAll()).thenReturn(List.of(trip1, trip2));
+
+        // When
+        TripMaintenanceStatsDTO stats = tripService.getTripMaintenanceStats();
+
+        // Then
+        assertThat(stats.totalTrips()).isEqualTo(2);
+        assertThat(stats.tripsWithPolyline()).isEqualTo(1);
+        assertThat(stats.tripsWithMultipleLocations()).isEqualTo(1);
+        assertThat(stats.tripsMissingPolyline()).isZero();
+        assertThat(stats.totalUpdates()).isEqualTo(3);
+        assertThat(stats.updatesWithGeocoding()).isEqualTo(2);
+        assertThat(stats.updatesMissingGeocoding()).isEqualTo(1);
+    }
+
+    @Test
+    void getTripMaintenanceStats_tripMissingPolyline_shouldBeCountedCorrectly() {
+        // Given — trip with 2+ locations but no polyline
+        UUID tripId = UUID.randomUUID();
+        Trip trip = TestEntityFactory.createTrip(tripId, "No Polyline Trip");
+        TripUpdate update1 = TestEntityFactory.createTripUpdate(UUID.randomUUID(), trip);
+        TripUpdate update2 = TestEntityFactory.createTripUpdate(UUID.randomUUID(), trip);
+        trip.setTripUpdates(List.of(update1, update2));
+        trip.setEncodedPolyline(null);
+
+        when(tripRepository.findAll()).thenReturn(List.of(trip));
+
+        // When
+        TripMaintenanceStatsDTO stats = tripService.getTripMaintenanceStats();
+
+        // Then
+        assertThat(stats.totalTrips()).isEqualTo(1);
+        assertThat(stats.tripsWithPolyline()).isZero();
+        assertThat(stats.tripsWithMultipleLocations()).isEqualTo(1);
+        assertThat(stats.tripsMissingPolyline()).isEqualTo(1);
+    }
+
+    @Test
+    void getTripMaintenanceStats_allUpdatesMissingGeocoding_shouldReflectCorrectly() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        Trip trip = TestEntityFactory.createTrip(tripId, "No Geocoding Trip");
+        TripUpdate update1 = TestEntityFactory.createTripUpdate(UUID.randomUUID(), trip);
+        update1.setCity(null);
+        update1.setCountry(null);
+        TripUpdate update2 = TestEntityFactory.createTripUpdate(UUID.randomUUID(), trip);
+        update2.setCity(null);
+        update2.setCountry(null);
+        trip.setTripUpdates(List.of(update1, update2));
+
+        when(tripRepository.findAll()).thenReturn(List.of(trip));
+
+        // When
+        TripMaintenanceStatsDTO stats = tripService.getTripMaintenanceStats();
+
+        // Then
+        assertThat(stats.totalUpdates()).isEqualTo(2);
+        assertThat(stats.updatesWithGeocoding()).isZero();
+        assertThat(stats.updatesMissingGeocoding()).isEqualTo(2);
     }
 }

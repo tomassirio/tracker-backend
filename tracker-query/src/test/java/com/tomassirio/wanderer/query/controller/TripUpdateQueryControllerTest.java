@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Reactions;
+import com.tomassirio.wanderer.commons.domain.WeatherCondition;
 import com.tomassirio.wanderer.commons.dto.TripUpdateDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
@@ -61,6 +62,8 @@ class TripUpdateQueryControllerTest {
                 .andExpect(jsonPath("$.location.lon").value(-71.0589))
                 .andExpect(jsonPath("$.battery").value(85))
                 .andExpect(jsonPath("$.message").value("Great location!"))
+                .andExpect(jsonPath("$.city").value("Santiago de Compostela"))
+                .andExpect(jsonPath("$.country").value("Spain"))
                 .andExpect(jsonPath("$.timestamp").exists());
     }
 
@@ -134,6 +137,8 @@ class TripUpdateQueryControllerTest {
                 .andExpect(jsonPath("$[0].id").value(updateId1.toString()))
                 .andExpect(jsonPath("$[0].message").value("First update"))
                 .andExpect(jsonPath("$[0].battery").value(90))
+                .andExpect(jsonPath("$[0].city").value("Santiago de Compostela"))
+                .andExpect(jsonPath("$[0].country").value("Spain"))
                 .andExpect(jsonPath("$[1].id").value(updateId2.toString()))
                 .andExpect(jsonPath("$[1].message").value("Second update"))
                 .andExpect(jsonPath("$[1].battery").value(85))
@@ -246,6 +251,10 @@ class TripUpdateQueryControllerTest {
                         85,
                         "Boston",
                         new Reactions(),
+                        null,
+                        null,
+                        null,
+                        null,
                         Instant.now());
 
         TripUpdateDTO update2 =
@@ -256,6 +265,10 @@ class TripUpdateQueryControllerTest {
                         80,
                         "New York",
                         new Reactions(),
+                        null,
+                        null,
+                        null,
+                        null,
                         Instant.now());
 
         when(tripUpdateService.getTripUpdatesForTrip(tripId)).thenReturn(List.of(update1, update2));
@@ -284,6 +297,10 @@ class TripUpdateQueryControllerTest {
                 battery,
                 message,
                 new Reactions(),
+                "Santiago de Compostela",
+                "Spain",
+                18.5,
+                WeatherCondition.PARTLY_CLOUDY,
                 Instant.now());
     }
 
@@ -298,6 +315,10 @@ class TripUpdateQueryControllerTest {
                 battery,
                 message,
                 new Reactions(),
+                "Santiago de Compostela",
+                "Spain",
+                18.5,
+                WeatherCondition.PARTLY_CLOUDY,
                 timestamp);
     }
 }

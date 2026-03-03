@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 022-add-polyline-to-trip-plans
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: trip_plans
+                columnName: encoded_polyline
+      changes:
+        - addColumn:
+            tableName: trip_plans
+            columns:
+              - column:
+                  name: encoded_polyline
+                  type: text
+              - column:
+                  name: polyline_updated_at
+                  type: timestamp with time zone
+      rollback:
+        - dropColumn:
+            tableName: trip_plans
+            columnName: encoded_polyline
+        - dropColumn:
+            tableName: trip_plans
+            columnName: polyline_updated_at
+

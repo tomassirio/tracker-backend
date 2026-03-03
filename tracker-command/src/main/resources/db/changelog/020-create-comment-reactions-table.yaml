@@ -1,0 +1,68 @@
+databaseChangeLog:
+  - changeSet:
+      id: 020-create-comment-reactions-table
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: comment_reactions
+      changes:
+        - createTable:
+            tableName: comment_reactions
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: comment_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: user_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: reaction_type
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: timestamp
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: comment_reactions
+            baseColumnNames: comment_id
+            referencedTableName: comments
+            referencedColumnNames: id
+            constraintName: fk_comment_reactions_comment_id
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: comment_reactions
+            baseColumnNames: user_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_comment_reactions_user_id
+        - createIndex:
+            tableName: comment_reactions
+            indexName: idx_comment_reactions_comment_id
+            columns:
+              - column:
+                  name: comment_id
+        - createIndex:
+            tableName: comment_reactions
+            indexName: idx_comment_reactions_user_id
+            columns:
+              - column:
+                  name: user_id
+        - addUniqueConstraint:
+            tableName: comment_reactions
+            columnNames: comment_id, user_id
+            constraintName: uk_comment_reactions_comment_user

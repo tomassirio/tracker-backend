@@ -8,7 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.FriendshipCreatedEvent;
 import com.tomassirio.wanderer.command.repository.FriendshipRepository;
-import com.tomassirio.wanderer.command.service.AchievementCalculationService;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.Friendship;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class FriendshipCreatedEventHandlerTest {
 
     @Mock private FriendshipRepository friendshipRepository;
-    @Mock private AchievementCalculationService achievementCalculationService;
+    @Mock private AchievementService achievementCalculationService;
 
     @InjectMocks private FriendshipCreatedEventHandler handler;
 

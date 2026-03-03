@@ -97,6 +97,7 @@ class CommentControllerTest {
                         null,
                         "Parent comment",
                         createReactionsDTO(5, 2),
+                        List.of(), // individualReactions
                         List.of(reply1, reply2),
                         Instant.now());
 
@@ -205,6 +206,7 @@ class CommentControllerTest {
                         null,
                         "Parent comment",
                         createReactionsDTO(3, 1),
+                        List.of(), // individualReactions
                         List.of(reply1, reply2),
                         Instant.now());
 
@@ -263,7 +265,8 @@ class CommentControllerTest {
                         null,
                         "Comment with reactions",
                         createReactionsDTO(10, 5),
-                        List.of(),
+                        List.of(), // individualReactions
+                        List.of(), // replies
                         Instant.now());
 
         when(commentService.getCommentsForTrip(tripId)).thenReturn(List.of(commentWithReactions));
@@ -285,7 +288,8 @@ class CommentControllerTest {
                 parentCommentId,
                 message,
                 createReactionsDTO(0, 0),
-                List.of(),
+                List.of(), // individualReactions
+                List.of(), // replies
                 Instant.now());
     }
 

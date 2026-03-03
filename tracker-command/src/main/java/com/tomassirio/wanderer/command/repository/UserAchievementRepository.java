@@ -10,15 +10,26 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface UserAchievementRepository extends JpaRepository<UserAchievement, UUID> {
-    @Query(
-            "SELECT CASE WHEN COUNT(ua) > 0 THEN true ELSE false END FROM UserAchievement ua "
-                    + "JOIN ua.achievement a WHERE ua.user.id = :userId AND a.type = :achievementType AND ua.trip.id = :tripId")
-    boolean existsByUserIdAndAchievementTypeAndTripId(
-            @Param("userId") UUID userId,
-            @Param("achievementType") AchievementType achievementType,
-            @Param("tripId") UUID tripId);
 
     @Query("DELETE FROM UserAchievement ua WHERE ua.user.id = :userId")
     @org.springframework.data.jpa.repository.Modifying
     void deleteByUserId(@Param("userId") UUID userId);
+
+    /**
+     * Checks if an achievement already exists, handling both trip-scoped and user-scoped (social)
+     * achievements in one query.
+     *
+     * @param userId the user ID
+     * @param achievementType the achievement type
+     * @param tripId the trip ID, or {@code null} for social achievements
+     * @return {@code true} if the achievement is already unlocked
+     */
+    @Query(
+            "SELECT CASE WHEN COUNT(ua) > 0 THEN true ELSE false END FROM UserAchievement ua "
+                    + "JOIN ua.achievement a WHERE ua.user.id = :userId AND a.type = :achievementType "
+                    + "AND (:tripId IS NULL AND ua.trip IS NULL OR ua.trip.id = :tripId)")
+    boolean existsByUserIdAndAchievementTypeAndOptionalTripId(
+            @Param("userId") UUID userId,
+            @Param("achievementType") AchievementType achievementType,
+            @Param("tripId") UUID tripId);
 }

@@ -11,5 +11,6 @@ public record CommentDTO(
         String parentCommentId, // null if top-level comment, set if this is a reply
         String message,
         ReactionsDTO reactions,
+        List<CommentReactionDTO> individualReactions, // Individual reactions with user details
         List<CommentDTO> replies, // Only populated for top-level comments
         Instant timestamp) {}

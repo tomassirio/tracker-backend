@@ -48,6 +48,9 @@ public class Comment {
     @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Comment> replies;
 
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<CommentReaction> commentReactions;
+
     @NotBlank
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     private String message;

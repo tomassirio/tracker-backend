@@ -15,4 +15,5 @@ public class CommentReactionPayload {
     private UUID commentId;
     private String reactionType;
     private UUID userId;
+    private String previousReactionType; // Set when replacing a reaction
 }
