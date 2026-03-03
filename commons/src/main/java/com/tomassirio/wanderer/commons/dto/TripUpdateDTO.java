@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.commons.dto;
 
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Reactions;
+import com.tomassirio.wanderer.commons.domain.WeatherCondition;
 import java.time.Instant;
 
 public record TripUpdateDTO(
@@ -13,4 +14,6 @@ public record TripUpdateDTO(
         Reactions reactions,
         String city,
         String country,
+        Double temperatureCelsius,
+        WeatherCondition weatherCondition,
         Instant timestamp) {}

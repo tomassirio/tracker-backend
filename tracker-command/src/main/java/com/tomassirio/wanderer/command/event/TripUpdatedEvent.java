@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.event;
 import com.tomassirio.wanderer.command.websocket.WebSocketEventType;
 import com.tomassirio.wanderer.command.websocket.payload.TripUpdatedPayload;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
+import com.tomassirio.wanderer.commons.domain.WeatherCondition;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,8 @@ public class TripUpdatedEvent implements DomainEvent, Broadcastable {
     private String message;
     private String city;
     private String country;
+    private Double temperatureCelsius;
+    private WeatherCondition weatherCondition;
     private Instant timestamp;
 
     @Override
@@ -49,6 +52,8 @@ public class TripUpdatedEvent implements DomainEvent, Broadcastable {
                 .message(message)
                 .city(city)
                 .country(country)
+                .temperatureCelsius(temperatureCelsius)
+                .weatherCondition(weatherCondition)
                 .build();
     }
 }

@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-add-weather-to-trip-updates
+      author: copilot
+      comment: "Add temperature and weather condition columns to trip_updates table"
+      changes:
+        - addColumn:
+            tableName: trip_updates
+            columns:
+              - column:
+                  name: temperature_celsius
+                  type: DOUBLE PRECISION
+                  constraints:
+                    nullable: true
+              - column:
+                  name: weather_condition
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: true
+
