@@ -74,6 +74,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatusCode()).body(reason);
     }
 
+    @ExceptionHandler(EmailSendException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    public ResponseEntity<String> handleEmailSendException(EmailSendException ex) {
+        log.error("Email delivery failed: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ResponseEntity<String> handleAllUncaughtException(Exception ex) {

@@ -2,13 +2,17 @@ package com.tomassirio.wanderer.auth.service.impl;
 
 import com.tomassirio.wanderer.auth.config.EmailProperties;
 import com.tomassirio.wanderer.auth.service.EmailService;
+import com.tomassirio.wanderer.commons.exception.EmailSendException;
 import jakarta.annotation.PostConstruct;
+import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
@@ -26,13 +30,44 @@ public class SmtpEmailServiceImpl implements EmailService {
     private final EmailProperties emailProperties;
 
     @PostConstruct
-    void logMode() {
+    void verifySmtpConnection() {
         log.info(
-                "SMTP email service active (app.email.enabled=true). "
-                        + "Host: {}, Port: {}, From: {}",
+                "SMTP email service active (app.email.enabled=true). Host: {}, Port: {}, From: {}",
                 emailProperties.getHost(),
                 emailProperties.getPort(),
                 emailProperties.getFrom());
+
+        boolean passwordSet =
+                emailProperties.getPassword() != null
+                        && !emailProperties.getPassword().isBlank();
+        log.info("SMTP username: {}, password set: {}", emailProperties.getUsername(), passwordSet);
+
+        if (!passwordSet) {
+            log.warn(
+                    "EMAIL_PASSWORD is empty — SMTP authentication will fail. "
+                            + "Set the EMAIL_PASSWORD environment variable.");
+            return;
+        }
+
+        if (mailSender instanceof JavaMailSenderImpl javaMailSender) {
+            try {
+                javaMailSender.testConnection();
+                log.info("SMTP connection test successful");
+            } catch (MessagingException e) {
+                if (e instanceof AuthenticationFailedException) {
+                    log.error(
+                            "SMTP authentication failed — check EMAIL_USERNAME and EMAIL_PASSWORD. "
+                                    + "For Brevo, use your SMTP key (not your account password). "
+                                    + "Error: {}",
+                            e.getMessage());
+                } else {
+                    log.error(
+                            "SMTP connection test failed — check EMAIL_HOST and EMAIL_PORT. "
+                                    + "Error: {}",
+                            e.getMessage());
+                }
+            }
+        }
     }
 
     @Override
@@ -48,12 +83,20 @@ public class SmtpEmailServiceImpl implements EmailService {
 
             mailSender.send(message);
             log.info("Verification email sent successfully to: {}", email);
+        } catch (MailAuthenticationException e) {
+            log.error(
+                    "SMTP authentication failed while sending email to: {}. "
+                            + "Check EMAIL_USERNAME and EMAIL_PASSWORD environment variables.",
+                    email,
+                    e);
+            throw new EmailSendException(
+                    "SMTP authentication failed — verify your email credentials", e);
         } catch (MessagingException e) {
             log.error("Failed to send verification email to: {}", email, e);
-            throw new IllegalStateException("Failed to send verification email", e);
+            throw new EmailSendException("Failed to send verification email", e);
         } catch (Exception e) {
             log.error("Unexpected error sending verification email to: {}", email, e);
-            throw new IllegalStateException("Failed to send verification email", e);
+            throw new EmailSendException("Failed to send verification email", e);
         }
     }
 
