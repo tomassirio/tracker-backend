@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.auth.service.impl;
 
 import com.tomassirio.wanderer.auth.service.EmailService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -20,6 +21,13 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 @Slf4j
 public class EmailServiceImpl implements EmailService {
+
+    @PostConstruct
+    void logMode() {
+        log.info(
+                "Console email service active (app.email.enabled=false). "
+                        + "Set EMAIL_ENABLED=true to send real emails via SMTP.");
+    }
 
     @Override
     public void sendVerificationEmail(String email, String username, String verificationToken) {

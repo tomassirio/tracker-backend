@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.auth.service.impl;
 
 import com.tomassirio.wanderer.auth.config.EmailProperties;
 import com.tomassirio.wanderer.auth.service.EmailService;
+import jakarta.annotation.PostConstruct;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,16 @@ public class SmtpEmailServiceImpl implements EmailService {
 
     private final JavaMailSender mailSender;
     private final EmailProperties emailProperties;
+
+    @PostConstruct
+    void logMode() {
+        log.info(
+                "SMTP email service active (app.email.enabled=true). "
+                        + "Host: {}, Port: {}, From: {}",
+                emailProperties.getHost(),
+                emailProperties.getPort(),
+                emailProperties.getFrom());
+    }
 
     @Override
     public void sendVerificationEmail(String email, String username, String verificationToken) {
