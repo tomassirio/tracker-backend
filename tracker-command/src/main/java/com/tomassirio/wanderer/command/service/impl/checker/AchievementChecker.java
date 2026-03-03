@@ -1,6 +1,6 @@
-package com.tomassirio.wanderer.command.service;
+package com.tomassirio.wanderer.command.service.impl.checker;
 
-import com.tomassirio.wanderer.command.service.impl.AchievementCalculationService;
+import com.tomassirio.wanderer.command.service.impl.AchievementServiceImpl;
 import com.tomassirio.wanderer.commons.domain.AchievementType;
 import java.util.List;
 
@@ -16,8 +16,7 @@ import java.util.List;
  *   <li>{@code AchievementChecker<UUID>} — user-scoped / social (followers, friends)
  * </ul>
  *
- * <p>Implementations are auto-discovered by Spring and collected by {@link
- * AchievementCalculationService}.
+ * <p>Implementations are auto-discovered by Spring and collected by {@link AchievementServiceImpl}.
  *
  * @param <T> the context type used to compute the metric (e.g., {@code Trip}, {@code UUID})
  * @since 0.8.0

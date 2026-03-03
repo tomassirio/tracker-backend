@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.service.impl;
+package com.tomassirio.wanderer.command.service.impl.strategy;
 
 import com.google.maps.DistanceMatrixApi;
 import com.google.maps.GeoApiContext;

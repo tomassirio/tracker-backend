@@ -48,6 +48,8 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
                         .message(event.getMessage())
                         .city(event.getCity())
                         .country(event.getCountry())
+                        .temperatureCelsius(event.getTemperatureCelsius())
+                        .weatherCondition(event.getWeatherCondition())
                         .timestamp(event.getTimestamp())
                         .build();
 

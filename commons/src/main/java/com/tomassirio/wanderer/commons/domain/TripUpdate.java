@@ -3,6 +3,8 @@ package com.tomassirio.wanderer.commons.domain;
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -52,6 +54,13 @@ public class TripUpdate {
 
     @Column(name = "country")
     private String country;
+
+    @Column(name = "temperature_celsius")
+    private Double temperatureCelsius;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "weather_condition")
+    private WeatherCondition weatherCondition;
 
     @NotNull
     @Column(nullable = false)

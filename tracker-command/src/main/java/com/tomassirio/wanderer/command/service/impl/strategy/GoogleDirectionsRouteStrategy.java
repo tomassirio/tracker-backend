@@ -1,4 +1,4 @@
-package com.tomassirio.wanderer.command.service.impl;
+package com.tomassirio.wanderer.command.service.impl.strategy;
 
 import com.google.maps.DirectionsApi;
 import com.google.maps.GeoApiContext;

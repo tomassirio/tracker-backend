@@ -45,3 +45,5 @@ databaseChangeLog:
       file: db/changelog/022-add-polyline-to-trip-plans.yaml
   - include:
       file: db/changelog/023-add-city-country-to-trip-updates.yaml
+  - include:
+      file: db/changelog/024-add-weather-to-trip-updates.yaml

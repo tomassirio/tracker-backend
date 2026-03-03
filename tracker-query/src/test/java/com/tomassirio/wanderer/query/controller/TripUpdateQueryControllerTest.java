@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Reactions;
+import com.tomassirio.wanderer.commons.domain.WeatherCondition;
 import com.tomassirio.wanderer.commons.dto.TripUpdateDTO;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
 import com.tomassirio.wanderer.commons.utils.MockMvcTestUtils;
@@ -252,6 +253,8 @@ class TripUpdateQueryControllerTest {
                         new Reactions(),
                         null,
                         null,
+                        null,
+                        null,
                         Instant.now());
 
         TripUpdateDTO update2 =
@@ -262,6 +265,8 @@ class TripUpdateQueryControllerTest {
                         80,
                         "New York",
                         new Reactions(),
+                        null,
+                        null,
                         null,
                         null,
                         Instant.now());
@@ -294,6 +299,8 @@ class TripUpdateQueryControllerTest {
                 new Reactions(),
                 "Santiago de Compostela",
                 "Spain",
+                18.5,
+                WeatherCondition.PARTLY_CLOUDY,
                 Instant.now());
     }
 
@@ -310,6 +317,8 @@ class TripUpdateQueryControllerTest {
                 new Reactions(),
                 "Santiago de Compostela",
                 "Spain",
+                18.5,
+                WeatherCondition.PARTLY_CLOUDY,
                 timestamp);
     }
 }
