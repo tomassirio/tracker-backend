@@ -101,8 +101,9 @@ public class SmtpEmailServiceImpl implements EmailService {
     }
 
     private String buildEmailContent(String username, String verificationToken) {
+        String baseUrl = emailProperties.getBaseUrl().replaceAll("/+$", "");
         String verificationLink =
-                emailProperties.getBaseUrl() + "/verify-email?token=" + verificationToken;
+                baseUrl + "/api/1/auth/verify-email?token=" + verificationToken;
 
         return """
                 <!DOCTYPE html>

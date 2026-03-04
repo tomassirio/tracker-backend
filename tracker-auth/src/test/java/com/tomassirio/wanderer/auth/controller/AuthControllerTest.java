@@ -4,8 +4,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -250,5 +252,42 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(request))
                                 .with(jwtAuth(userId.toString())))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void verifyEmailViaLink_whenValidToken_shouldReturnHtmlSuccess() throws Exception {
+        LoginResponse response =
+                new LoginResponse("jwt.access.token", "refresh.token", "Bearer", 3600000L);
+        when(authService.verifyEmail("valid.token")).thenReturn(response);
+
+        mockMvc.perform(
+                        get("/api/1/auth/verify-email")
+                                .param("token", "valid.token")
+                                .accept(MediaType.TEXT_HTML))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Email Verified!")))
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "Your email has been verified successfully")));
+    }
+
+    @Test
+    void verifyEmailViaLink_whenInvalidToken_shouldReturnHtmlError() throws Exception {
+        when(authService.verifyEmail("invalid.token"))
+                .thenThrow(new IllegalArgumentException("Invalid token"));
+
+        mockMvc.perform(
+                        get("/api/1/auth/verify-email")
+                                .param("token", "invalid.token")
+                                .accept(MediaType.TEXT_HTML))
+                .andExpect(status().isBadRequest())
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString("Verification Failed")))
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "invalid or has expired")));
     }
 }

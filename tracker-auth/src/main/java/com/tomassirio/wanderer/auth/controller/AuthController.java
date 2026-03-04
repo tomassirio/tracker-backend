@@ -25,10 +25,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -82,6 +84,64 @@ public class AuthController {
             @Valid @RequestBody VerifyEmailRequest request) {
         LoginResponse response = authService.verifyEmail(request.token());
         return ResponseEntity.status(201).body(response);
+    }
+
+    @GetMapping(value = ApiConstants.VERIFY_EMAIL_ENDPOINT, produces = MediaType.TEXT_HTML_VALUE)
+    @Operation(
+            summary = "Verify email via link",
+            description =
+                    "Verifies the user's email address via a clickable link from the verification"
+                            + " email. Returns an HTML page with the result.")
+    public ResponseEntity<String> verifyEmailViaLink(@RequestParam("token") String token) {
+        try {
+            authService.verifyEmail(token);
+            return ResponseEntity.ok(
+                    buildVerificationHtml(
+                            "Email Verified!",
+                            "Your email has been verified successfully. You can now log in to your"
+                                    + " account.",
+                            true));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(
+                            buildVerificationHtml(
+                                    "Verification Failed",
+                                    "The verification link is invalid or has expired. Please"
+                                            + " register again.",
+                                    false));
+        }
+    }
+
+    private String buildVerificationHtml(String title, String message, boolean success) {
+        String color = success ? "#4CAF50" : "#f44336";
+        String icon = success ? "✓" : "✗";
+        return """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>%s</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; display: flex; justify-content: center;
+                               align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
+                        .card { background: white; border-radius: 8px; padding: 40px; text-align: center;
+                                box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; }
+                        .icon { font-size: 64px; color: %s; }
+                        h1 { color: #333; margin: 16px 0 8px; }
+                        p { color: #666; line-height: 1.6; }
+                    </style>
+                </head>
+                <body>
+                    <div class="card">
+                        <div class="icon">%s</div>
+                        <h1>%s</h1>
+                        <p>%s</p>
+                    </div>
+                </body>
+                </html>
+                """
+                .formatted(title, color, icon, title, message);
     }
 
     @PostMapping(ApiConstants.LOGOUT_ENDPOINT)
