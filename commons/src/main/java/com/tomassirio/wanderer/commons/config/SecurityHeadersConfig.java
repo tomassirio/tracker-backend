@@ -67,7 +67,8 @@ public class SecurityHeadersConfig {
                     // Content-Security-Policy — restrict resource origins
                     .addHeaderWriter(
                             new ContentSecurityPolicyHeaderWriter(
-                                    "default-src 'self'; frame-ancestors 'none'"))
+                                    "default-src 'self'; style-src 'self' 'unsafe-inline';"
+                                            + " frame-ancestors 'none'"))
                     // Referrer-Policy — limit referrer information leakage
                     .referrerPolicy(
                             referrer ->

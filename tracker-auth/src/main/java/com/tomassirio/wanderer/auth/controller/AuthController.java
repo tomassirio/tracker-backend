@@ -64,7 +64,9 @@ public class AuthController {
             summary = "User login",
             description = "Authenticates a user and returns access and refresh tokens")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        log.info("Login attempt for user: {}", request.username());
         LoginResponse response = authService.login(request.username(), request.password());
+        log.info("Login successful for user: {}", request.username());
         return ResponseEntity.ok(response);
     }
 
@@ -78,7 +80,9 @@ public class AuthController {
                             + " account is created only after email verification.")
     public ResponseEntity<RegisterPendingResponse> register(
             @Valid @RequestBody RegisterRequest request) {
+        log.info("Registration attempt for user: {}", request.username());
         RegisterPendingResponse response = authService.register(request);
+        log.info("Registration initiated for user: {}, verification email sent", request.username());
         return ResponseEntity.status(202).body(response);
     }
 
@@ -93,7 +97,9 @@ public class AuthController {
                             + " and refresh tokens.")
     public ResponseEntity<LoginResponse> verifyEmail(
             @Valid @RequestBody VerifyEmailRequest request) {
+        log.info("Email verification attempt via POST");
         LoginResponse response = authService.verifyEmail(request.token());
+        log.info("Email verified successfully via POST");
         return ResponseEntity.status(201).body(response);
     }
 
@@ -106,9 +112,15 @@ public class AuthController {
     public ResponseEntity<String> verifyEmailViaLink(@RequestParam("token") String token) {
         try {
             authService.verifyEmail(token);
-            return ResponseEntity.ok(loadTemplate(VERIFICATION_SUCCESS_TEMPLATE));
+            log.info("Email verified successfully via link");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(loadTemplate(VERIFICATION_SUCCESS_TEMPLATE));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(loadTemplate(VERIFICATION_FAILURE_TEMPLATE));
+            log.warn("Email verification via link failed: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(loadTemplate(VERIFICATION_FAILURE_TEMPLATE));
         }
     }
 
@@ -130,7 +142,9 @@ public class AuthController {
             security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
+        log.info("Logout request for userId: {}", userId);
         authService.logout(userId);
+        log.info("Logout successful for userId: {}", userId);
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
@@ -140,7 +154,9 @@ public class AuthController {
             description = "Exchanges a refresh token for a new access token and refresh token")
     public ResponseEntity<RefreshTokenResponse> refresh(
             @Valid @RequestBody RefreshTokenRequest request) {
+        log.info("Token refresh request");
         RefreshTokenResponse response = tokenService.refreshAccessToken(request.refreshToken());
+        log.info("Token refresh successful");
         return ResponseEntity.ok(response);
     }
 
@@ -153,7 +169,9 @@ public class AuthController {
                     "Sends a password reset token (in production, this would be sent via email)")
     public ResponseEntity<Map<String, String>> initiatePasswordReset(
             @Valid @RequestBody PasswordResetRequest request) {
+        log.info("Password reset initiated for email: {}", request.email());
         String resetToken = authService.initiatePasswordReset(request.email());
+        log.info("Password reset token generated for email: {}", request.email());
         // In production, this token should be sent via email instead of returned in the response
         return ResponseEntity.ok(
                 Map.of("message", "Password reset token generated", "token", resetToken));
@@ -167,7 +185,9 @@ public class AuthController {
             description = "Resets the password using a valid reset token")
     public ResponseEntity<Map<String, String>> resetPassword(
             @Valid @RequestBody PasswordResetConfirmRequest request) {
+        log.info("Password reset confirmation attempt");
         authService.resetPassword(request.token(), request.newPassword());
+        log.info("Password reset completed successfully");
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 
@@ -182,7 +202,9 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> changePassword(
             @Valid @RequestBody PasswordChangeRequest request, @AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
+        log.info("Password change request for userId: {}", userId);
         authService.changePassword(userId, request.currentPassword(), request.newPassword());
+        log.info("Password changed successfully for userId: {}", userId);
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
 }
