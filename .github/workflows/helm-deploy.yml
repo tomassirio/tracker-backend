@@ -42,9 +42,8 @@ on:
       GOOGLE_MAPS_API_KEY:
         description: 'Google Maps API key for distance calculation'
         required: false
-      EMAIL_PASSWORD:
-        description: 'SMTP password for Brevo email service'
-        required: false
+      # EMAIL_PASSWORD is NOT declared here — it is an environment-level secret
+      # resolved directly from the job's environment context (dev/prod).
 
 env:
   ENV_SUFFIX: ${{ inputs.environment == 'dev' && '-dev' || '' }}
