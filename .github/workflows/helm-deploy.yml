@@ -213,11 +213,9 @@ jobs:
                 "--set" "application.email.enabled=${{ vars.EMAIL_ENABLED }}"
               )
             fi
-            if [ -n "${{ secrets.EMAIL_PASSWORD }}" ]; then
-              HELM_ARGS+=(
-                "--set-string" "application.email.password=${{ secrets.EMAIL_PASSWORD }}"
-              )
-            fi
+            HELM_ARGS+=(
+              "--set-string" "application.email.password=${{ secrets.EMAIL_PASSWORD }}"
+            )
             if [ -n "${{ vars.EMAIL_BASE_URL }}" ]; then
               HELM_ARGS+=(
                 "--set" "application.email.baseUrl=${{ vars.EMAIL_BASE_URL }}"
