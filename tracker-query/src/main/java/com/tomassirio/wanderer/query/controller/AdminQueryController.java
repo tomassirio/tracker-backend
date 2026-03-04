@@ -76,12 +76,17 @@ public class AdminQueryController {
         log.info("Admin retrieving roles for user {}", userId);
         try {
             Set<Role> roles = trackerAuthClient.getUserRoles(userId);
+            log.info("Successfully retrieved {} roles for user {}", roles.size(), userId);
             return ResponseEntity.ok(roles);
         } catch (FeignException.BadRequest | FeignException.NotFound e) {
             log.warn(
                     "User {} not found in auth service, returning empty roles: {}",
                     userId,
                     e.getMessage());
+            return ResponseEntity.ok(Collections.emptySet());
+        } catch (Exception e) {
+            log.error(
+                    "Unexpected error retrieving roles for user {}: {}", userId, e.getMessage(), e);
             return ResponseEntity.ok(Collections.emptySet());
         }
     }

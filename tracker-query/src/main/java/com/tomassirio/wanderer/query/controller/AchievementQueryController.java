@@ -32,6 +32,8 @@ public class AchievementQueryController {
     @ApiResponse(responseCode = "200", description = "Successfully retrieved all achievements")
     public ResponseEntity<List<AchievementDTO>> getAvailableAchievements() {
         log.info("Retrieving all available achievements");
-        return ResponseEntity.ok(achievementQueryService.getAvailableAchievements());
+        List<AchievementDTO> achievements = achievementQueryService.getAvailableAchievements();
+        log.info("Successfully retrieved {} available achievements", achievements.size());
+        return ResponseEntity.ok(achievements);
     }
 }

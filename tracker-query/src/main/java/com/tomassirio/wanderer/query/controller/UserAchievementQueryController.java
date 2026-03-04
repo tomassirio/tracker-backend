@@ -43,7 +43,9 @@ public class UserAchievementQueryController {
     public ResponseEntity<List<UserAchievementDTO>> getMyAchievements(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
         log.info("Retrieving achievements for current user: {}", userId);
-        return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
+        List<UserAchievementDTO> achievements = achievementQueryService.getUserAchievements(userId);
+        log.info("Successfully retrieved {} achievements for user {}", achievements.size(), userId);
+        return ResponseEntity.ok(achievements);
     }
 
     @GetMapping(ApiConstants.USER_ACHIEVEMENTS_ENDPOINT)
@@ -53,6 +55,8 @@ public class UserAchievementQueryController {
     @ApiResponse(responseCode = "200", description = "Successfully retrieved user achievements")
     public ResponseEntity<List<UserAchievementDTO>> getUserAchievements(@PathVariable UUID userId) {
         log.info("Retrieving achievements for user: {}", userId);
-        return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
+        List<UserAchievementDTO> achievements = achievementQueryService.getUserAchievements(userId);
+        log.info("Successfully retrieved {} achievements for user {}", achievements.size(), userId);
+        return ResponseEntity.ok(achievements);
     }
 }

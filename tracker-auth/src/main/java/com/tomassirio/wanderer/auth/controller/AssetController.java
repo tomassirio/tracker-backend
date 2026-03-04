@@ -24,8 +24,10 @@ public class AssetController {
         try {
             ClassPathResource resource = new ClassPathResource(LOGO_RESOURCE);
             if (!resource.exists()) {
+                log.warn("Logo resource not found: {}", LOGO_RESOURCE);
                 return ResponseEntity.notFound().build();
             }
+            log.info("Serving logo asset successfully");
             return ResponseEntity.ok()
                     .cacheControl(CacheControl.noCache())
                     .contentType(MediaType.IMAGE_PNG)

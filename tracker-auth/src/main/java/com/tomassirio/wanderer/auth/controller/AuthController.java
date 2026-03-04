@@ -70,9 +70,9 @@ public class AuthController {
             summary = "User login",
             description = "Authenticates a user and returns access and refresh tokens")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-        log.info("Login attempt for user: {}", request.username());
+        log.info("Login attempt received");
         LoginResponse response = authService.login(request.username(), request.password());
-        log.info("Login successful for user: {}", request.username());
+        log.info("Login successful");
         return ResponseEntity.ok(response);
     }
 
@@ -86,9 +86,9 @@ public class AuthController {
                             + " account is created only after email verification.")
     public ResponseEntity<RegisterPendingResponse> register(
             @Valid @RequestBody RegisterRequest request) {
-        log.info("Registration attempt for user: {}", request.username());
+        log.info("Registration attempt received");
         RegisterPendingResponse response = authService.register(request);
-        log.info("Registration initiated for user: {}, verification email sent", request.username());
+        log.info("Registration initiated, verification email sent");
         return ResponseEntity.status(202).body(response);
     }
 
@@ -193,9 +193,9 @@ public class AuthController {
                     "Sends a password reset token (in production, this would be sent via email)")
     public ResponseEntity<Map<String, String>> initiatePasswordReset(
             @Valid @RequestBody PasswordResetRequest request) {
-        log.info("Password reset initiated for email: {}", request.email());
+        log.info("Password reset initiated");
         String resetToken = authService.initiatePasswordReset(request.email());
-        log.info("Password reset token generated for email: {}", request.email());
+        log.info("Password reset token generated");
         // In production, this token should be sent via email instead of returned in the response
         return ResponseEntity.ok(
                 Map.of("message", "Password reset token generated", "token", resetToken));

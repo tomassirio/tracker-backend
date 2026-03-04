@@ -51,22 +51,35 @@ public class UserQueryController {
             @Parameter(description = "Pagination and sorting parameters")
                     @PageableDefault(size = 20, sort = "username")
                     Pageable pageable) {
-        log.info("Admin retrieving all users, page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
-        return ResponseEntity.ok(userQueryService.getAllUsersWithStats(pageable));
+        log.info(
+                "Admin retrieving all users, page: {}, size: {}",
+                pageable.getPageNumber(),
+                pageable.getPageSize());
+        Page<UserAdminResponse> users = userQueryService.getAllUsersWithStats(pageable);
+        log.info(
+                "Successfully retrieved {} users (page {} of {})",
+                users.getNumberOfElements(),
+                users.getNumber() + 1,
+                users.getTotalPages());
+        return ResponseEntity.ok(users);
     }
 
     @GetMapping(ApiConstants.USER_BY_ID_ENDPOINT)
     @Operation(summary = "Get user by ID", description = "Retrieves a specific user by their ID")
     public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
         log.info("Retrieving user by ID: {}", id);
-        return ResponseEntity.ok(userQueryService.getUserById(id));
+        UserResponse user = userQueryService.getUserById(id);
+        log.info("Successfully retrieved user with ID: {}", id);
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping(ApiConstants.USERNAME_ENDPOINT)
     @Operation(summary = "Get user by username", description = "Retrieves a user by their username")
     public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
-        log.info("Retrieving user by username: {}", username);
-        return ResponseEntity.ok(userQueryService.getUserByUsername(username));
+        log.info("Retrieving user by username");
+        UserResponse user = userQueryService.getUserByUsername(username);
+        log.info("Successfully retrieved user by username");
+        return ResponseEntity.ok(user);
     }
 
     @GetMapping(ApiConstants.ME_SUFFIX)
@@ -77,6 +90,8 @@ public class UserQueryController {
     public ResponseEntity<UserResponse> getMyUser(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
         log.info("Retrieving current user profile for userId: {}", userId);
-        return ResponseEntity.ok(userQueryService.getUserById(userId));
+        UserResponse user = userQueryService.getUserById(userId);
+        log.info("Successfully retrieved current user profile");
+        return ResponseEntity.ok(user);
     }
 }

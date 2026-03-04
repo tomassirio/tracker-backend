@@ -44,7 +44,9 @@ public class PromotedTripQueryController {
             description = "List of promoted trips retrieved successfully")
     public ResponseEntity<List<PromotedTripResponse>> getAllPromotedTrips() {
         log.info("Retrieving all promoted trips");
-        return ResponseEntity.ok(promotedTripQueryService.getAllPromotedTrips());
+        List<PromotedTripResponse> trips = promotedTripQueryService.getAllPromotedTrips();
+        log.info("Successfully retrieved {} promoted trips", trips.size());
+        return ResponseEntity.ok(trips);
     }
 
     @GetMapping(
@@ -58,6 +60,8 @@ public class PromotedTripQueryController {
     @ApiResponse(responseCode = "404", description = "Trip or promotion not found")
     public ResponseEntity<PromotedTripResponse> getPromotionInfo(@PathVariable UUID id) {
         log.info("Retrieving promotion info for trip: {}", id);
-        return ResponseEntity.ok(promotedTripQueryService.getPromotionByTripId(id));
+        PromotedTripResponse promotion = promotedTripQueryService.getPromotionByTripId(id);
+        log.info("Successfully retrieved promotion info for trip {}", id);
+        return ResponseEntity.ok(promotion);
     }
 }
