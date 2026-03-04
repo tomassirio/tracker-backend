@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Verified – Wanderer</title>
+    <style>
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #FAF9F7;
+            color: #1A1A1A;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .page-wrapper {
+            width: 100%;
+            background-color: #FAF9F7;
+            padding: 40px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card-container {
+            max-width: 520px;
+            margin: 0 auto;
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.04);
+        }
+        .card-header {
+            background: linear-gradient(135deg, #E07830 0%, #F5A623 100%);
+            padding: 48px 40px 40px;
+            text-align: center;
+        }
+        .card-header .logo-circle {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            line-height: 80px;
+            margin-bottom: 20px;
+        }
+        .card-header .logo-circle img {
+            width: 54px;
+            height: 54px;
+            vertical-align: middle;
+        }
+        .card-header h1 {
+            margin: 0 0 4px;
+            font-size: 28px;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: -0.3px;
+        }
+        .card-header p {
+            margin: 0;
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.85);
+        }
+        .card-body {
+            padding: 40px;
+            text-align: center;
+        }
+        .status-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 100%);
+            margin-bottom: 24px;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.35);
+        }
+        .status-icon span {
+            font-size: 36px;
+            color: #FFFFFF;
+            line-height: 1;
+        }
+        .card-body h2 {
+            margin: 0 0 12px;
+            font-size: 22px;
+            font-weight: 700;
+            color: #1A1A1A;
+        }
+        .card-body p {
+            margin: 0 0 16px;
+            font-size: 15px;
+            color: #666666;
+            line-height: 1.7;
+        }
+        .card-footer {
+            background-color: #FAF9F7;
+            padding: 28px 40px;
+            text-align: center;
+            border-top: 1px solid #F0EFED;
+        }
+        .card-footer p {
+            margin: 0 0 6px;
+            font-size: 12px;
+            color: #999999;
+            line-height: 1.6;
+        }
+        .card-footer .brand {
+            font-weight: 600;
+            color: #E07830;
+        }
+        @media only screen and (max-width: 600px) {
+            .page-wrapper { padding: 16px 0 !important; }
+            .card-container { margin: 0 12px !important; border-radius: 12px !important; }
+            .card-header { padding: 36px 24px 32px !important; }
+            .card-body { padding: 28px 24px !important; }
+            .card-footer { padding: 24px !important; }
+            .card-header h1 { font-size: 24px !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrapper">
+        <div class="card-container">
+
+            <!-- HEADER -->
+            <div class="card-header">
+                <div class="logo-circle">
+                    <img src="/assets/wanderer-logo.png" alt="Wanderer" width="54" height="54">
+                </div>
+                <h1>Wanderer</h1>
+                <p>Track your trips &amp; adventures</p>
+            </div>
+
+            <!-- BODY -->
+            <div class="card-body">
+                <div class="status-icon">
+                    <span>&#10003;</span>
+                </div>
+                <h2>Email Verified!</h2>
+                <p>Your email has been verified successfully. You can now log in to your account and start tracking your adventures.</p>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="card-footer">
+                <p>You can close this page.</p>
+                <p><span class="brand">Wanderer</span></p>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

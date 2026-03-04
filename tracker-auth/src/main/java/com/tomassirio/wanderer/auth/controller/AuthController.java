@@ -17,9 +17,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -42,8 +47,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = ApiConstants.AUTH_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Authentication", description = "Endpoints for user authentication and registration")
 public class AuthController {
+
+    private static final String VERIFICATION_SUCCESS_TEMPLATE =
+            "templates/email/verification-success.html";
+    private static final String VERIFICATION_FAILURE_TEMPLATE =
+            "templates/email/verification-failure.html";
 
     private final AuthService authService;
     private final TokenService tokenService;
@@ -95,53 +106,19 @@ public class AuthController {
     public ResponseEntity<String> verifyEmailViaLink(@RequestParam("token") String token) {
         try {
             authService.verifyEmail(token);
-            return ResponseEntity.ok(
-                    buildVerificationHtml(
-                            "Email Verified!",
-                            "Your email has been verified successfully. You can now log in to your"
-                                    + " account.",
-                            true));
+            return ResponseEntity.ok(loadTemplate(VERIFICATION_SUCCESS_TEMPLATE));
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(
-                            buildVerificationHtml(
-                                    "Verification Failed",
-                                    "The verification link is invalid or has expired. Please"
-                                            + " register again.",
-                                    false));
+            return ResponseEntity.badRequest().body(loadTemplate(VERIFICATION_FAILURE_TEMPLATE));
         }
     }
 
-    private String buildVerificationHtml(String title, String message, boolean success) {
-        String color = success ? "#4CAF50" : "#f44336";
-        String icon = success ? "✓" : "✗";
-        return """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>%s</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; display: flex; justify-content: center;
-                               align-items: center; min-height: 100vh; margin: 0; background: #f5f5f5; }
-                        .card { background: white; border-radius: 8px; padding: 40px; text-align: center;
-                                box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 400px; }
-                        .icon { font-size: 64px; color: %s; }
-                        h1 { color: #333; margin: 16px 0 8px; }
-                        p { color: #666; line-height: 1.6; }
-                    </style>
-                </head>
-                <body>
-                    <div class="card">
-                        <div class="icon">%s</div>
-                        <h1>%s</h1>
-                        <p>%s</p>
-                    </div>
-                </body>
-                </html>
-                """
-                .formatted(title, color, icon, title, message);
+    private String loadTemplate(String templatePath) {
+        try (InputStream inputStream = new ClassPathResource(templatePath).getInputStream()) {
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.error("Failed to load template: {}", templatePath, e);
+            return "<html><body><h1>An error occurred</h1></body></html>";
+        }
     }
 
     @PostMapping(ApiConstants.LOGOUT_ENDPOINT)

@@ -7,9 +7,14 @@ import jakarta.annotation.PostConstruct;
 import jakarta.mail.AuthenticationFailedException;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.MailAuthenticationException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
@@ -26,6 +31,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class SmtpEmailServiceImpl implements EmailService {
 
+    private static final String VERIFICATION_EMAIL_TEMPLATE =
+            "templates/email/verification-email.html";
+    private static final String LOGO_RESOURCE = "assets/wanderer-logo.png";
+
     private final JavaMailSender mailSender;
     private final EmailProperties emailProperties;
 
@@ -38,8 +47,7 @@ public class SmtpEmailServiceImpl implements EmailService {
                 emailProperties.getFrom());
 
         boolean passwordSet =
-                emailProperties.getPassword() != null
-                        && !emailProperties.getPassword().isBlank();
+                emailProperties.getPassword() != null && !emailProperties.getPassword().isBlank();
         log.info("SMTP username: {}, password set: {}", emailProperties.getUsername(), passwordSet);
 
         if (!passwordSet) {
@@ -102,90 +110,33 @@ public class SmtpEmailServiceImpl implements EmailService {
 
     private String buildEmailContent(String username, String verificationToken) {
         String baseUrl = emailProperties.getBaseUrl().replaceAll("/+$", "");
-        String verificationLink =
-                baseUrl + "/api/1/auth/verify-email?token=" + verificationToken;
+        String verificationLink = baseUrl + "/verify-email?token=" + verificationToken;
+        String logoDataUri = buildLogoDataUri();
 
-        return """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        body {
-                            font-family: Arial, sans-serif;
-                            line-height: 1.6;
-                            color: #333;
-                            max-width: 600px;
-                            margin: 0 auto;
-                            padding: 20px;
-                        }
-                        .header {
-                            background-color: #4CAF50;
-                            color: white;
-                            padding: 20px;
-                            text-align: center;
-                            border-radius: 5px 5px 0 0;
-                        }
-                        .content {
-                            background-color: #f9f9f9;
-                            padding: 30px;
-                            border-radius: 0 0 5px 5px;
-                        }
-                        .button {
-                            display: inline-block;
-                            padding: 12px 24px;
-                            background-color: #4CAF50;
-                            color: white;
-                            text-decoration: none;
-                            border-radius: 4px;
-                            margin: 20px 0;
-                        }
-                        .token-box {
-                            background-color: #fff;
-                            border: 1px solid #ddd;
-                            padding: 15px;
-                            margin: 20px 0;
-                            border-radius: 4px;
-                            font-family: monospace;
-                            word-break: break-all;
-                        }
-                        .footer {
-                            margin-top: 30px;
-                            padding-top: 20px;
-                            border-top: 1px solid #ddd;
-                            color: #666;
-                            font-size: 12px;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>Welcome to Tracker!</h1>
-                    </div>
-                    <div class="content">
-                        <p>Hello <strong>%s</strong>,</p>
+        String template = loadTemplate(VERIFICATION_EMAIL_TEMPLATE);
+        return template.replace("{{username}}", username)
+                .replace("{{verificationLink}}", verificationLink)
+                .replace("{{verificationToken}}", verificationToken)
+                .replace("{{logoSrc}}", logoDataUri);
+    }
 
-                        <p>Thank you for registering with Tracker! To complete your registration, please verify your email address.</p>
+    private String buildLogoDataUri() {
+        try (InputStream inputStream = new ClassPathResource(LOGO_RESOURCE).getInputStream()) {
+            byte[] bytes = inputStream.readAllBytes();
+            String base64 = Base64.getEncoder().encodeToString(bytes);
+            return "data:image/png;base64," + base64;
+        } catch (IOException e) {
+            log.warn("Failed to load logo for email, falling back to empty image", e);
+            return "";
+        }
+    }
 
-                        <p><a href="%s" class="button">Verify Email Address</a></p>
-
-                        <p>Or copy and paste this verification token:</p>
-
-                        <div class="token-box">%s</div>
-
-                        <p>You can verify your email by sending a POST request to <code>/api/1/auth/verify-email</code> with this token.</p>
-
-                        <p><strong>This token will expire in 24 hours.</strong></p>
-
-                        <p>If you did not create an account, please ignore this email.</p>
-
-                        <div class="footer">
-                            <p>This is an automated message, please do not reply to this email.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """
-                .formatted(username, verificationLink, verificationToken);
+    private String loadTemplate(String templatePath) {
+        try (InputStream inputStream = new ClassPathResource(templatePath).getInputStream()) {
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.error("Failed to load email template: {}", templatePath, e);
+            throw new EmailSendException("Failed to load email template: " + templatePath, e);
+        }
     }
 }

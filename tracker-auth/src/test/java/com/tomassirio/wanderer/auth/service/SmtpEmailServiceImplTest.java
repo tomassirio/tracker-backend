@@ -78,7 +78,9 @@ class SmtpEmailServiceImplTest {
         when(emailProperties.getFrom()).thenReturn("noreply@tomassir.io");
         when(emailProperties.getFromName()).thenReturn("Wanderer No Reply");
         when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
-        doThrow(new RuntimeException("Connection refused", new MessagingException("Connection refused")))
+        doThrow(
+                        new RuntimeException(
+                                "Connection refused", new MessagingException("Connection refused")))
                 .when(mailSender)
                 .send(any(MimeMessage.class));
 
@@ -111,4 +113,3 @@ class SmtpEmailServiceImplTest {
                 .hasMessageContaining("Failed to send verification email");
     }
 }
-

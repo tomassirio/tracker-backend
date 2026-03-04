@@ -49,7 +49,7 @@ public class EmailServiceImpl implements EmailService {
         log.info("");
         log.info(
                 "You can verify your email by sending a POST request to /api/1/auth/verify-email"
-                        + " with this token.");
+                        + " with this token, or visit /verify-email?token=<token> on the frontend.");
         log.info("");
         log.info("This token will expire in 24 hours.");
         log.info("");

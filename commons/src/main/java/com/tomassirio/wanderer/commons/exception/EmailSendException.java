@@ -14,4 +14,3 @@ public class EmailSendException extends RuntimeException {
         super(message, cause);
     }
 }
-

@@ -265,11 +265,13 @@ class AuthControllerTest {
                                 .param("token", "valid.token")
                                 .accept(MediaType.TEXT_HTML))
                 .andExpect(status().isOk())
-                .andExpect(content().string(org.hamcrest.Matchers.containsString("Email Verified!")))
                 .andExpect(
-                        content().string(
-                                org.hamcrest.Matchers.containsString(
-                                        "Your email has been verified successfully")));
+                        content().string(org.hamcrest.Matchers.containsString("Email Verified!")))
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "Your email has been verified successfully")));
     }
 
     @Test
@@ -283,11 +285,14 @@ class AuthControllerTest {
                                 .accept(MediaType.TEXT_HTML))
                 .andExpect(status().isBadRequest())
                 .andExpect(
-                        content().string(
-                                org.hamcrest.Matchers.containsString("Verification Failed")))
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "Verification Failed")))
                 .andExpect(
-                        content().string(
-                                org.hamcrest.Matchers.containsString(
-                                        "invalid or has expired")));
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "invalid or has expired")));
     }
 }
