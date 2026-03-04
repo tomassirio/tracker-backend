@@ -36,13 +36,5 @@ jobs:
       image-tag: ${{ github.event.release.tag_name || inputs.image-tag }}
       namespace: ${{ inputs.environment == 'dev' && 'wanderer-dev' || 'wanderer' }}
       service: ${{ inputs.service }}
-    secrets:
-      TWINGATE_SERVICE_KEY: ${{ secrets.TWINGATE_SERVICE_KEY }}
-      KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG_CONTENT }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_AUTH_PASSWORD: ${{ secrets.DB_AUTH_PASSWORD }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
-      EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+    secrets: inherit
 
