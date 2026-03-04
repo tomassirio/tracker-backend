@@ -20,10 +20,12 @@ import jakarta.validation.Valid;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -55,9 +57,13 @@ public class AuthController {
             "templates/email/verification-success.html";
     private static final String VERIFICATION_FAILURE_TEMPLATE =
             "templates/email/verification-failure.html";
+    private static final String LOGO_RESOURCE = "assets/wanderer-logo.png";
 
     private final AuthService authService;
     private final TokenService tokenService;
+
+    @Value("${app.email.base-url:http://localhost:3000}")
+    private String baseUrl;
 
     @PostMapping(value = ApiConstants.LOGIN_ENDPOINT, consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
@@ -115,12 +121,30 @@ public class AuthController {
             log.info("Email verified successfully via link");
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
-                    .body(loadTemplate(VERIFICATION_SUCCESS_TEMPLATE));
+                    .body(loadAndPopulateTemplate(VERIFICATION_SUCCESS_TEMPLATE));
         } catch (Exception e) {
             log.warn("Email verification via link failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                     .contentType(MediaType.TEXT_HTML)
-                    .body(loadTemplate(VERIFICATION_FAILURE_TEMPLATE));
+                    .body(loadAndPopulateTemplate(VERIFICATION_FAILURE_TEMPLATE));
+        }
+    }
+
+    private String loadAndPopulateTemplate(String templatePath) {
+        String template = loadTemplate(templatePath);
+        String loginUrl = baseUrl.replaceAll("/+$", "") + "/login";
+        String logoDataUri = buildLogoDataUri();
+        return template.replace("{{loginUrl}}", loginUrl)
+                .replace("{{logoSrc}}", logoDataUri);
+    }
+
+    private String buildLogoDataUri() {
+        try (InputStream inputStream = new ClassPathResource(LOGO_RESOURCE).getInputStream()) {
+            byte[] bytes = inputStream.readAllBytes();
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(bytes);
+        } catch (IOException e) {
+            log.warn("Failed to load logo for verification page", e);
+            return "";
         }
     }
 

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = ApiConstants.USERS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "User Queries", description = "Endpoints for retrieving user information")
 public class UserQueryController {
 
@@ -49,18 +51,21 @@ public class UserQueryController {
             @Parameter(description = "Pagination and sorting parameters")
                     @PageableDefault(size = 20, sort = "username")
                     Pageable pageable) {
+        log.info("Admin retrieving all users, page: {}, size: {}", pageable.getPageNumber(), pageable.getPageSize());
         return ResponseEntity.ok(userQueryService.getAllUsersWithStats(pageable));
     }
 
     @GetMapping(ApiConstants.USER_BY_ID_ENDPOINT)
     @Operation(summary = "Get user by ID", description = "Retrieves a specific user by their ID")
     public ResponseEntity<UserResponse> getUser(@PathVariable UUID id) {
+        log.info("Retrieving user by ID: {}", id);
         return ResponseEntity.ok(userQueryService.getUserById(id));
     }
 
     @GetMapping(ApiConstants.USERNAME_ENDPOINT)
     @Operation(summary = "Get user by username", description = "Retrieves a user by their username")
     public ResponseEntity<UserResponse> getUserByUsername(@PathVariable String username) {
+        log.info("Retrieving user by username: {}", username);
         return ResponseEntity.ok(userQueryService.getUserByUsername(username));
     }
 
@@ -71,6 +76,7 @@ public class UserQueryController {
             description = "Retrieves the profile of the currently authenticated user")
     public ResponseEntity<UserResponse> getMyUser(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
+        log.info("Retrieving current user profile for userId: {}", userId);
         return ResponseEntity.ok(userQueryService.getUserById(userId));
     }
 }

@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = ApiConstants.TRIPS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Trip Achievements", description = "Endpoints for retrieving trip achievements")
 public class TripAchievementQueryController {
 
@@ -34,6 +36,7 @@ public class TripAchievementQueryController {
             description = "Retrieves all achievements unlocked for a specific trip")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved trip achievements")
     public ResponseEntity<List<UserAchievementDTO>> getTripAchievements(@PathVariable UUID tripId) {
+        log.info("Retrieving achievements for trip: {}", tripId);
         return ResponseEntity.ok(achievementQueryService.getTripAchievements(tripId));
     }
 }

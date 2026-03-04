@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="5;url={{loginUrl}}">
     <title>Email Verified – Wanderer</title>
     <style>
         body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -33,6 +34,11 @@
             border-radius: 16px;
             overflow: hidden;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08), 0 16px 48px rgba(0, 0, 0, 0.04);
+            cursor: pointer;
+            transition: box-shadow 0.2s;
+        }
+        .card-container:hover {
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 20px 56px rgba(0, 0, 0, 0.06);
         }
         .card-header {
             background: linear-gradient(135deg, #E07830 0%, #F5A623 100%);
@@ -97,6 +103,18 @@
             color: #666666;
             line-height: 1.7;
         }
+        .redirect-text {
+            font-size: 13px;
+            color: #999999;
+        }
+        .redirect-text a {
+            color: #E07830;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .redirect-text a:hover {
+            text-decoration: underline;
+        }
         .card-footer {
             background-color: #FAF9F7;
             padding: 28px 40px;
@@ -125,12 +143,12 @@
 </head>
 <body>
     <div class="page-wrapper">
-        <div class="card-container">
+        <div class="card-container" onclick="window.location.href='{{loginUrl}}'">
 
             <!-- HEADER -->
             <div class="card-header">
                 <div class="logo-circle">
-                    <img src="/assets/wanderer-logo.png" alt="Wanderer" width="54" height="54">
+                    <img src="{{logoSrc}}" alt="Wanderer" width="54" height="54">
                 </div>
                 <h1>Wanderer</h1>
                 <p>Track your trips &amp; adventures</p>
@@ -143,15 +161,23 @@
                 </div>
                 <h2>Email Verified!</h2>
                 <p>Your email has been verified successfully. You can now log in to your account and start tracking your adventures.</p>
+                <p class="redirect-text">Redirecting to login in <span id="countdown">5</span> seconds&hellip; or <a href="{{loginUrl}}">click here</a></p>
             </div>
 
             <!-- FOOTER -->
             <div class="card-footer">
-                <p>You can close this page.</p>
                 <p><span class="brand">Wanderer</span></p>
             </div>
 
         </div>
     </div>
+    <script>
+        var seconds = 5;
+        var el = document.getElementById('countdown');
+        setInterval(function() {
+            seconds--;
+            if (el) el.textContent = seconds;
+        }, 1000);
+    </script>
 </body>
 </html>
