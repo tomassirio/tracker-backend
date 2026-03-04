@@ -32,13 +32,6 @@ spec:
         env:
         - name: SPRING_CONFIG_LOCATION
           value: "file:/app/config/application.properties"
-        {{- if .Values.application.email.enabled }}
-        - name: EMAIL_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Chart.Name }}{{ .Values.environment.suffix }}-email-secret
-              key: EMAIL_PASSWORD
-        {{- end }}
       volumes:
       - name: config
         configMap:
