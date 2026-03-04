@@ -87,7 +87,7 @@ public class AdminQueryController {
         } catch (Exception e) {
             log.error(
                     "Unexpected error retrieving roles for user {}: {}", userId, e.getMessage(), e);
-            return ResponseEntity.ok(Collections.emptySet());
+            return ResponseEntity.internalServerError().build();
         }
     }
 }
