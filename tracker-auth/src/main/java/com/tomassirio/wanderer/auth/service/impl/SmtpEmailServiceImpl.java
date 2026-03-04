@@ -89,8 +89,7 @@ public class SmtpEmailServiceImpl implements EmailService {
             helper.setTo(email);
             helper.setSubject("Verify your email address");
             helper.setText(buildEmailContent(username, verificationToken), true);
-            helper.addInline(
-                    "wandererLogo", new ClassPathResource(LOGO_RESOURCE), "image/png");
+            helper.addInline("wandererLogo", new ClassPathResource(LOGO_RESOURCE), "image/png");
 
             mailSender.send(message);
             log.info("Verification email sent successfully to: {}", email);

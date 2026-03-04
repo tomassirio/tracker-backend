@@ -32,6 +32,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -51,6 +52,7 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(authController, "baseUrl", "http://localhost:3000");
         mockMvc =
                 MockMvcBuilders.standaloneSetup(authController)
                         .setControllerAdvice(new GlobalExceptionHandler())
