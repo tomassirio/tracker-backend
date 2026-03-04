@@ -10,7 +10,6 @@ import jakarta.mail.internet.MimeMessage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -82,12 +81,16 @@ public class SmtpEmailServiceImpl implements EmailService {
     public void sendVerificationEmail(String email, String username, String verificationToken) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(
+                            message, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
 
             helper.setFrom(emailProperties.getFrom(), emailProperties.getFromName());
             helper.setTo(email);
             helper.setSubject("Verify your email address");
             helper.setText(buildEmailContent(username, verificationToken), true);
+            helper.addInline(
+                    "wandererLogo", new ClassPathResource(LOGO_RESOURCE), "image/png");
 
             mailSender.send(message);
             log.info("Verification email sent successfully to: {}", email);
@@ -111,24 +114,11 @@ public class SmtpEmailServiceImpl implements EmailService {
     private String buildEmailContent(String username, String verificationToken) {
         String baseUrl = emailProperties.getBaseUrl().replaceAll("/+$", "");
         String verificationLink = baseUrl + "/verify-email?token=" + verificationToken;
-        String logoDataUri = buildLogoDataUri();
 
         String template = loadTemplate(VERIFICATION_EMAIL_TEMPLATE);
         return template.replace("{{username}}", username)
                 .replace("{{verificationLink}}", verificationLink)
-                .replace("{{verificationToken}}", verificationToken)
-                .replace("{{logoSrc}}", logoDataUri);
-    }
-
-    private String buildLogoDataUri() {
-        try (InputStream inputStream = new ClassPathResource(LOGO_RESOURCE).getInputStream()) {
-            byte[] bytes = inputStream.readAllBytes();
-            String base64 = Base64.getEncoder().encodeToString(bytes);
-            return "data:image/png;base64," + base64;
-        } catch (IOException e) {
-            log.warn("Failed to load logo for email, falling back to empty image", e);
-            return "";
-        }
+                .replace("{{verificationToken}}", verificationToken);
     }
 
     private String loadTemplate(String templatePath) {
