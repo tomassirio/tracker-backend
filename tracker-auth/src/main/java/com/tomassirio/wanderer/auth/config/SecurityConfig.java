@@ -47,6 +47,8 @@ public class SecurityConfig {
                         authz ->
                                 authz.requestMatchers("/api/1/auth/**")
                                         .permitAll()
+                                        .requestMatchers("/assets/**")
+                                        .permitAll()
                                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**")
                                         .permitAll()
                                         .anyRequest()

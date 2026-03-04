@@ -3,8 +3,7 @@ package com.tomassirio.wanderer.commons.domain;
 /**
  * Weather conditions mapped from the Google Weather API {@code weatherCondition.type} values.
  *
- * @see <a
- *     href="https://developers.google.com/maps/documentation/weather/current-conditions">Google
+ * @see <a href="https://developers.google.com/maps/documentation/weather/current-conditions">Google
  *     Weather API</a>
  */
 public enum WeatherCondition {

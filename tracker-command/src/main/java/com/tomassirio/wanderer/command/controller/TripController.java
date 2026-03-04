@@ -57,7 +57,7 @@ public class TripController {
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @Valid @RequestBody TripCreationRequest request) {
 
-        log.info("Received request to create trip: {} by user {}", request.name(), userId);
+        log.info("Received request to create trip by user {}", userId);
 
         UUID tripId = tripService.createTrip(userId, request);
 
@@ -101,11 +101,7 @@ public class TripController {
             @Parameter(hidden = true) @CurrentUserId UUID userId,
             @PathVariable UUID id,
             @Valid @RequestBody TripUpdateRequest request) {
-        log.info(
-                "Received request to update trip {} with name: {} by user {}",
-                id,
-                request.name(),
-                userId);
+        log.info("Received request to update trip {} by user {}", id, userId);
 
         UUID tripId = tripService.updateTrip(userId, id, request);
 

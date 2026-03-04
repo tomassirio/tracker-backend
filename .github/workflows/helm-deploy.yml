@@ -42,6 +42,9 @@ on:
       GOOGLE_MAPS_API_KEY:
         description: 'Google Maps API key for distance calculation'
         required: false
+      EMAIL_PASSWORD:
+        description: 'SMTP password for Brevo email service'
+        required: false
 
 env:
   ENV_SUFFIX: ${{ inputs.environment == 'dev' && '-dev' || '' }}
@@ -166,6 +169,7 @@ jobs:
         env:
           DB_PASSWORD: ${{ matrix.service == 'tracker-auth' && secrets.DB_AUTH_PASSWORD || secrets.DB_PASSWORD }}
           DB_URL: jdbc:postgresql://postgres${{ env.ENV_SUFFIX }}:5432/${{ matrix.db }}
+          EMAIL_SMTP_PWD: ${{ secrets.EMAIL_PASSWORD }}
         run: |
           CORS_ORIGINS="${{ env.LOCAL_DOMAIN }},${{ env.CORS_ORIGINS }}"
           if [ -n "${{ vars.PUBLIC_URL }}" ]; then
@@ -204,6 +208,20 @@ jobs:
                 "--set" "application.bootstrap.adminEnabled=${{ vars.BOOTSTRAP_ADMIN_ENABLED }}"
               )
             fi
+            # Email configuration from GitHub environment variables and secrets
+            if [ -n "${{ vars.EMAIL_ENABLED }}" ]; then
+              HELM_ARGS+=(
+                "--set" "application.email.enabled=${{ vars.EMAIL_ENABLED }}"
+              )
+            fi
+            HELM_ARGS+=(
+              "--set-string" "application.email.password=$EMAIL_SMTP_PWD"
+            )
+            if [ -n "${{ vars.EMAIL_BASE_URL }}" ]; then
+              HELM_ARGS+=(
+                "--set" "application.email.baseUrl=${{ vars.EMAIL_BASE_URL }}"
+              )
+            fi
           fi
           
           if [ "${{ matrix.service }}" == "tracker-command" ] && [ -n "${{ secrets.GOOGLE_MAPS_API_KEY }}" ]; then
@@ -216,6 +234,15 @@ jobs:
             HELM_ARGS+=(
               "--set" "application.tracker.authUrl=http://tracker-auth${{ env.ENV_SUFFIX }}:8083"
             )
+          fi
+          
+          # Debug: check if EMAIL_PASSWORD secret has a value (logs length only, not the value)
+          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
+            EMAIL_PWD_LENGTH=${#EMAIL_SMTP_PWD}
+            echo "EMAIL_PASSWORD length: $EMAIL_PWD_LENGTH"
+            if [ "$EMAIL_PWD_LENGTH" -eq 0 ]; then
+              echo "::warning::EMAIL_PASSWORD secret is empty — email authentication will fail"
+            fi
           fi
           
           helm "${HELM_ARGS[@]}" --wait --timeout 5m

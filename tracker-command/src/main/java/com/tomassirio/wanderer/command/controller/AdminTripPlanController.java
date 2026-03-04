@@ -72,6 +72,7 @@ public class AdminTripPlanController {
                     UUID tripPlanId) {
         log.info("Admin recomputing polyline for trip plan {}", tripPlanId);
         tripPlanPolylineService.computePolyline(tripPlanId);
+        log.info("Successfully recomputed polyline for trip plan {}", tripPlanId);
         return ResponseEntity.noContent().build();
     }
 }

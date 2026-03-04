@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.auth.service;
 
 import com.tomassirio.wanderer.auth.dto.LoginResponse;
+import com.tomassirio.wanderer.auth.dto.RegisterPendingResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import java.util.UUID;
 
@@ -25,17 +26,28 @@ public interface AuthService {
     LoginResponse login(String username, String password);
 
     /**
-     * Registers a new user with the provided registration details. Creates the user in the domain
-     * via the command service and stores credentials in the auth database. If credential creation
-     * fails after user creation, attempts to delete the created user as compensation.
+     * Registers a new user with the provided registration details. Creates a pending email
+     * verification instead of immediately creating the user. An email verification token is
+     * generated and sent to the user's email address.
      *
      * @param request the registration request containing username, email, and password
-     * @return a LoginResponse containing the JWT token and metadata
-     * @throws IllegalArgumentException if credentials already exist for the user
-     * @throws IllegalStateException if user creation or credential saving fails, or if rollback
-     *     fails
+     * @return a RegisterPendingResponse indicating the email verification was sent
+     * @throws IllegalArgumentException if the email or username is already in use
+     * @throws IllegalStateException if there is an issue with the registration process
      */
-    LoginResponse register(RegisterRequest request);
+    RegisterPendingResponse register(RegisterRequest request);
+
+    /**
+     * Verifies a user's email address using the provided token. Upon successful verification,
+     * creates the user in the domain via the command service and stores credentials in the auth
+     * database.
+     *
+     * @param token the email verification token
+     * @return a LoginResponse containing the JWT token and metadata
+     * @throws IllegalArgumentException if the token is invalid, expired, or already verified
+     * @throws IllegalStateException if user creation or credential saving fails
+     */
+    LoginResponse verifyEmail(String token);
 
     /**
      * Logs out a user by revoking all refresh tokens.

@@ -19,7 +19,8 @@ import org.springframework.security.web.header.writers.XXssProtectionHeaderWrite
  *   <li><b>X-Content-Type-Options: nosniff</b> — Prevents MIME-type sniffing attacks
  *   <li><b>X-Frame-Options: DENY</b> — Prevents clickjacking by disallowing framing
  *   <li><b>X-XSS-Protection: 0</b> — Disables legacy XSS auditor (CSP is preferred)
- *   <li><b>Content-Security-Policy</b> — Restricts resource loading to same origin
+ *   <li><b>Content-Security-Policy</b> — Restricts resource loading to same origin; allows
+ *       inline styles and data: URIs for images
  *   <li><b>Referrer-Policy: strict-origin-when-cross-origin</b> — Limits referrer leakage
  *   <li><b>Permissions-Policy</b> — Restricts browser feature access
  *   <li><b>Cache-Control / Pragma / Expires</b> — Prevents sensitive data caching
@@ -67,7 +68,10 @@ public class SecurityHeadersConfig {
                     // Content-Security-Policy — restrict resource origins
                     .addHeaderWriter(
                             new ContentSecurityPolicyHeaderWriter(
-                                    "default-src 'self'; frame-ancestors 'none'"))
+                                    "default-src 'self'; style-src 'self' 'unsafe-inline';"
+                                            + " script-src 'self' 'unsafe-inline';"
+                                            + " img-src 'self' data:;"
+                                            + " frame-ancestors 'none'"))
                     // Referrer-Policy — limit referrer information leakage
                     .referrerPolicy(
                             referrer ->

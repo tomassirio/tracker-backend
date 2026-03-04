@@ -264,6 +264,27 @@ class GlobalExceptionHandlerTest {
                 .andExpect(content().string(""));
     }
 
+    @Test
+    void handleEmailSendException_shouldReturnBadGateway() {
+        // Given
+        EmailSendException exception = new EmailSendException("SMTP authentication failed");
+
+        // When
+        ResponseEntity<String> response =
+                globalExceptionHandler.handleEmailSendException(exception);
+
+        // Then
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_GATEWAY);
+        assertThat(response.getBody()).isEqualTo("SMTP authentication failed");
+    }
+
+    @Test
+    void handleEmailSendException_throughMockMvc_shouldReturnBadGateway() throws Exception {
+        mockMvc.perform(get("/test/email-send-exception"))
+                .andExpect(status().isBadGateway())
+                .andExpect(content().string("Failed to send verification email"));
+    }
+
     // Test controller to simulate exceptions
     @RestController
     static class TestController {
@@ -296,6 +317,11 @@ class GlobalExceptionHandlerTest {
         @GetMapping("/test/response-status-no-reason")
         public void throwResponseStatusNoReason() {
             throw new ResponseStatusException(HttpStatus.CONFLICT);
+        }
+
+        @GetMapping("/test/email-send-exception")
+        public void throwEmailSendException() {
+            throw new EmailSendException("Failed to send verification email");
         }
 
         @SuppressWarnings("unused")

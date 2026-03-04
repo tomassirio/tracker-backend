@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = ApiConstants.ACHIEVEMENTS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Achievement Queries", description = "Endpoints for retrieving achievement information")
 public class AchievementQueryController {
 
@@ -29,6 +31,9 @@ public class AchievementQueryController {
             description = "Retrieves all achievements that can be unlocked in the system")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved all achievements")
     public ResponseEntity<List<AchievementDTO>> getAvailableAchievements() {
-        return ResponseEntity.ok(achievementQueryService.getAvailableAchievements());
+        log.info("Retrieving all available achievements");
+        List<AchievementDTO> achievements = achievementQueryService.getAvailableAchievements();
+        log.info("Successfully retrieved {} available achievements", achievements.size());
+        return ResponseEntity.ok(achievements);
     }
 }

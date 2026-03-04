@@ -46,7 +46,7 @@ public class UserController {
             description =
                     "Registers a new user in the system. Returns 202 Accepted with the user ID as the operation completes asynchronously.")
     public ResponseEntity<UUID> createUser(@Valid @RequestBody UserCreationRequest request) {
-        log.info("Received request to create user: {}", request.username());
+        log.info("Received request to create new user");
         UUID userId = userService.createUser(request);
         log.info("Accepted user creation request with ID: {}", userId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(userId);

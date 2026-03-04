@@ -7,7 +7,9 @@ import com.tomassirio.wanderer.auth.dto.PasswordResetConfirmRequest;
 import com.tomassirio.wanderer.auth.dto.PasswordResetRequest;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenRequest;
 import com.tomassirio.wanderer.auth.dto.RefreshTokenResponse;
+import com.tomassirio.wanderer.auth.dto.RegisterPendingResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
+import com.tomassirio.wanderer.auth.dto.VerifyEmailRequest;
 import com.tomassirio.wanderer.auth.service.AuthService;
 import com.tomassirio.wanderer.auth.service.TokenService;
 import com.tomassirio.wanderer.commons.constants.ApiConstants;
@@ -15,18 +17,27 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -38,18 +49,30 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = ApiConstants.AUTH_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Authentication", description = "Endpoints for user authentication and registration")
 public class AuthController {
 
+    private static final String VERIFICATION_SUCCESS_TEMPLATE =
+            "templates/email/verification-success.html";
+    private static final String VERIFICATION_FAILURE_TEMPLATE =
+            "templates/email/verification-failure.html";
+    private static final String LOGO_RESOURCE = "assets/wanderer-logo.png";
+
     private final AuthService authService;
     private final TokenService tokenService;
+
+    @Value("${app.email.base-url:http://localhost:3000}")
+    private String baseUrl;
 
     @PostMapping(value = ApiConstants.LOGIN_ENDPOINT, consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "User login",
             description = "Authenticates a user and returns access and refresh tokens")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        log.info("Login attempt received");
         LoginResponse response = authService.login(request.username(), request.password());
+        log.info("Login successful");
         return ResponseEntity.ok(response);
     }
 
@@ -58,10 +81,79 @@ public class AuthController {
             consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "User registration",
-            description = "Registers a new user and returns access and refresh tokens")
-    public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
-        LoginResponse resp = authService.register(request);
-        return ResponseEntity.status(201).body(resp);
+            description =
+                    "Initiates user registration by sending an email verification link. The user"
+                            + " account is created only after email verification.")
+    public ResponseEntity<RegisterPendingResponse> register(
+            @Valid @RequestBody RegisterRequest request) {
+        log.info("Registration attempt received");
+        RegisterPendingResponse response = authService.register(request);
+        log.info("Registration initiated, verification email sent");
+        return ResponseEntity.status(202).body(response);
+    }
+
+    @PostMapping(
+            value = ApiConstants.VERIFY_EMAIL_ENDPOINT,
+            consumes = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(
+            summary = "Verify email",
+            description =
+                    "Verifies the user's email address using the token sent via email. Upon"
+                            + " successful verification, creates the user account and returns access"
+                            + " and refresh tokens.")
+    public ResponseEntity<LoginResponse> verifyEmail(
+            @Valid @RequestBody VerifyEmailRequest request) {
+        log.info("Email verification attempt via POST");
+        LoginResponse response = authService.verifyEmail(request.token());
+        log.info("Email verified successfully via POST");
+        return ResponseEntity.status(201).body(response);
+    }
+
+    @GetMapping(value = ApiConstants.VERIFY_EMAIL_ENDPOINT, produces = MediaType.TEXT_HTML_VALUE)
+    @Operation(
+            summary = "Verify email via link",
+            description =
+                    "Verifies the user's email address via a clickable link from the verification"
+                            + " email. Returns an HTML page with the result.")
+    public ResponseEntity<String> verifyEmailViaLink(@RequestParam("token") String token) {
+        try {
+            authService.verifyEmail(token);
+            log.info("Email verified successfully via link");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(loadAndPopulateTemplate(VERIFICATION_SUCCESS_TEMPLATE));
+        } catch (Exception e) {
+            log.warn("Email verification via link failed: {}", e.getMessage());
+            return ResponseEntity.badRequest()
+                    .contentType(MediaType.TEXT_HTML)
+                    .body(loadAndPopulateTemplate(VERIFICATION_FAILURE_TEMPLATE));
+        }
+    }
+
+    private String loadAndPopulateTemplate(String templatePath) {
+        String template = loadTemplate(templatePath);
+        String loginUrl = baseUrl.replaceAll("/+$", "") + "/login";
+        String logoDataUri = buildLogoDataUri();
+        return template.replace("{{loginUrl}}", loginUrl).replace("{{logoSrc}}", logoDataUri);
+    }
+
+    private String buildLogoDataUri() {
+        try (InputStream inputStream = new ClassPathResource(LOGO_RESOURCE).getInputStream()) {
+            byte[] bytes = inputStream.readAllBytes();
+            return "data:image/png;base64," + Base64.getEncoder().encodeToString(bytes);
+        } catch (IOException e) {
+            log.warn("Failed to load logo for verification page", e);
+            return "";
+        }
+    }
+
+    private String loadTemplate(String templatePath) {
+        try (InputStream inputStream = new ClassPathResource(templatePath).getInputStream()) {
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            log.error("Failed to load template: {}", templatePath, e);
+            return "<html><body><h1>An error occurred</h1></body></html>";
+        }
     }
 
     @PostMapping(ApiConstants.LOGOUT_ENDPOINT)
@@ -73,7 +165,9 @@ public class AuthController {
             security = @SecurityRequirement(name = "Bearer Authentication"))
     public ResponseEntity<Map<String, String>> logout(@AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
+        log.info("Logout request for userId: {}", userId);
         authService.logout(userId);
+        log.info("Logout successful for userId: {}", userId);
         return ResponseEntity.ok(Map.of("message", "Logged out successfully"));
     }
 
@@ -83,7 +177,9 @@ public class AuthController {
             description = "Exchanges a refresh token for a new access token and refresh token")
     public ResponseEntity<RefreshTokenResponse> refresh(
             @Valid @RequestBody RefreshTokenRequest request) {
+        log.info("Token refresh request");
         RefreshTokenResponse response = tokenService.refreshAccessToken(request.refreshToken());
+        log.info("Token refresh successful");
         return ResponseEntity.ok(response);
     }
 
@@ -96,7 +192,9 @@ public class AuthController {
                     "Sends a password reset token (in production, this would be sent via email)")
     public ResponseEntity<Map<String, String>> initiatePasswordReset(
             @Valid @RequestBody PasswordResetRequest request) {
+        log.info("Password reset initiated");
         String resetToken = authService.initiatePasswordReset(request.email());
+        log.info("Password reset token generated");
         // In production, this token should be sent via email instead of returned in the response
         return ResponseEntity.ok(
                 Map.of("message", "Password reset token generated", "token", resetToken));
@@ -110,7 +208,9 @@ public class AuthController {
             description = "Resets the password using a valid reset token")
     public ResponseEntity<Map<String, String>> resetPassword(
             @Valid @RequestBody PasswordResetConfirmRequest request) {
+        log.info("Password reset confirmation attempt");
         authService.resetPassword(request.token(), request.newPassword());
+        log.info("Password reset completed successfully");
         return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 
@@ -125,7 +225,9 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> changePassword(
             @Valid @RequestBody PasswordChangeRequest request, @AuthenticationPrincipal Jwt jwt) {
         UUID userId = UUID.fromString(jwt.getSubject());
+        log.info("Password change request for userId: {}", userId);
         authService.changePassword(userId, request.currentPassword(), request.newPassword());
+        log.info("Password changed successfully for userId: {}", userId);
         return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
     }
 }

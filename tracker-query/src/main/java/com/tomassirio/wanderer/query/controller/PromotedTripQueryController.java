@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @RequiredArgsConstructor
+@Slf4j
 @Tag(
         name = "Promoted Trip Queries",
         description = "Public endpoints for retrieving information about promoted trips")
@@ -41,7 +43,10 @@ public class PromotedTripQueryController {
             responseCode = "200",
             description = "List of promoted trips retrieved successfully")
     public ResponseEntity<List<PromotedTripResponse>> getAllPromotedTrips() {
-        return ResponseEntity.ok(promotedTripQueryService.getAllPromotedTrips());
+        log.info("Retrieving all promoted trips");
+        List<PromotedTripResponse> trips = promotedTripQueryService.getAllPromotedTrips();
+        log.info("Successfully retrieved {} promoted trips", trips.size());
+        return ResponseEntity.ok(trips);
     }
 
     @GetMapping(
@@ -54,6 +59,9 @@ public class PromotedTripQueryController {
     @ApiResponse(responseCode = "200", description = "Promotion info retrieved successfully")
     @ApiResponse(responseCode = "404", description = "Trip or promotion not found")
     public ResponseEntity<PromotedTripResponse> getPromotionInfo(@PathVariable UUID id) {
-        return ResponseEntity.ok(promotedTripQueryService.getPromotionByTripId(id));
+        log.info("Retrieving promotion info for trip: {}", id);
+        PromotedTripResponse promotion = promotedTripQueryService.getPromotionByTripId(id);
+        log.info("Successfully retrieved promotion info for trip {}", id);
+        return ResponseEntity.ok(promotion);
     }
 }

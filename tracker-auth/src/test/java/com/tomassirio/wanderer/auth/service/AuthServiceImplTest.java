@@ -3,7 +3,6 @@ package com.tomassirio.wanderer.auth.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,6 +11,7 @@ import com.tomassirio.wanderer.auth.client.TrackerCommandClient;
 import com.tomassirio.wanderer.auth.client.TrackerQueryClient;
 import com.tomassirio.wanderer.auth.domain.Credential;
 import com.tomassirio.wanderer.auth.dto.LoginResponse;
+import com.tomassirio.wanderer.auth.dto.RegisterPendingResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import com.tomassirio.wanderer.auth.repository.CredentialRepository;
 import com.tomassirio.wanderer.auth.service.impl.AuthServiceImpl;
@@ -43,6 +43,8 @@ class AuthServiceImplTest {
     @Mock private JwtService jwtService;
 
     @Mock private TokenService tokenService;
+
+    @Mock private EmailService emailService;
 
     @Mock private TrackerCommandClient trackerCommandClient;
 
@@ -146,117 +148,141 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void register_whenValidRequest_shouldReturnLoginResponse() {
+    void register_whenValidRequest_shouldCreatePendingVerificationAndSendEmail() {
         RegisterRequest request =
                 new RegisterRequest("testuser", "test@example.com", "password123");
+        String verificationToken = "verification.token";
+        Request dummyRequest =
+                Request.create(
+                        Request.HttpMethod.GET,
+                        "http://dummy",
+                        Map.of(),
+                        null,
+                        StandardCharsets.UTF_8,
+                        null);
+
+        when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(trackerQueryClient.getUserByUsername(request.username()))
+                .thenThrow(
+                        new NotFound("User not found", dummyRequest, null, null)); // 404 expected
+        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
+        when(tokenService.createEmailVerificationToken(
+                        request.email(), request.username(), "hashedPassword"))
+                .thenReturn(verificationToken);
+
+        RegisterPendingResponse result = authService.register(request);
+
+        assertEquals(
+                "Registration pending. Please check your email to verify your account.",
+                result.message());
+        verify(emailService)
+                .sendVerificationEmail(request.email(), request.username(), verificationToken);
+        verify(trackerCommandClient, never()).createUser(any());
+    }
+
+    @Test
+    void register_whenEmailAlreadyExists_shouldThrowException() {
+        RegisterRequest request =
+                new RegisterRequest("testuser", "existing@example.com", "password123");
+
+        when(credentialRepository.findByEmail(request.email()))
+                .thenReturn(Optional.of(testCredential));
+
+        assertThrows(IllegalArgumentException.class, () -> authService.register(request));
+        verify(tokenService, never()).createEmailVerificationToken(any(), any(), any());
+        verify(emailService, never()).sendVerificationEmail(any(), any(), any());
+    }
+
+    @Test
+    void register_whenUsernameAlreadyExists_shouldThrowException() {
+        RegisterRequest request =
+                new RegisterRequest("existinguser", "test@example.com", "password123");
+
+        when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
+        when(trackerQueryClient.getUserByUsername(request.username())).thenReturn(testUser);
+
+        assertThrows(IllegalArgumentException.class, () -> authService.register(request));
+        verify(tokenService, never()).createEmailVerificationToken(any(), any(), any());
+        verify(emailService, never()).sendVerificationEmail(any(), any(), any());
+    }
+
+    @Test
+    void verifyEmail_whenValidToken_shouldCreateUserAndReturnLoginResponse() {
+        String verificationToken = "verification.token";
+        String[] verificationData = new String[] {"test@example.com", "testuser", "hashedPassword"};
         String accessToken = "jwt.access.token";
         String refreshToken = "refresh.token";
         long expiresIn = 3600000L;
 
+        when(tokenService.validateEmailVerificationToken(verificationToken))
+                .thenReturn(verificationData);
+        when(credentialRepository.findByEmail(verificationData[0])).thenReturn(Optional.empty());
         when(trackerCommandClient.createUser(any())).thenReturn(testUser.getId());
         when(trackerQueryClient.getUserById(testUser.getId())).thenReturn(testUser);
         when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
-        when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
         when(jwtService.generateTokenWithJti(any(), any(), any())).thenReturn(accessToken);
         when(tokenService.createRefreshToken(testUser.getId())).thenReturn(refreshToken);
         when(jwtService.getExpirationMs()).thenReturn(expiresIn);
 
-        LoginResponse result = authService.register(request);
+        LoginResponse result = authService.verifyEmail(verificationToken);
 
         assertEquals(accessToken, result.accessToken());
         assertEquals(refreshToken, result.refreshToken());
         assertEquals("Bearer", result.tokenType());
         assertEquals(expiresIn, result.expiresIn());
         verify(credentialRepository).save(any(Credential.class));
+        verify(tokenService).markEmailVerificationTokenAsVerified(verificationToken);
         verify(trackerCommandClient, never()).deleteUser(any());
     }
 
     @Test
-    void register_whenUserCreationFails_shouldThrowIllegalStateException() {
-        RegisterRequest request =
-                new RegisterRequest("testuser", "test@example.com", "password123");
+    void verifyEmail_whenEmailAlreadyInUse_shouldThrowException() {
+        String verificationToken = "verification.token";
+        String[] verificationData =
+                new String[] {"existing@example.com", "testuser", "hashedPassword"};
 
+        when(tokenService.validateEmailVerificationToken(verificationToken))
+                .thenReturn(verificationData);
+        when(credentialRepository.findByEmail(verificationData[0]))
+                .thenReturn(Optional.of(testCredential));
+
+        assertThrows(IllegalStateException.class, () -> authService.verifyEmail(verificationToken));
+        verify(trackerCommandClient, never()).createUser(any());
+    }
+
+    @Test
+    void verifyEmail_whenUserCreationFails_shouldThrowIllegalStateException() {
+        String verificationToken = "verification.token";
+        String[] verificationData = new String[] {"test@example.com", "testuser", "hashedPassword"};
+
+        when(tokenService.validateEmailVerificationToken(verificationToken))
+                .thenReturn(verificationData);
+        when(credentialRepository.findByEmail(verificationData[0])).thenReturn(Optional.empty());
         when(trackerCommandClient.createUser(any())).thenThrow(FeignException.class);
 
-        assertThrows(IllegalStateException.class, () -> authService.register(request));
+        assertThrows(IllegalStateException.class, () -> authService.verifyEmail(verificationToken));
         verify(credentialRepository, never()).save(any());
     }
 
     @Test
-    void register_whenFetchUserFails_shouldRollbackAndThrowIllegalStateException() {
-        RegisterRequest request =
-                new RegisterRequest("testuser", "test@example.com", "password123");
+    void verifyEmail_whenFetchUserFails_shouldRollbackAndThrowIllegalStateException() {
+        String verificationToken = "verification.token";
+        String[] verificationData = new String[] {"test@example.com", "testuser", "hashedPassword"};
 
+        when(tokenService.validateEmailVerificationToken(verificationToken))
+                .thenReturn(verificationData);
+        when(credentialRepository.findByEmail(verificationData[0])).thenReturn(Optional.empty());
         when(trackerCommandClient.createUser(any())).thenReturn(testUser.getId());
         when(trackerQueryClient.getUserById(testUser.getId())).thenThrow(FeignException.class);
 
         IllegalStateException exception =
-                assertThrows(IllegalStateException.class, () -> authService.register(request));
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> authService.verifyEmail(verificationToken));
 
         assertEquals("Failed to fetch created user from query service", exception.getMessage());
         verify(trackerCommandClient).deleteUser(testUser.getId());
         verify(credentialRepository, never()).save(any());
-    }
-
-    @Test
-    void register_whenFetchUserFailsAndRollbackFails_shouldThrowCompositeException() {
-        RegisterRequest request =
-                new RegisterRequest("testuser", "test@example.com", "password123");
-
-        when(trackerCommandClient.createUser(any())).thenReturn(testUser.getId());
-        when(trackerQueryClient.getUserById(testUser.getId())).thenThrow(FeignException.class);
-
-        Request dummyRequest =
-                Request.create(
-                        Request.HttpMethod.DELETE,
-                        "http://dummy",
-                        Map.of(),
-                        null,
-                        StandardCharsets.UTF_8,
-                        null);
-        doThrow(new FeignException.InternalServerError("Delete failed", dummyRequest, null, null))
-                .when(trackerCommandClient)
-                .deleteUser(testUser.getId());
-
-        IllegalStateException exception =
-                assertThrows(IllegalStateException.class, () -> authService.register(request));
-
-        assertEquals(
-                "Failed to fetch created user and failed to rollback: Delete failed",
-                exception.getMessage());
-        verify(trackerCommandClient).deleteUser(testUser.getId());
-    }
-
-    @Test
-    void register_whenCredentialsAlreadyExist_shouldThrowIllegalStateException() {
-        RegisterRequest request =
-                new RegisterRequest("testuser", "test@example.com", "password123");
-
-        when(trackerCommandClient.createUser(any())).thenReturn(testUser.getId());
-        when(trackerQueryClient.getUserById(testUser.getId())).thenReturn(testUser);
-        when(credentialRepository.findById(testUser.getId()))
-                .thenReturn(Optional.of(testCredential));
-
-        assertThrows(IllegalStateException.class, () -> authService.register(request));
-        verify(credentialRepository, never()).save(any());
-        verify(trackerCommandClient).deleteUser(testUser.getId());
-    }
-
-    @Test
-    void register_whenEmailAlreadyExists_shouldThrowIllegalStateException() {
-        RegisterRequest request =
-                new RegisterRequest("newuser", testCredential.getEmail(), "password123");
-
-        when(trackerCommandClient.createUser(any())).thenReturn(testUser.getId());
-        when(trackerQueryClient.getUserById(testUser.getId())).thenReturn(testUser);
-        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
-        when(credentialRepository.findByEmail(testCredential.getEmail()))
-                .thenReturn(Optional.of(testCredential));
-
-        assertThrows(IllegalStateException.class, () -> authService.register(request));
-        verify(credentialRepository, never()).save(any());
-        verify(trackerCommandClient).deleteUser(testUser.getId());
     }
 
     @Test
@@ -406,67 +432,5 @@ class AuthServiceImplTest {
         assertEquals("Failed to contact user query service", exception.getMessage());
         assertEquals(serverError, exception.getCause());
         verify(credentialRepository, never()).findById(any());
-    }
-
-    @Test
-    void register_whenCredentialSaveFailsAndRollbackFails_shouldThrowCompositeException() {
-        RegisterRequest request =
-                new RegisterRequest("testuser", "test@example.com", "password123");
-
-        // User creation succeeds
-        when(trackerCommandClient.createUser(any())).thenReturn(testUser.getId());
-        when(trackerQueryClient.getUserById(testUser.getId())).thenReturn(testUser);
-        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
-        when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
-
-        // Credential save fails
-        when(credentialRepository.save(any(Credential.class)))
-                .thenThrow(new RuntimeException("Database error"));
-
-        // Rollback (delete user) also fails - use doThrow for void methods
-        Request dummyRequest =
-                Request.create(
-                        Request.HttpMethod.DELETE,
-                        "http://dummy",
-                        Map.of(),
-                        null,
-                        StandardCharsets.UTF_8,
-                        null);
-        doThrow(new FeignException.InternalServerError("Delete failed", dummyRequest, null, null))
-                .when(trackerCommandClient)
-                .deleteUser(testUser.getId());
-
-        IllegalStateException exception =
-                assertThrows(IllegalStateException.class, () -> authService.register(request));
-
-        assertEquals(
-                "Failed to create credentials and failed to rollback user creation: Delete failed",
-                exception.getMessage());
-        verify(trackerCommandClient).deleteUser(testUser.getId());
-    }
-
-    @Test
-    void register_whenCredentialSaveFailsButRollbackSucceeds_shouldThrowIllegalStateException() {
-        RegisterRequest request =
-                new RegisterRequest("testuser", "test@example.com", "password123");
-
-        // User creation succeeds
-        when(trackerCommandClient.createUser(any())).thenReturn(testUser.getId());
-        when(trackerQueryClient.getUserById(testUser.getId())).thenReturn(testUser);
-        when(credentialRepository.findById(testUser.getId())).thenReturn(Optional.empty());
-        when(credentialRepository.findByEmail(request.email())).thenReturn(Optional.empty());
-        when(passwordEncoder.encode(request.password())).thenReturn("hashedPassword");
-
-        // Credential save fails
-        when(credentialRepository.save(any(Credential.class)))
-                .thenThrow(new RuntimeException("Database error"));
-
-        IllegalStateException exception =
-                assertThrows(IllegalStateException.class, () -> authService.register(request));
-
-        assertEquals(
-                "Failed to create credentials, rolled back user creation", exception.getMessage());
-        verify(trackerCommandClient).deleteUser(testUser.getId());
     }
 }

@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping(value = ApiConstants.USERS_PATH, produces = MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "User Achievements", description = "Endpoints for retrieving user achievements")
 public class UserAchievementQueryController {
 
@@ -40,7 +42,10 @@ public class UserAchievementQueryController {
     @ApiResponse(responseCode = "401", description = "Unauthorized")
     public ResponseEntity<List<UserAchievementDTO>> getMyAchievements(
             @Parameter(hidden = true) @CurrentUserId UUID userId) {
-        return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
+        log.info("Retrieving achievements for current user: {}", userId);
+        List<UserAchievementDTO> achievements = achievementQueryService.getUserAchievements(userId);
+        log.info("Successfully retrieved {} achievements for user {}", achievements.size(), userId);
+        return ResponseEntity.ok(achievements);
     }
 
     @GetMapping(ApiConstants.USER_ACHIEVEMENTS_ENDPOINT)
@@ -49,6 +54,9 @@ public class UserAchievementQueryController {
             description = "Retrieves all achievements unlocked by a specific user")
     @ApiResponse(responseCode = "200", description = "Successfully retrieved user achievements")
     public ResponseEntity<List<UserAchievementDTO>> getUserAchievements(@PathVariable UUID userId) {
-        return ResponseEntity.ok(achievementQueryService.getUserAchievements(userId));
+        log.info("Retrieving achievements for user: {}", userId);
+        List<UserAchievementDTO> achievements = achievementQueryService.getUserAchievements(userId);
+        log.info("Successfully retrieved {} achievements for user {}", achievements.size(), userId);
+        return ResponseEntity.ok(achievements);
     }
 }

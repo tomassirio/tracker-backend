@@ -4,8 +4,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -14,6 +16,7 @@ import com.tomassirio.wanderer.auth.dto.LoginRequest;
 import com.tomassirio.wanderer.auth.dto.LoginResponse;
 import com.tomassirio.wanderer.auth.dto.PasswordChangeRequest;
 import com.tomassirio.wanderer.auth.dto.PasswordResetConfirmRequest;
+import com.tomassirio.wanderer.auth.dto.RegisterPendingResponse;
 import com.tomassirio.wanderer.auth.dto.RegisterRequest;
 import com.tomassirio.wanderer.auth.service.AuthService;
 import com.tomassirio.wanderer.commons.exception.GlobalExceptionHandler;
@@ -29,6 +32,7 @@ import org.springframework.http.MediaType;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -48,6 +52,7 @@ class AuthControllerTest {
 
     @BeforeEach
     void setUp() {
+        ReflectionTestUtils.setField(authController, "baseUrl", "http://localhost:3000");
         mockMvc =
                 MockMvcBuilders.standaloneSetup(authController)
                         .setControllerAdvice(new GlobalExceptionHandler())
@@ -105,11 +110,12 @@ class AuthControllerTest {
     }
 
     @Test
-    void register_whenValidRequest_shouldReturnCreated() throws Exception {
+    void register_whenValidRequest_shouldReturnAccepted() throws Exception {
         RegisterRequest request =
                 new RegisterRequest("testuser", "test@example.com", "password123");
-        LoginResponse response =
-                new LoginResponse("jwt.access.token", "refresh.token", "Bearer", 3600000L);
+        RegisterPendingResponse response =
+                new RegisterPendingResponse(
+                        "Registration pending. Please check your email to verify your account.");
 
         when(authService.register(any(RegisterRequest.class))).thenReturn(response);
 
@@ -117,11 +123,12 @@ class AuthControllerTest {
                         post("/api/1/auth/register")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.accessToken").value("jwt.access.token"))
-                .andExpect(jsonPath("$.refreshToken").value("refresh.token"))
-                .andExpect(jsonPath("$.tokenType").value("Bearer"))
-                .andExpect(jsonPath("$.expiresIn").value(3600000L));
+                .andExpect(status().isAccepted())
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        "Registration pending. Please check your email to verify"
+                                                + " your account."));
     }
 
     @Test
@@ -247,5 +254,47 @@ class AuthControllerTest {
                                 .content(objectMapper.writeValueAsString(request))
                                 .with(jwtAuth(userId.toString())))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void verifyEmailViaLink_whenValidToken_shouldReturnHtmlSuccess() throws Exception {
+        LoginResponse response =
+                new LoginResponse("jwt.access.token", "refresh.token", "Bearer", 3600000L);
+        when(authService.verifyEmail("valid.token")).thenReturn(response);
+
+        mockMvc.perform(
+                        get("/api/1/auth/verify-email")
+                                .param("token", "valid.token")
+                                .accept(MediaType.TEXT_HTML))
+                .andExpect(status().isOk())
+                .andExpect(
+                        content().string(org.hamcrest.Matchers.containsString("Email Verified!")))
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "Your email has been verified successfully")));
+    }
+
+    @Test
+    void verifyEmailViaLink_whenInvalidToken_shouldReturnHtmlError() throws Exception {
+        when(authService.verifyEmail("invalid.token"))
+                .thenThrow(new IllegalArgumentException("Invalid token"));
+
+        mockMvc.perform(
+                        get("/api/1/auth/verify-email")
+                                .param("token", "invalid.token")
+                                .accept(MediaType.TEXT_HTML))
+                .andExpect(status().isBadRequest())
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "Verification Failed")))
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "invalid or has expired")));
     }
 }

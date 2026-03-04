@@ -1,0 +1,77 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-email-verification-tokens
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - tableExists:
+                tableName: email_verification_tokens
+      changes:
+        - createTable:
+            tableName: email_verification_tokens
+            columns:
+              - column:
+                  name: token_id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: email
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: username
+                  type: varchar(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: password_hash
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: token_hash
+                  type: varchar(500)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: expires_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  constraints:
+                    nullable: false
+              - column:
+                  name: verified
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+        - createIndex:
+            indexName: idx_email_verification_tokens_email
+            tableName: email_verification_tokens
+            columns:
+              - column:
+                  name: email
+        - createIndex:
+            indexName: idx_email_verification_tokens_token_hash
+            tableName: email_verification_tokens
+            columns:
+              - column:
+                  name: token_hash
+      rollback:
+        - dropIndex:
+            indexName: idx_email_verification_tokens_token_hash
+            tableName: email_verification_tokens
+        - dropIndex:
+            indexName: idx_email_verification_tokens_email
+            tableName: email_verification_tokens
+        - dropTable:
+            tableName: email_verification_tokens
