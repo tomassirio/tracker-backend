@@ -78,6 +78,12 @@ application:
   wanderer:
     authUrl: "http://wanderer-auth:8083"
 
+  # Rate Limiting
+  rateLimit:
+    enabled: true
+    maxRequests: 100
+    windowSeconds: 60
+
   # Spring Cloud Configuration
   springCloud:
     compatibilityVerifierEnabled: false

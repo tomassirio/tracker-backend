@@ -56,6 +56,12 @@ application:
   wandererCommandUrl: "http://wanderer-command:8081"
   wandererQueryUrl: "http://wanderer-query:8082"
 
+  # Rate Limiting (lower limit for auth service to prevent brute-force)
+  rateLimit:
+    enabled: true
+    maxRequests: 20
+    windowSeconds: 60
+
   # Spring Cloud
   springCloud:
     compatibilityVerifierEnabled: false
