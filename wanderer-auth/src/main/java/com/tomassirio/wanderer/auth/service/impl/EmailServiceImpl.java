@@ -76,7 +76,7 @@ public class EmailServiceImpl implements EmailService {
         log.info(
                 "You can reset your password by sending a PUT request to /api/1/auth/password/reset"
                         + " with this token and your new password, or visit"
-                        + " /api/1/auth/password/reset-form?token=<token> in your browser.");
+                        + " /api/auth/password/reset-form?token=<token> in your browser.");
         log.info("");
         log.info("This token will expire in 1 hour.");
         log.info("");

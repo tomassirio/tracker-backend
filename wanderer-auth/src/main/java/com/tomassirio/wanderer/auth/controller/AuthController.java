@@ -221,9 +221,7 @@ public class AuthController {
         String loginUrl = baseUrl.replaceAll("/+$", "") + "/login";
         String logoDataUri = buildLogoDataUri();
         String resetApiUrl =
-                baseUrl.replaceAll("/+$", "")
-                        + ApiConstants.AUTH_PATH
-                        + ApiConstants.PASSWORD_RESET_ENDPOINT;
+                baseUrl.replaceAll("/+$", "") + "/api/auth" + ApiConstants.PASSWORD_RESET_ENDPOINT;
         String html =
                 template.replace("{{token}}", token)
                         .replace("{{loginUrl}}", loginUrl)

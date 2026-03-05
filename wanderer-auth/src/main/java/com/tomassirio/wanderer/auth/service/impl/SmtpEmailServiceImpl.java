@@ -157,7 +157,7 @@ public class SmtpEmailServiceImpl implements EmailService {
 
     private String buildPasswordResetEmailContent(String username, String resetToken) {
         String baseUrl = emailProperties.getBaseUrl().replaceAll("/+$", "");
-        String resetLink = baseUrl + "/api/1/auth/password/reset-form?token=" + resetToken;
+        String resetLink = baseUrl + "/api/auth/password/reset-form?token=" + resetToken;
 
         String template = loadTemplate(PASSWORD_RESET_EMAIL_TEMPLATE);
         return template.replace("{{username}}", username)
