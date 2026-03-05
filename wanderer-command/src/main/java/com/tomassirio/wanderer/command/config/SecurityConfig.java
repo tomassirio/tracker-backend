@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.command.config;
 
 import com.tomassirio.wanderer.commons.config.JwtConfig;
 import com.tomassirio.wanderer.commons.config.JwtConverterConfig;
+import com.tomassirio.wanderer.commons.config.RateLimitConfig;
 import com.tomassirio.wanderer.commons.config.SecurityCorsConfig;
 import com.tomassirio.wanderer.commons.config.SecurityHeadersConfig;
 import com.tomassirio.wanderer.commons.config.SecurityHeadersConfig.SecurityHeadersCustomizer;
@@ -28,7 +29,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
     JwtConfig.class,
     JwtConverterConfig.class,
     SecurityCorsConfig.class,
-    SecurityHeadersConfig.class
+    SecurityHeadersConfig.class,
+    RateLimitConfig.class
 })
 public class SecurityConfig {
 

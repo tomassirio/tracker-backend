@@ -42,6 +42,11 @@ data:
     # Wanderer service URLs
     wanderer.auth.url={{ .Values.application.wanderer.authUrl }}
 
+    # Rate Limiting
+    app.rate-limit.enabled={{ .Values.application.rateLimit.enabled }}
+    app.rate-limit.max-requests={{ .Values.application.rateLimit.maxRequests }}
+    app.rate-limit.window-seconds={{ .Values.application.rateLimit.windowSeconds }}
+
     # Disable Spring Cloud compatibility verifier
     spring.cloud.compatibility-verifier.enabled={{ .Values.application.springCloud.compatibilityVerifierEnabled }}
 
