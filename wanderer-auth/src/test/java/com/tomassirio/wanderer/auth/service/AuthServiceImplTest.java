@@ -308,8 +308,7 @@ class AuthServiceImplTest {
 
         assertEquals(resetToken, result);
         verify(tokenService).createPasswordResetToken(testCredential.getUserId());
-        verify(emailService)
-                .sendPasswordResetEmail(email, testUser.getUsername(), resetToken);
+        verify(emailService).sendPasswordResetEmail(email, testUser.getUsername(), resetToken);
     }
 
     @Test

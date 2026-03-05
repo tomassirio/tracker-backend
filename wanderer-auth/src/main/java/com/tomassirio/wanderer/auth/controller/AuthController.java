@@ -123,8 +123,9 @@ public class AuthController {
             log.info("Email verified successfully via link");
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
-                    .body(loadAndPopulateTemplate(
-                            VERIFICATION_SUCCESS_TEMPLATE, response.username()));
+                    .body(
+                            loadAndPopulateTemplate(
+                                    VERIFICATION_SUCCESS_TEMPLATE, response.username()));
         } catch (Exception e) {
             log.warn("Email verification via link failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
@@ -194,15 +195,16 @@ public class AuthController {
             consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Initiate password reset",
-            description =
-                    "Sends a password reset email with a link to the password reset form")
+            description = "Sends a password reset email with a link to the password reset form")
     public ResponseEntity<Map<String, String>> initiatePasswordReset(
             @Valid @RequestBody PasswordResetRequest request) {
         log.info("Password reset initiated");
         authService.initiatePasswordReset(request.email());
         log.info("Password reset email sent");
         return ResponseEntity.ok(
-                Map.of("message", "If an account with that email exists, a password reset email has been sent"));
+                Map.of(
+                        "message",
+                        "If an account with that email exists, a password reset email has been sent"));
     }
 
     @GetMapping(
@@ -218,13 +220,15 @@ public class AuthController {
         String template = loadTemplate(PASSWORD_RESET_FORM_TEMPLATE);
         String loginUrl = baseUrl.replaceAll("/+$", "") + "/login";
         String logoDataUri = buildLogoDataUri();
-        String resetApiUrl = baseUrl.replaceAll("/+$", "") + ApiConstants.AUTH_PATH
-                + ApiConstants.PASSWORD_RESET_ENDPOINT;
-        String html = template
-                .replace("{{token}}", token)
-                .replace("{{loginUrl}}", loginUrl)
-                .replace("{{logoSrc}}", logoDataUri)
-                .replace("{{resetApiUrl}}", resetApiUrl);
+        String resetApiUrl =
+                baseUrl.replaceAll("/+$", "")
+                        + ApiConstants.AUTH_PATH
+                        + ApiConstants.PASSWORD_RESET_ENDPOINT;
+        String html =
+                template.replace("{{token}}", token)
+                        .replace("{{loginUrl}}", loginUrl)
+                        .replace("{{logoSrc}}", logoDataUri)
+                        .replace("{{resetApiUrl}}", resetApiUrl);
         return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
     }
 

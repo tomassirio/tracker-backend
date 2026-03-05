@@ -47,7 +47,7 @@ class AuthControllerTest {
 
     @Mock private AuthService authService;
 
-    @Mock privateTokenService tokenService;
+    @Mock private TokenService tokenService;
 
     @InjectMocks private AuthController authController;
 
@@ -197,10 +197,7 @@ class AuthControllerTest {
                                         org.hamcrest.Matchers.containsString(
                                                 "Reset your password")))
                 .andExpect(
-                        content()
-                                .string(
-                                        org.hamcrest.Matchers.containsString(
-                                                "some.reset.token")));
+                        content().string(org.hamcrest.Matchers.containsString("some.reset.token")));
     }
 
     @Test

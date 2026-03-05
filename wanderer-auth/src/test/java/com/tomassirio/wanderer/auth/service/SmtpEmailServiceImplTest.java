@@ -122,8 +122,7 @@ class SmtpEmailServiceImplTest {
         when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
 
         // When
-        smtpEmailService.sendPasswordResetEmail(
-                "user@example.com", "testuser", "reset123token");
+        smtpEmailService.sendPasswordResetEmail("user@example.com", "testuser", "reset123token");
 
         // Then
         verify(mailSender).send(any(MimeMessage.class));
