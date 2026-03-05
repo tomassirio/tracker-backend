@@ -1,9 +1,9 @@
-# Trip Tracker Application
+# Wanderer Application
 
 ![Java](https://img.shields.io/badge/Java-21-orange?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.6-brightgreen?logo=spring&logoColor=white)
 ![Version](https://img.shields.io/badge/version-0.8.5-blue)
-![Build Status](https://img.shields.io/github/actions/workflow/status/tomassirio/tracker-backend/merge.yml?branch=main&label=build)
+![Build Status](https://img.shields.io/github/actions/workflow/status/tomassirio/wanderer-backend/merge.yml?branch=main&label=build)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Coverage](https://img.shields.io/badge/coverage-51%25-orange)
 
@@ -16,7 +16,7 @@ A comprehensive tracking system for my pilgrimage to Santiago de Compostela, bui
 
 ## 📚 Documentation
 
-- **[API Documentation Wiki](https://github.com/tomassirio/tracker-backend/wiki)** - Comprehensive API reference and guides
+- **[API Documentation Wiki](https://github.com/tomassirio/wanderer-backend/wiki)** - Comprehensive API reference and guides
   - All wiki source files are in [`docs/wiki/`](docs/wiki/)
   - To publish to GitHub Wiki: `./setup-wiki.sh`
   - See [`docs/wiki/SETUP-INSTRUCTIONS.md`](docs/wiki/SETUP-INSTRUCTIONS.md) for details
@@ -24,7 +24,7 @@ A comprehensive tracking system for my pilgrimage to Santiago de Compostela, bui
 - **[Docker Guide](docs/DOCKER.md)** - Complete guide for building and running with Docker
 - **[CI/CD Workflows](docs/CI-CD.md)** - GitHub Actions workflows and automation
 - **[Admin Role Management](docs/ADMIN_ROLES.md)** - Guide for promoting users to admin and bootstrap configuration
-- **[Release Notes](https://github.com/tomassirio/tracker-backend/releases)** - Version history and changelog
+- **[Release Notes](https://github.com/tomassirio/wanderer-backend/releases)** - Version history and changelog
 
 ## 📖 Description
 
@@ -36,14 +36,14 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ### CQRS Multi-Module Structure
 - **Commons**: Shared domain entities, DTOs, and CQRS infrastructure
-- **Tracker-Auth**: Authentication and authorization service - Port 8083
+- **Wanderer-Auth**: Authentication and authorization service - Port 8083
   - User registration and login
   - JWT token generation and validation
   - Refresh token management with rotation
   - Password reset and change functionality
   - Token blacklisting for logout
-- **Tracker-Command**: Write operations (location updates, messages) - Port 8081
-- **Tracker-Query**: Read operations (location history, achievements, weather) - Port 8082
+- **Wanderer-Command**: Write operations (location updates, messages) - Port 8081
+- **Wanderer-Query**: Read operations (location history, achievements, weather) - Port 8082
 
 ### Technology Stack
 - **Backend**: Java 21 with Spring Boot
@@ -56,14 +56,14 @@ The system receives location updates from my phone via OwnTracks (or a custom An
 
 ## 🧩 Applications
 
-### Tracker-Backend (This Repository)
+### Wanderer-Backend (This Repository)
 - Receives REST calls with location and OwnTracks metadata
 - Stores data in PostgresSQL
 - Exposes REST API for frontend queries
 - Supports status messages and weather integration
 - Automatically unlocks achievements based on milestones
 
-### Tracker-Frontend (Separate Repository)
+### Wanderer-Frontend (Separate Repository)
 - Interactive maps showing Camino path and current position
 - Daily route planning view
 - Messages feed and achievements display
@@ -165,16 +165,16 @@ A JSONB structure tracking reaction counts:
 
 ## 📖 API Documentation
 
-For comprehensive API documentation, visit the **[API Documentation Wiki](https://github.com/tomassirio/tracker-backend/wiki)**:
+For comprehensive API documentation, visit the **[API Documentation Wiki](https://github.com/tomassirio/wanderer-backend/wiki)**:
 
-- **[Getting Started Guide](https://github.com/tomassirio/tracker-backend/wiki/Getting-Started-with-APIs)** - Quick start with examples
-- **[Authentication API](https://github.com/tomassirio/tracker-backend/wiki/Authentication-API)** - User registration and login
-- **[User API](https://github.com/tomassirio/tracker-backend/wiki/User-API)** - User management
-- **[Trip API](https://github.com/tomassirio/tracker-backend/wiki/Trip-API)** - Trip CRUD operations
-- **[Trip Plan API](https://github.com/tomassirio/tracker-backend/wiki/Trip-Plan-API)** - Route planning
-- **[Trip Update API](https://github.com/tomassirio/tracker-backend/wiki/Trip-Update-API)** - Location tracking
-- **[Comment API](https://github.com/tomassirio/tracker-backend/wiki/Comment-API)** - Comments and reactions
-- **[Security Guide](https://github.com/tomassirio/tracker-backend/wiki/Security-and-Authorization)** - Authentication and authorization
+- **[Getting Started Guide](https://github.com/tomassirio/wanderer-backend/wiki/Getting-Started-with-APIs)** - Quick start with examples
+- **[Authentication API](https://github.com/tomassirio/wanderer-backend/wiki/Authentication-API)** - User registration and login
+- **[User API](https://github.com/tomassirio/wanderer-backend/wiki/User-API)** - User management
+- **[Trip API](https://github.com/tomassirio/wanderer-backend/wiki/Trip-API)** - Trip CRUD operations
+- **[Trip Plan API](https://github.com/tomassirio/wanderer-backend/wiki/Trip-Plan-API)** - Route planning
+- **[Trip Update API](https://github.com/tomassirio/wanderer-backend/wiki/Trip-Update-API)** - Location tracking
+- **[Comment API](https://github.com/tomassirio/wanderer-backend/wiki/Comment-API)** - Comments and reactions
+- **[Security Guide](https://github.com/tomassirio/wanderer-backend/wiki/Security-and-Authorization)** - Authentication and authorization
 
 The Wiki provides detailed documentation with request/response examples, error handling, and complete workflows.
 
@@ -188,9 +188,9 @@ Each service also provides interactive API documentation:
 
 ## 🌐 API Endpoints Overview
 
-Below is a quick reference of available endpoints. For detailed documentation, see the [Wiki](https://github.com/tomassirio/tracker-backend/wiki).
+Below is a quick reference of available endpoints. For detailed documentation, see the [Wiki](https://github.com/tomassirio/wanderer-backend/wiki).
 
-### Authentication API (tracker-auth) - Port 8083
+### Authentication API (wanderer-auth) - Port 8083
 ```
 POST /api/1/auth/login           → Login with username/password, returns access & refresh tokens
 POST /api/1/auth/register        → Register new user, returns access & refresh tokens
@@ -203,7 +203,7 @@ PUT  /api/1/auth/password/change → Change password for authenticated user (Aut
 
 ### User APIs
 
-#### Command (tracker-command) - Port 8081
+#### Command (wanderer-command) - Port 8081
 ```
 POST /api/1/users                              → Create new user
 POST /api/1/users/friends/requests             → Send a friend request
@@ -213,7 +213,7 @@ POST /api/1/users/follows                      → Follow a user
 DELETE /api/1/users/follows/{id}               → Unfollow a user
 ```
 
-#### Query (tracker-query) - Port 8082
+#### Query (wanderer-query) - Port 8082
 ```
 GET /api/1/users/{id}                          → Get user by ID (Auth: ADMIN, USER)
 GET /api/1/users/username/{username}           → Get user by username (Public)
@@ -227,7 +227,7 @@ GET /api/1/users/follows/followers             → Get users that follow current
 
 ### Trip APIs
 
-#### Command (tracker-command) - Port 8081
+#### Command (wanderer-command) - Port 8081
 ```
 POST   /api/1/trips                    → Create new trip
 PUT    /api/1/trips/{id}               → Update trip
@@ -237,14 +237,14 @@ DELETE /api/1/trips/{id}               → Delete trip
 POST   /api/1/trips/{tripId}/updates   → Create trip update (location, battery, message)
 ```
 
-#### Query (tracker-query) - Port 8082
+#### Query (wanderer-query) - Port 8082
 ```
 GET /api/1/trips/{id}      → Get trip by ID
 GET /api/1/trips           → Get all trips (Admin only)
 GET /api/1/trips/me        → Get current user's trips
 ```
 
-### Trip Plan APIs (tracker-command) - Port 8081
+### Trip Plan APIs (wanderer-command) - Port 8081
 ```
 POST   /api/1/trips/plans   → Create trip plan
 PUT    /api/1/trips/plans/{planId}   → Update trip plan
@@ -253,7 +253,7 @@ DELETE /api/1/trips/plans/{planId}   → Delete trip plan
 
 ### Comment APIs
 
-#### Command (tracker-command) - Port 8081
+#### Command (wanderer-command) - Port 8081
 ```
 POST   /api/1/trips/{tripId}/comments              → Create comment or reply on a trip
                                                      (use parentCommentId in body for replies)
@@ -345,25 +345,25 @@ mvn clean install
 
 # Build specific module
 mvn clean install -pl commons
-mvn clean install -pl tracker-command
-mvn clean install -pl tracker-query
+mvn clean install -pl wanderer-command
+mvn clean install -pl wanderer-query
 ```
 
 ### Running the Applications
 
 #### Auth Service (Port 8083)
 ```bash
-mvn spring-boot:run -pl tracker-auth
+mvn spring-boot:run -pl wanderer-auth
 ```
 
 #### Command Service (Port 8081)
 ```bash
-mvn spring-boot:run -pl tracker-command
+mvn spring-boot:run -pl wanderer-command
 ```
 
 #### Query Service (Port 8082)
 ```bash
-mvn spring-boot:run -pl tracker-query
+mvn spring-boot:run -pl wanderer-query
 ```
 
 ### Testing
@@ -372,8 +372,8 @@ mvn spring-boot:run -pl tracker-query
 mvn test
 
 # Test specific module
-mvn test -pl tracker-command
-mvn test -pl tracker-query
+mvn test -pl wanderer-command
+mvn test -pl wanderer-query
 ```
 
 ## 🐳 Docker Deployment
@@ -381,18 +381,18 @@ mvn test -pl tracker-query
 ### Building Docker Images
 ```bash
 # Command service
-mvn clean compile jib:dockerBuild -pl tracker-command
+mvn clean compile jib:dockerBuild -pl wanderer-command
 
 # Query service
-mvn clean compile jib:dockerBuild -pl tracker-query
+mvn clean compile jib:dockerBuild -pl wanderer-query
 ```
 
 ### Docker Compose (Coming Soon)
 ```yaml
 # docker-compose.yml will include:
 # - PostgreSQL database
-# - tracker-command service
-# - tracker-query service
+# - wanderer-command service
+# - wanderer-query service
 # - Prometheus & Grafana
 ```
 

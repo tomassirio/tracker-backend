@@ -22,10 +22,10 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(
                         new Info()
-                                .title("Tracker Backend API")
+                                .title("Wanderer Backend API")
                                 .version(apiVersion)
                                 .description(
-                                        "Trip Tracker API for tracking a pilgrimage to Santiago de Compostela"))
+                                        "Wanderer API for tracking a pilgrimage to Santiago de Compostela"))
                 .components(
                         new Components()
                                 .addSecuritySchemes(

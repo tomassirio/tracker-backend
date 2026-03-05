@@ -1,8 +1,8 @@
-# GitHub Copilot Instructions for Tracker Backend
+# GitHub Copilot Instructions for Wanderer Backend
 
 ## Project Overview
 
-This is a Trip Tracker application for tracking a pilgrimage to Santiago de Compostela. It's built using Spring Boot 3.5.6 with Java 21, implementing CQRS (Command Query Responsibility Segregation) architecture in a multi-module Maven project.
+This is a Wanderer application for tracking a pilgrimage to Santiago de Compostela. It's built using Spring Boot 3.5.6 with Java 21, implementing CQRS (Command Query Responsibility Segregation) architecture in a multi-module Maven project.
 
 ### Purpose
 The system receives location updates from mobile devices (via OwnTracks or custom Android app) and provides real-time tracking, messaging, achievements, and weather information for friends, family, and guests following the journey.
@@ -16,7 +16,7 @@ The system receives location updates from mobile devices (via OwnTracks or custo
 
 ### Development Flow
 - **Build**: `mvn clean install` (builds all modules)
-- **Build specific module**: `mvn clean install -pl <module-name>` (e.g., `mvn clean install -pl tracker-command`)
+- **Build specific module**: `mvn clean install -pl <module-name>` (e.g., `mvn clean install -pl wanderer-command`)
 - **Test**: `mvn test` (runs unit tests)
 - **Integration Test**: `mvn verify` (runs unit and integration tests)
 - **Format Code**: `mvn spotless:apply` (formats all Java code)
@@ -28,11 +28,11 @@ The system receives location updates from mobile devices (via OwnTracks or custo
 
 ### Multi-Module Maven Project
 ```
-tracker-backend/
+wanderer-backend/
 ├── commons/                  # Shared domain entities, DTOs, and CQRS infrastructure
-├── tracker-auth/            # Authentication service (JWT tokens) - Port 8083
-├── tracker-command/         # Write operations (location updates, messages, trip management) - Port 8081
-├── tracker-query/           # Read operations (location history, achievements, weather) - Port 8082
+├── wanderer-auth/            # Authentication service (JWT tokens) - Port 8083
+├── wanderer-command/         # Write operations (location updates, messages, trip management) - Port 8081
+├── wanderer-query/           # Read operations (location history, achievements, weather) - Port 8082
 ├── docs/                    # Documentation (DOCKER.md, CI-CD.md)
 ├── .github/                 # GitHub Actions workflows and this instructions file
 │   ├── workflows/          # CI/CD pipeline definitions
@@ -60,9 +60,9 @@ com.tomassirio.wanderer.{module}/
 
 ### CQRS Multi-Module Structure
 - **commons**: Shared domain entities, DTOs, and CQRS infrastructure
-- **tracker-auth**: Authentication service (JWT tokens) - Port 8083
-- **tracker-command**: Write operations (location updates, messages, trip management) - Port 8081
-- **tracker-query**: Read operations (location history, achievements, weather) - Port 8082
+- **wanderer-auth**: Authentication service (JWT tokens) - Port 8083
+- **wanderer-command**: Write operations (location updates, messages, trip management) - Port 8081
+- **wanderer-query**: Read operations (location history, achievements, weather) - Port 8082
 
 ### Technology Stack
 - **Backend Framework**: Spring Boot 3.5.6
@@ -85,7 +85,7 @@ com.tomassirio.wanderer.{module}/
 4. **Code Formatting**: Always run `mvn spotless:apply` before committing to maintain code style consistency
 5. **Write Tests**: Maintain minimum 80% code coverage (enforced by JaCoCo). Write unit tests for service layer methods and integration tests for controllers and repositories.
 6. **Document APIs**: Use OpenAPI annotations (`@Operation`, `@ApiResponse`, etc.) for all REST endpoints
-7. **Follow CQRS**: Keep write operations in tracker-command module, read operations in tracker-query module
+7. **Follow CQRS**: Keep write operations in wanderer-command module, read operations in wanderer-query module
 8. **Use DTOs**: Never expose JPA entities directly in API responses. Use MapStruct for entity-to-DTO conversions.
 9. **Security First**: Always consider authentication and authorization requirements. Use `@PreAuthorize` annotations for method-level security.
 10. **Review Logs**: Use appropriate logging levels (DEBUG, INFO, WARN, ERROR). Never log sensitive data (passwords, tokens).
@@ -173,22 +173,22 @@ com.tomassirio.wanderer.{module}
 
 ```bash
 # Auth Service (Port 8083)
-mvn spring-boot:run -pl tracker-auth
+mvn spring-boot:run -pl wanderer-auth
 
 # Command Service (Port 8081)
-mvn spring-boot:run -pl tracker-command
+mvn spring-boot:run -pl wanderer-command
 
 # Query Service (Port 8082)
-mvn spring-boot:run -pl tracker-query
+mvn spring-boot:run -pl wanderer-query
 ```
 
 ### Docker Deployment
 
 ```bash
 # Build Docker images with Jib
-mvn clean compile jib:dockerBuild -pl tracker-command
-mvn clean compile jib:dockerBuild -pl tracker-query
-mvn clean compile jib:dockerBuild -pl tracker-auth
+mvn clean compile jib:dockerBuild -pl wanderer-command
+mvn clean compile jib:dockerBuild -pl wanderer-query
+mvn clean compile jib:dockerBuild -pl wanderer-auth
 
 # Run with Docker Compose
 docker-compose up
@@ -204,7 +204,7 @@ See [docs/DOCKER.md](../docs/DOCKER.md) for detailed Docker deployment guide.
 - Query Service: http://localhost:8082/swagger-ui.html
 
 ### Comprehensive API Documentation
-Full API documentation is available in the [GitHub Wiki](https://github.com/tomassirio/tracker-backend/wiki), including:
+Full API documentation is available in the [GitHub Wiki](https://github.com/tomassirio/wanderer-backend/wiki), including:
 - Getting Started Guide
 - Authentication API
 - User API
@@ -239,13 +239,13 @@ Full API documentation is available in the [GitHub Wiki](https://github.com/toma
 - Custom exceptions
 - Common utilities and constants
 
-### Tracker-Auth Module
+### Wanderer-Auth Module
 - User registration and authentication
 - JWT token generation and validation
 - Login/register endpoints
 - Security configuration
 
-### Tracker-Command Module
+### Wanderer-Command Module
 - Write operations: Create, Update, Delete
 - Trip management (CRUD, status, visibility)
 - Trip Plan management
@@ -253,7 +253,7 @@ Full API documentation is available in the [GitHub Wiki](https://github.com/toma
 - Comment creation and reactions
 - Database writes via JPA repositories
 
-### Tracker-Query Module
+### Wanderer-Query Module
 - Read operations: Query and List
 - User queries (by ID, username, current user)
 - Trip queries (by ID, all, user's trips)
@@ -331,10 +331,10 @@ Full API documentation is available in the [GitHub Wiki](https://github.com/toma
 ## Additional Resources
 
 - [README.md](../README.md) - Project overview and getting started
-- [GitHub Wiki](https://github.com/tomassirio/tracker-backend/wiki) - Complete API documentation
+- [GitHub Wiki](https://github.com/tomassirio/wanderer-backend/wiki) - Complete API documentation
 - [Docker Guide](../docs/DOCKER.md) - Docker deployment guide
 - [CI/CD Guide](../docs/CI-CD.md) - GitHub Actions workflows
-- [Release Notes](https://github.com/tomassirio/tracker-backend/releases) - Version history
+- [Release Notes](https://github.com/tomassirio/wanderer-backend/releases) - Version history
 
 ## Questions or Issues?
 
