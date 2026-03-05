@@ -32,6 +32,8 @@ public class SmtpEmailServiceImpl implements EmailService {
 
     private static final String VERIFICATION_EMAIL_TEMPLATE =
             "templates/email/verification-email.html";
+    private static final String PASSWORD_RESET_EMAIL_TEMPLATE =
+            "templates/email/password-reset-email.html";
     private static final String LOGO_RESOURCE = "assets/wanderer-logo.png";
 
     private final JavaMailSender mailSender;
@@ -118,6 +120,49 @@ public class SmtpEmailServiceImpl implements EmailService {
         return template.replace("{{username}}", username)
                 .replace("{{verificationLink}}", verificationLink)
                 .replace("{{verificationToken}}", verificationToken);
+    }
+
+    @Override
+    public void sendPasswordResetEmail(String email, String username, String resetToken) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(
+                            message, MimeMessageHelper.MULTIPART_MODE_RELATED, "UTF-8");
+
+            helper.setFrom(emailProperties.getFrom(), emailProperties.getFromName());
+            helper.setTo(email);
+            helper.setSubject("Reset your password");
+            helper.setText(buildPasswordResetEmailContent(username, resetToken), true);
+            helper.addInline("wandererLogo", new ClassPathResource(LOGO_RESOURCE), "image/png");
+
+            mailSender.send(message);
+            log.info("Password reset email sent successfully to: {}", email);
+        } catch (MailAuthenticationException e) {
+            log.error(
+                    "SMTP authentication failed while sending password reset email to: {}. "
+                            + "Check EMAIL_USERNAME and EMAIL_PASSWORD environment variables.",
+                    email,
+                    e);
+            throw new EmailSendException(
+                    "SMTP authentication failed — verify your email credentials", e);
+        } catch (MessagingException e) {
+            log.error("Failed to send password reset email to: {}", email, e);
+            throw new EmailSendException("Failed to send password reset email", e);
+        } catch (Exception e) {
+            log.error("Unexpected error sending password reset email to: {}", email, e);
+            throw new EmailSendException("Failed to send password reset email", e);
+        }
+    }
+
+    private String buildPasswordResetEmailContent(String username, String resetToken) {
+        String baseUrl = emailProperties.getBaseUrl().replaceAll("/+$", "");
+        String resetLink = baseUrl + "/api/auth/password/reset-form?token=" + resetToken;
+
+        String template = loadTemplate(PASSWORD_RESET_EMAIL_TEMPLATE);
+        return template.replace("{{username}}", username)
+                .replace("{{resetLink}}", resetLink)
+                .replace("{{resetToken}}", resetToken);
     }
 
     private String loadTemplate(String templatePath) {

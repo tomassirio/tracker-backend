@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="refresh" content="5;url={{loginUrl}}">
+    <meta http-equiv="refresh" content="5;url={{homeUrl}}">
     <title>Verification Failed – Wanderer</title>
     <style>
         body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -28,6 +28,7 @@
             min-height: 100vh;
         }
         .card-container {
+            width: 100%;
             max-width: 520px;
             margin: 0 auto;
             background-color: #FFFFFF;
@@ -159,7 +160,7 @@
 </head>
 <body>
     <div class="page-wrapper">
-        <div class="card-container" onclick="window.location.href='{{loginUrl}}'">
+        <div class="card-container" onclick="window.location.href='{{homeUrl}}'">
 
             <!-- HEADER -->
             <div class="card-header">
@@ -183,7 +184,7 @@
                     <p>Please register again to receive a new verification link. Tokens expire after 24 hours.</p>
                 </div>
 
-                <p class="redirect-text">Redirecting to login in <span id="countdown">5</span> seconds&hellip; or <a href="{{loginUrl}}">click here</a></p>
+                <p class="redirect-text">Redirecting to home in <span id="countdown">5</span> seconds&hellip; or <a href="{{homeUrl}}">click here</a></p>
             </div>
 
             <!-- FOOTER -->

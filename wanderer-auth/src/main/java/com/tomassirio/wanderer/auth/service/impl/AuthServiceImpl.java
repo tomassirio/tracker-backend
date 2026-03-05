@@ -80,7 +80,12 @@ public class AuthServiceImpl implements AuthService {
         String accessToken = jwtService.generateTokenWithJti(user, jti, cred.getRoles());
         String refreshToken = tokenService.createRefreshToken(user.getId());
 
-        return new LoginResponse(accessToken, refreshToken, "Bearer", jwtService.getExpirationMs());
+        return new LoginResponse(
+                accessToken,
+                refreshToken,
+                "Bearer",
+                jwtService.getExpirationMs(),
+                user.getUsername());
     }
 
     /**
@@ -200,7 +205,12 @@ public class AuthServiceImpl implements AuthService {
         String jti = UUID.randomUUID().toString();
         String accessToken = jwtService.generateTokenWithJti(createdUser, jti, Set.of(Role.USER));
         String refreshToken = tokenService.createRefreshToken(createdUser.getId());
-        return new LoginResponse(accessToken, refreshToken, "Bearer", jwtService.getExpirationMs());
+        return new LoginResponse(
+                accessToken,
+                refreshToken,
+                "Bearer",
+                jwtService.getExpirationMs(),
+                createdUser.getUsername());
     }
 
     @Override
@@ -217,11 +227,26 @@ public class AuthServiceImpl implements AuthService {
         }
 
         Credential cred = maybeCred.get();
-        return tokenService.createPasswordResetToken(cred.getUserId());
+        String resetToken = tokenService.createPasswordResetToken(cred.getUserId());
+
+        // Fetch the user to get the username for the email
+        String username;
+        try {
+            User user = wandererQueryClient.getUserById(cred.getUserId());
+            username = user.getUsername();
+        } catch (FeignException e) {
+            // Fall back to email as the greeting name if user lookup fails
+            username = email;
+        }
+
+        // Send password reset email
+        emailService.sendPasswordResetEmail(email, username, resetToken);
+
+        return resetToken;
     }
 
     @Override
-    public void resetPassword(String token, String newPassword) {
+    public String resetPassword(String token, String newPassword) {
         // Validate the reset token and get user ID
         UUID userId = tokenService.validatePasswordResetToken(token);
 
@@ -243,6 +268,14 @@ public class AuthServiceImpl implements AuthService {
 
         // Revoke all refresh tokens for security
         tokenService.revokeAllRefreshTokensForUser(userId);
+
+        // Fetch the username for the response
+        try {
+            User user = wandererQueryClient.getUserById(userId);
+            return user.getUsername();
+        } catch (FeignException e) {
+            return null;
+        }
     }
 
     @Override

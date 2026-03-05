@@ -71,9 +71,10 @@ public interface AuthService {
      *
      * @param token the password reset token
      * @param newPassword the new password
+     * @return the username of the user whose password was reset
      * @throws IllegalArgumentException if the token is invalid, expired, or already used
      */
-    void resetPassword(String token, String newPassword);
+    String resetPassword(String token, String newPassword);
 
     /**
      * Changes a user's password after verifying the current password.

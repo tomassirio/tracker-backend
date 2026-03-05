@@ -57,6 +57,8 @@ public class AuthController {
             "templates/email/verification-success.html";
     private static final String VERIFICATION_FAILURE_TEMPLATE =
             "templates/email/verification-failure.html";
+    private static final String PASSWORD_RESET_FORM_TEMPLATE =
+            "templates/email/password-reset-form.html";
     private static final String LOGO_RESOURCE = "assets/wanderer-logo.png";
 
     private final AuthService authService;
@@ -117,24 +119,33 @@ public class AuthController {
                             + " email. Returns an HTML page with the result.")
     public ResponseEntity<String> verifyEmailViaLink(@RequestParam("token") String token) {
         try {
-            authService.verifyEmail(token);
+            LoginResponse response = authService.verifyEmail(token);
             log.info("Email verified successfully via link");
             return ResponseEntity.ok()
                     .contentType(MediaType.TEXT_HTML)
-                    .body(loadAndPopulateTemplate(VERIFICATION_SUCCESS_TEMPLATE));
+                    .body(
+                            loadAndPopulateTemplate(
+                                    VERIFICATION_SUCCESS_TEMPLATE, response.username()));
         } catch (Exception e) {
             log.warn("Email verification via link failed: {}", e.getMessage());
             return ResponseEntity.badRequest()
                     .contentType(MediaType.TEXT_HTML)
-                    .body(loadAndPopulateTemplate(VERIFICATION_FAILURE_TEMPLATE));
+                    .body(loadAndPopulateTemplate(VERIFICATION_FAILURE_TEMPLATE, null));
         }
     }
 
-    private String loadAndPopulateTemplate(String templatePath) {
+    private String loadAndPopulateTemplate(String templatePath, String username) {
         String template = loadTemplate(templatePath);
         String loginUrl = baseUrl.replaceAll("/+$", "") + "/login";
+        if (username != null && !username.isBlank()) {
+            loginUrl += "?username=" + username;
+        }
+        String homeUrl = baseUrl.replaceAll("/+$", "");
         String logoDataUri = buildLogoDataUri();
-        return template.replace("{{loginUrl}}", loginUrl).replace("{{logoSrc}}", logoDataUri);
+        return template
+                .replace("{{loginUrl}}", loginUrl)
+                .replace("{{homeUrl}}", homeUrl)
+                .replace("{{logoSrc}}", logoDataUri);
     }
 
     private String buildLogoDataUri() {
@@ -188,16 +199,39 @@ public class AuthController {
             consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
             summary = "Initiate password reset",
-            description =
-                    "Sends a password reset token (in production, this would be sent via email)")
+            description = "Sends a password reset email with a link to the password reset form")
     public ResponseEntity<Map<String, String>> initiatePasswordReset(
             @Valid @RequestBody PasswordResetRequest request) {
         log.info("Password reset initiated");
-        String resetToken = authService.initiatePasswordReset(request.email());
-        log.info("Password reset token generated");
-        // In production, this token should be sent via email instead of returned in the response
+        authService.initiatePasswordReset(request.email());
+        log.info("Password reset email sent");
         return ResponseEntity.ok(
-                Map.of("message", "Password reset token generated", "token", resetToken));
+                Map.of(
+                        "message",
+                        "If an account with that email exists, a password reset email has been sent"));
+    }
+
+    @GetMapping(
+            value = ApiConstants.PASSWORD_RESET_FORM_ENDPOINT,
+            produces = MediaType.TEXT_HTML_VALUE)
+    @Operation(
+            summary = "Password reset form",
+            description =
+                    "Displays the password reset form where users can enter their new password."
+                            + " This page is linked from the password reset email.")
+    public ResponseEntity<String> passwordResetForm(@RequestParam("token") String token) {
+        log.info("Password reset form requested");
+        String template = loadTemplate(PASSWORD_RESET_FORM_TEMPLATE);
+        String loginUrl = baseUrl.replaceAll("/+$", "") + "/login";
+        String logoDataUri = buildLogoDataUri();
+        String resetApiUrl =
+                baseUrl.replaceAll("/+$", "") + "/api/auth" + ApiConstants.PASSWORD_RESET_ENDPOINT;
+        String html =
+                template.replace("{{token}}", token)
+                        .replace("{{loginUrl}}", loginUrl)
+                        .replace("{{logoSrc}}", logoDataUri)
+                        .replace("{{resetApiUrl}}", resetApiUrl);
+        return ResponseEntity.ok().contentType(MediaType.TEXT_HTML).body(html);
     }
 
     @PutMapping(
@@ -209,9 +243,14 @@ public class AuthController {
     public ResponseEntity<Map<String, String>> resetPassword(
             @Valid @RequestBody PasswordResetConfirmRequest request) {
         log.info("Password reset confirmation attempt");
-        authService.resetPassword(request.token(), request.newPassword());
+        String username = authService.resetPassword(request.token(), request.newPassword());
         log.info("Password reset completed successfully");
-        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+        Map<String, String> response = new java.util.HashMap<>();
+        response.put("message", "Password reset successfully");
+        if (username != null) {
+            response.put("username", username);
+        }
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping(

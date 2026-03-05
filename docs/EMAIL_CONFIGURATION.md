@@ -59,8 +59,8 @@ app.email.username=a39a49001@smtp-brevo.com
 app.email.password=your-brevo-smtp-key  # Set via EMAIL_PASSWORD environment variable
 
 # Email Sender Configuration
-app.email.from=noreply@tomassir.io
-app.email.from-name=Wanderer No Reply
+app.email.from=wanderer@tomassir.io
+app.email.from-name=Wanderer
 
 # Application Base URL (for verification links)
 app.email.base-url=https://wanderer.example.com
@@ -81,8 +81,8 @@ All email properties can be configured via environment variables:
 | `app.email.port` | `EMAIL_PORT` | `587` | No |
 | `app.email.username` | `EMAIL_USERNAME` | `a39a49001@smtp-brevo.com` | Yes (if enabled) |
 | `app.email.password` | `EMAIL_PASSWORD` | - | Yes (if enabled) - **Use GitHub Secret** |
-| `app.email.from` | `EMAIL_FROM` | `noreply@tomassir.io` | No |
-| `app.email.from-name` | `EMAIL_FROM_NAME` | `Wanderer No Reply` | No |
+| `app.email.from` | `EMAIL_FROM` | `wanderer@tomassir.io` | No |
+| `app.email.from-name` | `EMAIL_FROM_NAME` | `Wanderer` | No |
 | `app.email.base-url` | `EMAIL_BASE_URL` | `http://localhost:3000` | No |
 | `app.email.auth` | `EMAIL_AUTH` | `true` | No |
 | `app.email.start-tls` | `EMAIL_START_TLS` | `true` | No |
@@ -115,8 +115,8 @@ services:
       - EMAIL_PORT=587
       - EMAIL_USERNAME=a39a49001@smtp-brevo.com
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}  # Pass from GitHub secret or .env file
-      - EMAIL_FROM=noreply@tomassir.io
-      - EMAIL_FROM_NAME=Wanderer No Reply
+      - EMAIL_FROM=wanderer@tomassir.io
+      - EMAIL_FROM_NAME=Wanderer
       - EMAIL_BASE_URL=https://wanderer.example.com
 ```
 
@@ -129,8 +129,8 @@ app.email.host=smtp-relay.brevo.com
 app.email.port=587
 app.email.username=a39a49001@smtp-brevo.com
 app.email.password=your-brevo-smtp-key  # Get from Brevo dashboard
-app.email.from=noreply@tomassir.io
-app.email.from-name=Wanderer No Reply
+app.email.from=wanderer@tomassir.io
+app.email.from-name=Wanderer
 app.email.auth=true
 app.email.start-tls=true
 ```

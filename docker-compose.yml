@@ -99,8 +99,8 @@ services:
       EMAIL_PORT: ${EMAIL_PORT:-587}
       EMAIL_USERNAME: ${EMAIL_USERNAME:-a39a49001@smtp-brevo.com}
       EMAIL_PASSWORD: ${EMAIL_PASSWORD:-}
-      EMAIL_FROM: ${EMAIL_FROM:-noreply@tomassir.io}
-      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Wanderer No Reply}
+      EMAIL_FROM: ${EMAIL_FROM:-wanderer@tomassir.io}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Wanderer}
       EMAIL_BASE_URL: ${EMAIL_BASE_URL:-http://localhost:3000}
       EMAIL_AUTH: ${EMAIL_AUTH:-true}
       EMAIL_START_TLS: ${EMAIL_START_TLS:-true}

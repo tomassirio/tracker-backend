@@ -47,6 +47,7 @@ public final class ApiConstants {
     public static final String LOGOUT_ENDPOINT = "/logout";
     public static final String REFRESH_ENDPOINT = "/refresh";
     public static final String PASSWORD_RESET_ENDPOINT = "/password/reset";
+    public static final String PASSWORD_RESET_FORM_ENDPOINT = "/password/reset-form";
     public static final String PASSWORD_CHANGE_ENDPOINT = "/password/change";
 
     // ============================================================
