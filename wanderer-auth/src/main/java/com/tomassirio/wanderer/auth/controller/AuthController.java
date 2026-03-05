@@ -140,8 +140,12 @@ public class AuthController {
         if (username != null && !username.isBlank()) {
             loginUrl += "?username=" + username;
         }
+        String homeUrl = baseUrl.replaceAll("/+$", "");
         String logoDataUri = buildLogoDataUri();
-        return template.replace("{{loginUrl}}", loginUrl).replace("{{logoSrc}}", logoDataUri);
+        return template
+                .replace("{{loginUrl}}", loginUrl)
+                .replace("{{homeUrl}}", homeUrl)
+                .replace("{{logoSrc}}", logoDataUri);
     }
 
     private String buildLogoDataUri() {
