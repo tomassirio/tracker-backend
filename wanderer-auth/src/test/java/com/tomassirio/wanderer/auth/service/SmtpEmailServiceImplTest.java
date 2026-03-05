@@ -39,8 +39,8 @@ class SmtpEmailServiceImplTest {
     void sendVerificationEmail_shouldSendEmailSuccessfully() throws Exception {
         // Given
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        when(emailProperties.getFrom()).thenReturn("noreply@tomassir.io");
-        when(emailProperties.getFromName()).thenReturn("Wanderer No Reply");
+        when(emailProperties.getFrom()).thenReturn("wanderer@tomassir.io");
+        when(emailProperties.getFromName()).thenReturn("Wanderer");
         when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
 
         // When
@@ -54,8 +54,8 @@ class SmtpEmailServiceImplTest {
     void sendVerificationEmail_whenAuthenticationFails_shouldThrowEmailSendException() {
         // Given
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        when(emailProperties.getFrom()).thenReturn("noreply@tomassir.io");
-        when(emailProperties.getFromName()).thenReturn("Wanderer No Reply");
+        when(emailProperties.getFrom()).thenReturn("wanderer@tomassir.io");
+        when(emailProperties.getFromName()).thenReturn("Wanderer");
         when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
         doThrow(new MailAuthenticationException("535 5.7.8 Authentication failed"))
                 .when(mailSender)
@@ -75,8 +75,8 @@ class SmtpEmailServiceImplTest {
             throws Exception {
         // Given
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        when(emailProperties.getFrom()).thenReturn("noreply@tomassir.io");
-        when(emailProperties.getFromName()).thenReturn("Wanderer No Reply");
+        when(emailProperties.getFrom()).thenReturn("wanderer@tomassir.io");
+        when(emailProperties.getFromName()).thenReturn("Wanderer");
         when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
         doThrow(
                         new RuntimeException(
@@ -97,8 +97,8 @@ class SmtpEmailServiceImplTest {
     void sendVerificationEmail_whenUnexpectedExceptionOccurs_shouldThrowEmailSendException() {
         // Given
         when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
-        when(emailProperties.getFrom()).thenReturn("noreply@tomassir.io");
-        when(emailProperties.getFromName()).thenReturn("Wanderer No Reply");
+        when(emailProperties.getFrom()).thenReturn("wanderer@tomassir.io");
+        when(emailProperties.getFromName()).thenReturn("Wanderer");
         when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
         doThrow(new RuntimeException("Unexpected error"))
                 .when(mailSender)
@@ -111,5 +111,61 @@ class SmtpEmailServiceImplTest {
                                         "user@example.com", "testuser", "abc123token"))
                 .isInstanceOf(EmailSendException.class)
                 .hasMessageContaining("Failed to send verification email");
+    }
+
+    @Test
+    void sendPasswordResetEmail_shouldSendEmailSuccessfully() throws Exception {
+        // Given
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(emailProperties.getFrom()).thenReturn("wanderer@tomassir.io");
+        when(emailProperties.getFromName()).thenReturn("Wanderer");
+        when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
+
+        // When
+        smtpEmailService.sendPasswordResetEmail(
+                "user@example.com", "testuser", "reset123token");
+
+        // Then
+        verify(mailSender).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void sendPasswordResetEmail_whenAuthenticationFails_shouldThrowEmailSendException() {
+        // Given
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(emailProperties.getFrom()).thenReturn("wanderer@tomassir.io");
+        when(emailProperties.getFromName()).thenReturn("Wanderer");
+        when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
+        doThrow(new MailAuthenticationException("535 5.7.8 Authentication failed"))
+                .when(mailSender)
+                .send(any(MimeMessage.class));
+
+        // When & Then
+        assertThatThrownBy(
+                        () ->
+                                smtpEmailService.sendPasswordResetEmail(
+                                        "user@example.com", "testuser", "reset123token"))
+                .isInstanceOf(EmailSendException.class)
+                .hasMessageContaining("SMTP authentication failed");
+    }
+
+    @Test
+    void sendPasswordResetEmail_whenUnexpectedExceptionOccurs_shouldThrowEmailSendException() {
+        // Given
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(emailProperties.getFrom()).thenReturn("wanderer@tomassir.io");
+        when(emailProperties.getFromName()).thenReturn("Wanderer");
+        when(emailProperties.getBaseUrl()).thenReturn("http://localhost:3000");
+        doThrow(new RuntimeException("Unexpected error"))
+                .when(mailSender)
+                .send(any(MimeMessage.class));
+
+        // When & Then
+        assertThatThrownBy(
+                        () ->
+                                smtpEmailService.sendPasswordResetEmail(
+                                        "user@example.com", "testuser", "reset123token"))
+                .isInstanceOf(EmailSendException.class)
+                .hasMessageContaining("Failed to send password reset email");
     }
 }

@@ -47,7 +47,7 @@ class AuthControllerTest {
 
     @Mock private AuthService authService;
 
-    @Mock private TokenService tokenService;
+    @Mock privateTokenService tokenService;
 
     @InjectMocks private AuthController authController;
 
@@ -84,7 +84,8 @@ class AuthControllerTest {
     void login_whenValidRequest_shouldReturnOk() throws Exception {
         LoginRequest request = new LoginRequest("testuser", "password123");
         LoginResponse response =
-                new LoginResponse("jwt.access.token", "refresh.token", "Bearer", 3600000L);
+                new LoginResponse(
+                        "jwt.access.token", "refresh.token", "Bearer", 3600000L, "testuser");
 
         when(authService.login(request.username(), request.password())).thenReturn(response);
 
@@ -176,8 +177,30 @@ class AuthControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Password reset token generated"))
-                .andExpect(jsonPath("$.token").value("reset.token.here"));
+                .andExpect(
+                        jsonPath("$.message")
+                                .value(
+                                        "If an account with that email exists, a password reset"
+                                                + " email has been sent"));
+    }
+
+    @Test
+    void passwordResetForm_whenTokenProvided_shouldReturnHtml() throws Exception {
+        mockMvc.perform(
+                        get("/api/1/auth/password/reset-form")
+                                .param("token", "some.reset.token")
+                                .accept(MediaType.TEXT_HTML))
+                .andExpect(status().isOk())
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "Reset your password")))
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "some.reset.token")));
     }
 
     @Test
@@ -198,14 +221,16 @@ class AuthControllerTest {
         PasswordResetConfirmRequest request =
                 new PasswordResetConfirmRequest("valid.reset.token", "newPassword123");
 
-        doNothing().when(authService).resetPassword(request.token(), request.newPassword());
+        when(authService.resetPassword(request.token(), request.newPassword()))
+                .thenReturn("testuser");
 
         mockMvc.perform(
                         put("/api/1/auth/password/reset")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Password reset successfully"));
+                .andExpect(jsonPath("$.message").value("Password reset successfully"))
+                .andExpect(jsonPath("$.username").value("testuser"));
 
         verify(authService).resetPassword(request.token(), request.newPassword());
     }
@@ -260,7 +285,8 @@ class AuthControllerTest {
     @Test
     void verifyEmailViaLink_whenValidToken_shouldReturnHtmlSuccess() throws Exception {
         LoginResponse response =
-                new LoginResponse("jwt.access.token", "refresh.token", "Bearer", 3600000L);
+                new LoginResponse(
+                        "jwt.access.token", "refresh.token", "Bearer", 3600000L, "testuser");
         when(authService.verifyEmail("valid.token")).thenReturn(response);
 
         mockMvc.perform(
@@ -274,7 +300,12 @@ class AuthControllerTest {
                         content()
                                 .string(
                                         org.hamcrest.Matchers.containsString(
-                                                "Your email has been verified successfully")));
+                                                "Your email has been verified successfully")))
+                .andExpect(
+                        content()
+                                .string(
+                                        org.hamcrest.Matchers.containsString(
+                                                "/login?username=testuser")));
     }
 
     @Test

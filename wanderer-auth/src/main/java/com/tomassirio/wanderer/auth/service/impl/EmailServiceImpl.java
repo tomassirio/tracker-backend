@@ -56,4 +56,31 @@ public class EmailServiceImpl implements EmailService {
         log.info("If you did not create an account, please ignore this email.");
         log.info("========================================");
     }
+
+    @Override
+    public void sendPasswordResetEmail(String email, String username, String resetToken) {
+        log.info("========================================");
+        log.info("PASSWORD RESET");
+        log.info("========================================");
+        log.info("To: {}", email);
+        log.info("Subject: Reset your password");
+        log.info("----------------------------------------");
+        log.info("Hello {},", username);
+        log.info("");
+        log.info("We received a request to reset your password.");
+        log.info("");
+        log.info("Please use the following token to reset your password:");
+        log.info("");
+        log.info("Token: {}", resetToken);
+        log.info("");
+        log.info(
+                "You can reset your password by sending a PUT request to /api/1/auth/password/reset"
+                        + " with this token and your new password, or visit"
+                        + " /api/1/auth/password/reset-form?token=<token> in your browser.");
+        log.info("");
+        log.info("This token will expire in 1 hour.");
+        log.info("");
+        log.info("If you did not request a password reset, please ignore this email.");
+        log.info("========================================");
+    }
 }

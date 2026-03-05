@@ -90,6 +90,7 @@ class AuthServiceImplTest {
         assertEquals(refreshToken, result.refreshToken());
         assertEquals("Bearer", result.tokenType());
         assertEquals(expiresIn, result.expiresIn());
+        assertEquals(testUser.getUsername(), result.username());
         verify(jwtService).generateTokenWithJti(any(), any(), any());
         verify(tokenService).createRefreshToken(testUser.getId());
     }
@@ -230,6 +231,7 @@ class AuthServiceImplTest {
         assertEquals(refreshToken, result.refreshToken());
         assertEquals("Bearer", result.tokenType());
         assertEquals(expiresIn, result.expiresIn());
+        assertEquals(testUser.getUsername(), result.username());
         verify(credentialRepository).save(any(Credential.class));
         verify(tokenService).markEmailVerificationTokenAsVerified(verificationToken);
         verify(wandererCommandClient, never()).deleteUser(any());
@@ -300,11 +302,39 @@ class AuthServiceImplTest {
         when(credentialRepository.findByEmail(email)).thenReturn(Optional.of(testCredential));
         when(tokenService.createPasswordResetToken(testCredential.getUserId()))
                 .thenReturn(resetToken);
+        when(wandererQueryClient.getUserById(testCredential.getUserId())).thenReturn(testUser);
 
         String result = authService.initiatePasswordReset(email);
 
         assertEquals(resetToken, result);
         verify(tokenService).createPasswordResetToken(testCredential.getUserId());
+        verify(emailService)
+                .sendPasswordResetEmail(email, testUser.getUsername(), resetToken);
+    }
+
+    @Test
+    void initiatePasswordReset_whenUserLookupFails_shouldFallBackToEmailAsUsername() {
+        String email = "user@email.com";
+        String resetToken = "reset.token";
+
+        when(credentialRepository.findByEmail(email)).thenReturn(Optional.of(testCredential));
+        when(tokenService.createPasswordResetToken(testCredential.getUserId()))
+                .thenReturn(resetToken);
+        Request dummyRequest =
+                Request.create(
+                        Request.HttpMethod.GET,
+                        "/test",
+                        Map.of(),
+                        null,
+                        StandardCharsets.UTF_8,
+                        null);
+        when(wandererQueryClient.getUserById(testCredential.getUserId()))
+                .thenThrow(new NotFound("Not Found", dummyRequest, null, Map.of()));
+
+        String result = authService.initiatePasswordReset(email);
+
+        assertEquals(resetToken, result);
+        verify(emailService).sendPasswordResetEmail(email, email, resetToken);
     }
 
     @Test
@@ -326,9 +356,11 @@ class AuthServiceImplTest {
         when(tokenService.validatePasswordResetToken(token)).thenReturn(userId);
         when(credentialRepository.findById(userId)).thenReturn(Optional.of(testCredential));
         when(passwordEncoder.encode(newPassword)).thenReturn("hashedNewPassword");
+        when(wandererQueryClient.getUserById(userId)).thenReturn(testUser);
 
-        authService.resetPassword(token, newPassword);
+        String username = authService.resetPassword(token, newPassword);
 
+        assertEquals(testUser.getUsername(), username);
         verify(credentialRepository).save(testCredential);
         verify(tokenService).markPasswordResetTokenAsUsed(token);
         verify(tokenService).revokeAllRefreshTokensForUser(userId);

@@ -74,8 +74,8 @@ application:
     port: 587
     username: "a39a49001@smtp-brevo.com"
     password: ""  # Set via GitHub secret EMAIL_PASSWORD
-    from: "noreply@tomassir.io"
-    fromName: "Wanderer No Reply"
+    from: "wanderer@tomassir.io"
+    fromName: "Wanderer"
     baseUrl: "http://localhost:3000"
     auth: true
     startTls: true
