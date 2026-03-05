@@ -380,8 +380,8 @@ No special migration needed:
 ## Questions?
 
 For questions or issues:
-- Check the [GitHub Wiki](https://github.com/tomassirio/tracker-backend/wiki) for full API documentation
-- Review test files in `tracker-command/src/test/java/.../CommentServiceImplTest.java`
+- Check the [GitHub Wiki](https://github.com/tomassirio/wanderer-backend/wiki) for full API documentation
+- Review test files in `wanderer-command/src/test/java/.../CommentServiceImplTest.java`
 - Open an issue in the repository
 
 ---

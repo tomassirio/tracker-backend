@@ -1,6 +1,6 @@
 # CI/CD Workflows
 
-This document describes the GitHub Actions workflows for building, testing, and deploying the Tracker Backend application to GitHub Container Registry (GHCR).
+This document describes the GitHub Actions workflows for building, testing, and deploying the Wanderer Backend application to GitHub Container Registry (GHCR).
 
 ## Workflows Overview
 
@@ -15,10 +15,10 @@ This document describes the GitHub Actions workflows for building, testing, and 
 - Pushes images to GHCR with `ci-test` tag for testing
 
 **Images Published**:
-- `ghcr.io/tomassirio/tracker-command:X.X.X-SNAPSHOT`
-- `ghcr.io/tomassirio/tracker-command:ci-test`
-- `ghcr.io/tomassirio/tracker-query:X.X.X-SNAPSHOT`
-- `ghcr.io/tomassirio/tracker-query:ci-test`
+- `ghcr.io/tomassirio/wanderer-command:X.X.X-SNAPSHOT`
+- `ghcr.io/tomassirio/wanderer-command:ci-test`
+- `ghcr.io/tomassirio/wanderer-query:X.X.X-SNAPSHOT`
+- `ghcr.io/tomassirio/wanderer-query:ci-test`
 
 **Usage**: Automatically runs on every push to feature branches
 
@@ -42,10 +42,10 @@ This document describes the GitHub Actions workflows for building, testing, and 
 10. Builds and pushes Docker images from the release tag
 
 **Images Published**:
-- `ghcr.io/tomassirio/tracker-command:0.1.4` (release version)
-- `ghcr.io/tomassirio/tracker-command:latest`
-- `ghcr.io/tomassirio/tracker-query:0.1.4` (release version)
-- `ghcr.io/tomassirio/tracker-query:latest`
+- `ghcr.io/tomassirio/wanderer-command:0.1.4` (release version)
+- `ghcr.io/tomassirio/wanderer-command:latest`
+- `ghcr.io/tomassirio/wanderer-query:0.1.4` (release version)
+- `ghcr.io/tomassirio/wanderer-query:latest`
 
 **Important**: Docker images are built from the release tag, not from the main branch after version bump.
 
@@ -59,7 +59,7 @@ This document describes the GitHub Actions workflows for building, testing, and 
 **Location**: `.github/workflows/docker-build.yml` (root level)
 
 **Features**:
-- ✅ **Matrix strategy**: Builds tracker-command and tracker-query in parallel
+- ✅ **Matrix strategy**: Builds wanderer-command and wanderer-query in parallel
 - ✅ **Fail-fast disabled**: If one module fails, the other continues
 - ✅ **ARM64 support**: Configured for Apple Silicon
 - ✅ **Version extraction**: Automatically uses Maven project version
@@ -114,8 +114,8 @@ Your `pom.xml` is already configured:
 ```
 
 This creates images like:
-- `ghcr.io/tomassirio/tracker-command:version`
-- `ghcr.io/tomassirio/tracker-query:version`
+- `ghcr.io/tomassirio/wanderer-command:version`
+- `ghcr.io/tomassirio/wanderer-query:version`
 
 ---
 
@@ -172,20 +172,20 @@ Docker workflows are at the root level of `.github/workflows/`:
 
 ## Adding New Modules
 
-To add a new Docker module (e.g., `tracker-analytics`):
+To add a new Docker module (e.g., `wanderer-analytics`):
 
 1. **Add to matrix** in `docker/docker-build.yml`:
    ```yaml
    strategy:
      matrix:
-       module: [tracker-command, tracker-query, tracker-analytics]
+       module: [wanderer-command, wanderer-query, wanderer-analytics]
    ```
 
 2. **Configure Jib** in the new module's `pom.xml`:
    ```xml
    <properties>
-       <start-class>com.tomassirio.wanderer.analytics.TrackerAnalyticsApplication</start-class>
-       <docker.image.name>${docker.image.prefix}/tracker-analytics</docker.image.name>
+       <start-class>com.tomassirio.wanderer.analytics.WandererAnalyticsApplication</start-class>
+       <docker.image.name>${docker.image.prefix}/wanderer-analytics</docker.image.name>
        <docker.image.port>8083</docker.image.port>
    </properties>
    ```
@@ -207,14 +207,14 @@ Images are tagged with multiple versions:
 
 **Examples**:
 ```
-ghcr.io/tomassirio/tracker-command:0.1.1-SNAPSHOT  (CI builds)
-ghcr.io/tomassirio/tracker-command:ci-test         (CI builds)
-ghcr.io/tomassirio/tracker-command:0.1.1           (Release)
-ghcr.io/tomassirio/tracker-command:latest          (Release)
-ghcr.io/tomassirio/tracker-query:0.1.1-SNAPSHOT
-ghcr.io/tomassirio/tracker-query:ci-test
-ghcr.io/tomassirio/tracker-query:0.1.1
-ghcr.io/tomassirio/tracker-query:latest
+ghcr.io/tomassirio/wanderer-command:0.1.1-SNAPSHOT  (CI builds)
+ghcr.io/tomassirio/wanderer-command:ci-test         (CI builds)
+ghcr.io/tomassirio/wanderer-command:0.1.1           (Release)
+ghcr.io/tomassirio/wanderer-command:latest          (Release)
+ghcr.io/tomassirio/wanderer-query:0.1.1-SNAPSHOT
+ghcr.io/tomassirio/wanderer-query:ci-test
+ghcr.io/tomassirio/wanderer-query:0.1.1
+ghcr.io/tomassirio/wanderer-query:latest
 ```
 
 ---
@@ -267,51 +267,51 @@ ghcr.io/tomassirio/tracker-query:latest
 After your workflow completes successfully, verify the images were published:
 
 **1. GitHub Packages UI:**
-- Go to: `https://github.com/tomassirio/tracker-backend`
+- Go to: `https://github.com/tomassirio/wanderer-backend`
 - Click "Packages" tab (right sidebar)
 - You should see:
-  - `tracker-command`
-  - `tracker-query`
+  - `wanderer-command`
+  - `wanderer-query`
 
 **2. Direct Package Links:**
-- `https://github.com/tomassirio/tracker-backend/pkgs/container/tracker-command`
-- `https://github.com/tomassirio/tracker-backend/pkgs/container/tracker-query`
+- `https://github.com/tomassirio/wanderer-backend/pkgs/container/wanderer-command`
+- `https://github.com/tomassirio/wanderer-backend/pkgs/container/wanderer-query`
 
 **3. Command Line Verification:**
 ```bash
 # Pull CI test images
-docker pull ghcr.io/tomassirio/tracker-command:ci-test
-docker pull ghcr.io/tomassirio/tracker-query:ci-test
+docker pull ghcr.io/tomassirio/wanderer-command:ci-test
+docker pull ghcr.io/tomassirio/wanderer-query:ci-test
 
 # Pull version-specific images
-docker pull ghcr.io/tomassirio/tracker-command:0.1.1-SNAPSHOT
-docker pull ghcr.io/tomassirio/tracker-query:0.1.1-SNAPSHOT
+docker pull ghcr.io/tomassirio/wanderer-command:0.1.1-SNAPSHOT
+docker pull ghcr.io/tomassirio/wanderer-query:0.1.1-SNAPSHOT
 
 # Pull latest release images
-docker pull ghcr.io/tomassirio/tracker-command:latest
-docker pull ghcr.io/tomassirio/tracker-query:latest
+docker pull ghcr.io/tomassirio/wanderer-command:latest
+docker pull ghcr.io/tomassirio/wanderer-query:latest
 ```
 
 **4. List All Tags:**
 View all available tags in the GitHub Packages UI, or use GitHub CLI:
 ```bash
-gh api /user/packages/container/tracker-command/versions
+gh api /user/packages/container/wanderer-command/versions
 ```
 
 ### Making Packages Public
 
 By default, GHCR packages are **private**. To make them public for unauthenticated pulls:
 
-1. Go to package page: `https://github.com/tomassirio/tracker-backend/pkgs/container/tracker-command`
+1. Go to package page: `https://github.com/tomassirio/wanderer-backend/pkgs/container/wanderer-command`
 2. Click **"Package settings"** (right sidebar)
 3. Scroll to **"Danger Zone"**
 4. Click **"Change visibility"** → Select **"Public"**
 5. Confirm the change
-6. Repeat for `tracker-query`
+6. Repeat for `wanderer-query`
 
 **After making public**, anyone can pull without authentication:
 ```bash
-docker pull ghcr.io/tomassirio/tracker-command:latest
+docker pull ghcr.io/tomassirio/wanderer-command:latest
 ```
 
 ### Checking Workflow Results
@@ -323,7 +323,7 @@ docker pull ghcr.io/tomassirio/tracker-command:latest
 4. Expand **"Tag and Push to GHCR"** step
 5. Verify output shows successful pushes:
    ```
-   The push refers to repository [ghcr.io/tomassirio/tracker-command]
+   The push refers to repository [ghcr.io/tomassirio/wanderer-command]
    abc123def: Pushed
    0.1.1-SNAPSHOT: digest: sha256:... size: 1234
    ci-test: digest: sha256:... size: 1234

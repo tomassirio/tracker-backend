@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        module: [tracker-command, tracker-query, tracker-auth]
+        module: [wanderer-command, wanderer-query, wanderer-auth]
       fail-fast: false
 
     steps:

@@ -1,6 +1,6 @@
 # Admin Role Management
 
-This document describes how to manage admin roles in the Tracker Backend application, including the bootstrap mechanism for creating the first admin user.
+This document describes how to manage admin roles in the Wanderer Backend application, including the bootstrap mechanism for creating the first admin user.
 
 ## Overview
 
@@ -37,8 +37,8 @@ bootstrap.admin.enabled=true
 
 ```yaml
 services:
-  tracker-auth:
-    image: tracker-auth:latest
+  wanderer-auth:
+    image: wanderer-auth:latest
     environment:
       - BOOTSTRAP_ADMIN_USERNAME=admin
       - BOOTSTRAP_ADMIN_ENABLED=true
@@ -50,7 +50,7 @@ services:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: tracker-auth-config
+  name: wanderer-auth-config
 data:
   bootstrap.admin.username: "admin"
   bootstrap.admin.enabled: "true"

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The tracker-auth module supports email verification for user registration with two modes:
+The wanderer-auth module supports email verification for user registration with two modes:
 - **Development Mode**: Logs emails to console (default)
 - **Production Mode**: Sends actual emails via SMTP using Jakarta Mail (Angus Mail)
 
@@ -63,7 +63,7 @@ app.email.from=noreply@tomassir.io
 app.email.from-name=Wanderer No Reply
 
 # Application Base URL (for verification links)
-app.email.base-url=https://tracker.example.com
+app.email.base-url=https://wanderer.example.com
 
 # SMTP Settings
 app.email.auth=true
@@ -108,7 +108,7 @@ env:
 ```yaml
 # docker-compose.yml
 services:
-  tracker-auth:
+  wanderer-auth:
     environment:
       - EMAIL_ENABLED=true
       - EMAIL_HOST=smtp-relay.brevo.com
@@ -117,7 +117,7 @@ services:
       - EMAIL_PASSWORD=${EMAIL_PASSWORD}  # Pass from GitHub secret or .env file
       - EMAIL_FROM=noreply@tomassir.io
       - EMAIL_FROM_NAME=Wanderer No Reply
-      - EMAIL_BASE_URL=https://tracker.example.com
+      - EMAIL_BASE_URL=https://wanderer.example.com
 ```
 
 ## Supported SMTP Providers
@@ -203,7 +203,7 @@ app.email.start-tls=true  # or false if using SSL on port 465
 The verification email is sent as HTML with the following content:
 
 - **Subject**: "Verify your email address"
-- **Header**: "Welcome to Tracker!"
+- **Header**: "Welcome to Wanderer!"
 - **Body**:
   - Greeting with username
   - Clickable verification button

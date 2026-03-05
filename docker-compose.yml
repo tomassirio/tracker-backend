@@ -44,45 +44,45 @@ services:
       timeout: 5s
       retries: 5
 
-  tracker-command:
+  wanderer-command:
     <<: *service-common
     depends_on:
       postgres-cqrs:
         condition: service_healthy
-    image: ${TRACKER_COMMAND_IMAGE:-ghcr.io/tomassirio/tracker-command:latest}
-    container_name: tracker-command
+    image: ${WANDERER_COMMAND_IMAGE:-ghcr.io/tomassirio/wanderer-command:latest}
+    container_name: wanderer-command
     ports:
-      - "${TRACKER_COMMAND_PORT:-8081}:8081"
+      - "${WANDERER_COMMAND_PORT:-8081}:8081"
     environment:
       <<: *common-db-variables
       # Allow overriding the CORS allowed origins via env var APP_CORS_ALLOWED_ORIGINS
       # Defaults to http://localhost:51538 when the variable is not provided.
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:51538}
 
-  tracker-query:
+  wanderer-query:
     <<: *service-common
     depends_on:
       postgres-cqrs:
         condition: service_healthy
-    image: ${TRACKER_QUERY_IMAGE:-ghcr.io/tomassirio/tracker-query:latest}
-    container_name: tracker-query
+    image: ${WANDERER_QUERY_IMAGE:-ghcr.io/tomassirio/wanderer-query:latest}
+    container_name: wanderer-query
     ports:
-      - "${TRACKER_QUERY_PORT:-8082}:8082"
+      - "${WANDERER_QUERY_PORT:-8082}:8082"
     environment:
       <<: *common-db-variables
       # Allow overriding the CORS allowed origins via env var APP_CORS_ALLOWED_ORIGINS
       # Defaults to http://localhost:51538 when the variable is not provided.
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:51538}
 
-  tracker-auth:
+  wanderer-auth:
     <<: *service-common
     depends_on:
       postgres-auth:
         condition: service_healthy
-    image: ${TRACKER_AUTH_IMAGE:-ghcr.io/tomassirio/tracker-auth:latest}
-    container_name: tracker-auth
+    image: ${WANDERER_AUTH_IMAGE:-ghcr.io/tomassirio/wanderer-auth:latest}
+    container_name: wanderer-auth
     ports:
-      - "${TRACKER_AUTH_PORT:-8083}:8083"
+      - "${WANDERER_AUTH_PORT:-8083}:8083"
     environment:
       DB_URL: jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-wanderer_auth_db}
       DB_USERNAME: ${AUTH_DB_USER:-wanderer_auth}
@@ -90,8 +90,8 @@ services:
       DB_DRIVERCLASSNAME: org.postgresql.Driver
       JWT_SECRET: ${JWT_SECRET:-0123456789ABCDEF0123456789ABCDEF}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-3600000}
-      TRACKER_QUERY_URL: ${TRACKER_QUERY_URL:-http://tracker-query:8082}
-      TRACKER_COMMAND_URL: ${TRACKER_COMMAND_URL:-http://tracker-command:8081}
+      WANDERER_QUERY_URL: ${WANDERER_QUERY_URL:-http://wanderer-query:8082}
+      WANDERER_COMMAND_URL: ${WANDERER_COMMAND_URL:-http://wanderer-command:8081}
       APP_CORS_ALLOWED_ORIGINS: ${APP_CORS_ALLOWED_ORIGINS:-http://localhost:51538}
       # Email Configuration
       EMAIL_ENABLED: ${EMAIL_ENABLED:-false}

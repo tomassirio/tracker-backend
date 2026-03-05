@@ -9,11 +9,11 @@
 
 ### Build specific service
 ```bash
-# Build only tracker-command
-./mvnw clean package jib:dockerBuild -pl tracker-command
+# Build only wanderer-command
+./mvnw clean package jib:dockerBuild -pl wanderer-command
 
-# Build only tracker-query
-./mvnw clean package jib:dockerBuild -pl tracker-query
+# Build only wanderer-query
+./mvnw clean package jib:dockerBuild -pl wanderer-query
 ```
 
 ### Skip tests during build
@@ -24,15 +24,15 @@
 ## Verify Images Were Created
 
 ```bash
-docker images | grep tracker
+docker images | grep wanderer
 ```
 
 You should see:
 ```
-ghcr.io/tomassirio/tracker-command   latest              ...
-ghcr.io/tomassirio/tracker-command   0.1.1-SNAPSHOT      ...
-ghcr.io/tomassirio/tracker-query     latest              ...
-ghcr.io/tomassirio/tracker-query     0.1.1-SNAPSHOT      ...
+ghcr.io/tomassirio/wanderer-command   latest              ...
+ghcr.io/tomassirio/wanderer-command   0.1.1-SNAPSHOT      ...
+ghcr.io/tomassirio/wanderer-query     latest              ...
+ghcr.io/tomassirio/wanderer-query     0.1.1-SNAPSHOT      ...
 ```
 
 ## Running with Docker Compose
@@ -48,8 +48,8 @@ docker-compose up -d
 docker-compose logs -f
 
 # Specific service
-docker-compose logs -f tracker-command
-docker-compose logs -f tracker-query
+docker-compose logs -f wanderer-command
+docker-compose logs -f wanderer-query
 ```
 
 ### Stop all services
@@ -64,37 +64,37 @@ docker-compose down -v
 
 ## Running Individual Containers
 
-### tracker-command
+### wanderer-command
 ```bash
 docker run -d \
-  --name tracker-command \
+  --name wanderer-command \
   -p 8081:8081 \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/wanderer_db \
   -e SPRING_DATASOURCE_USERNAME=wanderer \
   -e SPRING_DATASOURCE_PASSWORD=password \
-  ghcr.io/tomassirio/tracker-command:latest
+  ghcr.io/tomassirio/wanderer-command:latest
 ```
 
-### tracker-query
+### wanderer-query
 ```bash
 docker run -d \
-  --name tracker-query \
+  --name wanderer-query \
   -p 8082:8082 \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://host.docker.internal:5432/wanderer_db \
   -e SPRING_DATASOURCE_USERNAME=wanderer \
   -e SPRING_DATASOURCE_PASSWORD=password \
-  ghcr.io/tomassirio/tracker-query:latest
+  ghcr.io/tomassirio/wanderer-query:latest
 ```
 
 ## Service Endpoints
 
 Once running, your services are available at:
 
-- **tracker-command**: http://localhost:8081
+- **wanderer-command**: http://localhost:8081
   - Swagger UI: http://localhost:8081/swagger-ui.html
   - Health: http://localhost:8081/actuator/health
   
-- **tracker-query**: http://localhost:8082
+- **wanderer-query**: http://localhost:8082
   - Swagger UI: http://localhost:8082/swagger-ui.html
   - Health: http://localhost:8082/actuator/health
 
@@ -133,8 +133,8 @@ docker-compose ps
 
 ### View application logs
 ```bash
-docker logs tracker-command
-docker logs tracker-query
+docker logs wanderer-command
+docker logs wanderer-query
 ```
 
 ### Rebuild after code changes
@@ -143,7 +143,7 @@ docker logs tracker-query
 ./mvnw clean package jib:dockerBuild -DskipTests
 
 # Restart services
-docker-compose restart tracker-command tracker-query
+docker-compose restart wanderer-command wanderer-query
 ```
 
 ### Platform mismatch warnings
@@ -176,7 +176,7 @@ environment:
    ```
 3. **Restart services**:
    ```bash
-   docker-compose restart tracker-command tracker-query
+   docker-compose restart wanderer-command wanderer-query
    ```
 4. **Check logs**:
    ```bash

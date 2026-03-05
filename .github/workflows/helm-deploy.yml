@@ -105,15 +105,15 @@ jobs:
     environment: ${{ inputs.environment }}
     strategy:
       matrix:
-        service: [tracker-auth, tracker-command, tracker-query]
+        service: [wanderer-auth, wanderer-command, wanderer-query]
         include:
-          - service: tracker-auth
+          - service: wanderer-auth
             port: 8083
             db: wanderer_auth_db
-          - service: tracker-command
+          - service: wanderer-command
             port: 8081
             db: wanderer_db
-          - service: tracker-query
+          - service: wanderer-query
             port: 8082
             db: wanderer_db
       fail-fast: false
@@ -167,7 +167,7 @@ jobs:
       - name: Deploy ${{ matrix.service }}
         if: steps.should-deploy.outputs.deploy == 'true'
         env:
-          DB_PASSWORD: ${{ matrix.service == 'tracker-auth' && secrets.DB_AUTH_PASSWORD || secrets.DB_PASSWORD }}
+          DB_PASSWORD: ${{ matrix.service == 'wanderer-auth' && secrets.DB_AUTH_PASSWORD || secrets.DB_PASSWORD }}
           DB_URL: jdbc:postgresql://postgres${{ env.ENV_SUFFIX }}:5432/${{ matrix.db }}
           EMAIL_SMTP_PWD: ${{ secrets.EMAIL_PASSWORD }}
         run: |
@@ -192,10 +192,10 @@ jobs:
             "--set" "ingress.enabled=false"
           )
           
-          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
+          if [ "${{ matrix.service }}" == "wanderer-auth" ]; then
             HELM_ARGS+=(
-              "--set" "application.trackerCommandUrl=http://tracker-command${{ env.ENV_SUFFIX }}:8081"
-              "--set" "application.trackerQueryUrl=http://tracker-query${{ env.ENV_SUFFIX }}:8082"
+              "--set" "application.wandererCommandUrl=http://wanderer-command${{ env.ENV_SUFFIX }}:8081"
+              "--set" "application.wandererQueryUrl=http://wanderer-query${{ env.ENV_SUFFIX }}:8082"
             )
             # Bootstrap admin configuration from GitHub environment variables
             if [ -n "${{ vars.BOOTSTRAP_ADMIN_USERNAME }}" ]; then
@@ -224,20 +224,20 @@ jobs:
             fi
           fi
           
-          if [ "${{ matrix.service }}" == "tracker-command" ] && [ -n "${{ secrets.GOOGLE_MAPS_API_KEY }}" ]; then
+          if [ "${{ matrix.service }}" == "wanderer-command" ] && [ -n "${{ secrets.GOOGLE_MAPS_API_KEY }}" ]; then
             HELM_ARGS+=(
               "--set" "application.googleMaps.apiKey=${{ secrets.GOOGLE_MAPS_API_KEY }}"
             )
           fi
 
-          if [ "${{ matrix.service }}" == "tracker-command" ] || [ "${{ matrix.service }}" == "tracker-query" ]; then
+          if [ "${{ matrix.service }}" == "wanderer-command" ] || [ "${{ matrix.service }}" == "wanderer-query" ]; then
             HELM_ARGS+=(
-              "--set" "application.tracker.authUrl=http://tracker-auth${{ env.ENV_SUFFIX }}:8083"
+              "--set" "application.wanderer.authUrl=http://wanderer-auth${{ env.ENV_SUFFIX }}:8083"
             )
           fi
           
           # Debug: check if EMAIL_PASSWORD secret has a value (logs length only, not the value)
-          if [ "${{ matrix.service }}" == "tracker-auth" ]; then
+          if [ "${{ matrix.service }}" == "wanderer-auth" ]; then
             EMAIL_PWD_LENGTH=${#EMAIL_SMTP_PWD}
             echo "EMAIL_PASSWORD length: $EMAIL_PWD_LENGTH"
             if [ "$EMAIL_PWD_LENGTH" -eq 0 ]; then
