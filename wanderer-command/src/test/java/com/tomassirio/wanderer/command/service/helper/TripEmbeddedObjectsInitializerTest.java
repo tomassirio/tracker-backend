@@ -44,6 +44,7 @@ class TripEmbeddedObjectsInitializerTest {
         assertThat(settings.getTripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(settings.getVisibility()).isEqualTo(TripVisibility.PRIVATE);
         assertThat(settings.getUpdateRefresh()).isNull();
+        assertThat(settings.getTripModality()).isNull();
     }
 
     @Test
@@ -57,6 +58,7 @@ class TripEmbeddedObjectsInitializerTest {
         assertThat(settings.getTripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(settings.getVisibility()).isEqualTo(TripVisibility.PROTECTED);
         assertThat(settings.getUpdateRefresh()).isNull();
+        assertThat(settings.getTripModality()).isNull();
     }
 
     // Tests for createTripSettings(TripVisibility, TripModality)

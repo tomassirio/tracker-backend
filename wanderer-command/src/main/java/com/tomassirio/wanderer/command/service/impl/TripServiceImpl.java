@@ -204,10 +204,7 @@ public class TripServiceImpl implements TripService {
                                 tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC))
                         .endTimestamp(
                                 tripPlan.getEndDate().atStartOfDay().toInstant(ZoneOffset.UTC))
-                        .tripModality(
-                                TripPlanType.MULTI_DAY.equals(tripPlan.getPlanType())
-                                        ? TripModality.MULTI_DAY
-                                        : TripModality.SIMPLE)
+                        .tripModality(deriveModalityFromPlanType(tripPlan.getPlanType()))
                         .build());
 
         return tripId;
@@ -238,5 +235,11 @@ public class TripServiceImpl implements TripService {
                         .build());
 
         return id;
+    }
+
+    private TripModality deriveModalityFromPlanType(TripPlanType planType) {
+        return TripPlanType.MULTI_DAY.equals(planType)
+                ? TripModality.MULTI_DAY
+                : TripModality.SIMPLE;
     }
 }
