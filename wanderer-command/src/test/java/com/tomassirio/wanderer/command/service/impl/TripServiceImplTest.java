@@ -1043,7 +1043,7 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        UUID result = tripService.updateSettings(USER_ID, tripId, 120, true);
+        UUID result = tripService.updateSettings(USER_ID, tripId, 120, true, null);
 
         // Then
         assertThat(result).isNotNull();
@@ -1079,7 +1079,8 @@ class TripServiceImplTest {
         assertThatThrownBy(
                         () ->
                                 tripService.updateSettings(
-                                        USER_ID, tripId, 120, true)) // USER_ID is not the owner
+                                        USER_ID, tripId, 120, true,
+                                        null)) // USER_ID is not the owner
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("does not have permission to modify trip");
 
@@ -1095,7 +1096,7 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> tripService.updateSettings(USER_ID, tripId, 120, true))
+        assertThatThrownBy(() -> tripService.updateSettings(USER_ID, tripId, 120, true, null))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("Trip not found");
 
@@ -1130,7 +1131,7 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When - only update automaticUpdates
-        UUID result = tripService.updateSettings(USER_ID, tripId, null, true);
+        UUID result = tripService.updateSettings(USER_ID, tripId, null, true, null);
 
         // Then
         assertThat(result).isNotNull();

@@ -15,7 +15,9 @@ import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
+import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import jakarta.persistence.EntityNotFoundException;
@@ -60,6 +62,7 @@ public class TripServiceImpl implements TripService {
                         .visibility(request.visibility().name())
                         .tripPlanId(null)
                         .creationTimestamp(creationTimestamp)
+                        .tripModality(request.tripModality())
                         .build());
 
         return tripId;
@@ -201,6 +204,10 @@ public class TripServiceImpl implements TripService {
                                 tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC))
                         .endTimestamp(
                                 tripPlan.getEndDate().atStartOfDay().toInstant(ZoneOffset.UTC))
+                        .tripModality(
+                                TripPlanType.MULTI_DAY.equals(tripPlan.getPlanType())
+                                        ? TripModality.MULTI_DAY
+                                        : TripModality.SIMPLE)
                         .build());
 
         return tripId;
@@ -208,7 +215,11 @@ public class TripServiceImpl implements TripService {
 
     @Override
     public UUID updateSettings(
-            UUID userId, UUID id, Integer updateRefresh, Boolean automaticUpdates) {
+            UUID userId,
+            UUID id,
+            Integer updateRefresh,
+            Boolean automaticUpdates,
+            TripModality tripModality) {
         // Validate trip exists and ownership
         Trip trip =
                 tripRepository
@@ -223,6 +234,7 @@ public class TripServiceImpl implements TripService {
                         .tripId(id)
                         .updateRefresh(updateRefresh)
                         .automaticUpdates(automaticUpdates)
+                        .tripModality(tripModality)
                         .build());
 
         return id;

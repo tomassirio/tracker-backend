@@ -137,8 +137,7 @@ class RateLimitFilterTest {
     }
 
     @Test
-    void shouldShareSingleBucketAcrossEndpointsForSameIp()
-            throws ServletException, IOException {
+    void shouldShareSingleBucketAcrossEndpointsForSameIp() throws ServletException, IOException {
         String ip = "10.0.0.7";
 
         // Use 3 requests on auth endpoint
@@ -218,4 +217,3 @@ class RateLimitFilterTest {
         assertThat(bucket.getResetEpochSecond()).isEqualTo(1060);
     }
 }
-

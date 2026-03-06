@@ -39,7 +39,8 @@ public class TripCreatedEventHandler implements EventHandler<TripCreatedEvent> {
                         .userId(event.getOwnerId())
                         .tripSettings(
                                 embeddedObjectsInitializer.createTripSettings(
-                                        TripVisibility.valueOf(event.getVisibility())))
+                                        TripVisibility.valueOf(event.getVisibility()),
+                                        event.getTripModality()))
                         .tripDetails(
                                 event.getStartLocation() != null
                                                 || event.getStartTimestamp() != null

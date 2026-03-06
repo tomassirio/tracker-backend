@@ -43,6 +43,9 @@ public class TripSettingsUpdatedEventHandler implements EventHandler<TripSetting
                                 trip.getTripSettings()
                                         .setAutomaticUpdates(event.getAutomaticUpdates());
                             }
+                            if (event.getTripModality() != null) {
+                                trip.getTripSettings().setTripModality(event.getTripModality());
+                            }
                             // No need to call save() - entity is managed and will be flushed
                             // automatically
                             log.info("Trip settings updated: {}", event.getTripId());

@@ -8,8 +8,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 
 /**
- * Registers the {@link RateLimitFilter} as a servlet filter with highest precedence so that
- * abusive clients are rejected before any authentication or business logic runs.
+ * Registers the {@link RateLimitFilter} as a servlet filter with highest precedence so that abusive
+ * clients are rejected before any authentication or business logic runs.
  *
  * @since 0.9.2
  */
@@ -32,4 +32,3 @@ public class RateLimitConfig {
         return registration;
     }
 }
-

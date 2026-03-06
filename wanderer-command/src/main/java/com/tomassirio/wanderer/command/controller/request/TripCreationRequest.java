@@ -1,5 +1,6 @@
 package com.tomassirio.wanderer.command.controller.request;
 
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
@@ -19,4 +20,9 @@ public record TripCreationRequest(
                         example = "PUBLIC",
                         allowableValues = {"PRIVATE", "PROTECTED", "PUBLIC"})
                 @NotNull(message = "Visibility is required")
-                TripVisibility visibility) {}
+                TripVisibility visibility,
+        @Schema(
+                        description = "Trip modality",
+                        example = "SIMPLE",
+                        allowableValues = {"SIMPLE", "MULTI_DAY"})
+                TripModality tripModality) {}

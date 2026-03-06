@@ -31,4 +31,3 @@ class RateLimitConfigTest {
         assertThat(registration.getUrlPatterns()).containsExactly("/*");
     }
 }
-

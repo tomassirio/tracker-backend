@@ -34,4 +34,3 @@ public class RateLimitProperties {
     /** Duration of the rate-limit window in seconds. */
     private int windowSeconds = 60;
 }
-

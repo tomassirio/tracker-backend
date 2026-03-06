@@ -107,7 +107,7 @@ class TripControllerTest {
     @Test
     void createTrip_whenNameIsTooShort_shouldReturnBadRequest() throws Exception {
         // Given
-        TripCreationRequest request = new TripCreationRequest("AB", TripVisibility.PUBLIC);
+        TripCreationRequest request = new TripCreationRequest("AB", TripVisibility.PUBLIC, null);
 
         // When & Then
         mockMvc.perform(
@@ -120,7 +120,7 @@ class TripControllerTest {
     @Test
     void createTrip_whenNameIsBlank_shouldReturnBadRequest() throws Exception {
         // Given
-        TripCreationRequest request = new TripCreationRequest("", TripVisibility.PUBLIC);
+        TripCreationRequest request = new TripCreationRequest("", TripVisibility.PUBLIC, null);
 
         // When & Then
         mockMvc.perform(
@@ -134,7 +134,8 @@ class TripControllerTest {
     void createTrip_whenNameIsTooLong_shouldReturnBadRequest() throws Exception {
         // Given - name with more than 100 characters
         String longName = "A".repeat(101);
-        TripCreationRequest request = new TripCreationRequest(longName, TripVisibility.PUBLIC);
+        TripCreationRequest request =
+                new TripCreationRequest(longName, TripVisibility.PUBLIC, null);
 
         // When & Then
         mockMvc.perform(
@@ -147,7 +148,7 @@ class TripControllerTest {
     @Test
     void createTrip_whenVisibilityIsNull_shouldReturnBadRequest() throws Exception {
         // Given
-        TripCreationRequest request = new TripCreationRequest("Summer Road Trip", null);
+        TripCreationRequest request = new TripCreationRequest("Summer Road Trip", null, null);
 
         // When & Then
         mockMvc.perform(
@@ -396,7 +397,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         String requestBody = "{\"updateRefresh\": 120, \"automaticUpdates\": true}";
 
-        when(tripService.updateSettings(any(UUID.class), eq(tripId), eq(120), eq(true)))
+        when(tripService.updateSettings(any(UUID.class), eq(tripId), eq(120), eq(true), any()))
                 .thenReturn(tripId);
 
         // When & Then
@@ -414,7 +415,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         String requestBody = "{\"automaticUpdates\": false}";
 
-        when(tripService.updateSettings(any(UUID.class), eq(tripId), eq(null), eq(false)))
+        when(tripService.updateSettings(any(UUID.class), eq(tripId), eq(null), eq(false), any()))
                 .thenReturn(tripId);
 
         // When & Then
@@ -432,7 +433,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         String requestBody = "{\"updateRefresh\": 120, \"automaticUpdates\": true}";
 
-        when(tripService.updateSettings(any(UUID.class), eq(tripId), any(), any()))
+        when(tripService.updateSettings(any(UUID.class), eq(tripId), any(), any(), any()))
                 .thenThrow(new EntityNotFoundException("Trip not found"));
 
         // When & Then
@@ -449,7 +450,7 @@ class TripControllerTest {
         UUID tripId = UUID.randomUUID();
         String requestBody = "{\"updateRefresh\": 120, \"automaticUpdates\": true}";
 
-        when(tripService.updateSettings(any(UUID.class), eq(tripId), any(), any()))
+        when(tripService.updateSettings(any(UUID.class), eq(tripId), any(), any(), any()))
                 .thenThrow(new AccessDeniedException("Access denied"));
 
         // When & Then

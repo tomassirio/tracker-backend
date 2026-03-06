@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.service.helper;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
@@ -24,7 +25,19 @@ public class TripEmbeddedObjectsInitializer {
      * @return a new TripSettings instance
      */
     public TripSettings createTripSettings(TripVisibility visibility) {
-        return createTripSettings(TripStatus.CREATED, visibility);
+        return createTripSettings(TripStatus.CREATED, visibility, null);
+    }
+
+    /**
+     * Creates a new TripSettings with the specified visibility and modality. Used during trip
+     * creation.
+     *
+     * @param visibility the visibility setting
+     * @param tripModality the trip modality (SIMPLE or MULTI_DAY)
+     * @return a new TripSettings instance
+     */
+    public TripSettings createTripSettings(TripVisibility visibility, TripModality tripModality) {
+        return createTripSettings(TripStatus.CREATED, visibility, tripModality);
     }
 
     /**
@@ -69,7 +82,7 @@ public class TripEmbeddedObjectsInitializer {
      */
     public void ensureTripSettings(Trip trip, TripVisibility visibility) {
         if (trip.getTripSettings() == null) {
-            trip.setTripSettings(createTripSettings(TripStatus.CREATED, visibility));
+            trip.setTripSettings(createTripSettings(TripStatus.CREATED, visibility, null));
         }
     }
 
@@ -83,7 +96,7 @@ public class TripEmbeddedObjectsInitializer {
      */
     public TripStatus ensureTripSettingsAndGetPreviousStatus(Trip trip, TripStatus status) {
         if (trip.getTripSettings() == null) {
-            trip.setTripSettings(createTripSettings(status, TripVisibility.PUBLIC));
+            trip.setTripSettings(createTripSettings(status, TripVisibility.PUBLIC, null));
             return TripStatus.CREATED;
         }
         return trip.getTripSettings().getTripStatus();
@@ -100,11 +113,13 @@ public class TripEmbeddedObjectsInitializer {
         }
     }
 
-    private TripSettings createTripSettings(TripStatus status, TripVisibility visibility) {
+    private TripSettings createTripSettings(
+            TripStatus status, TripVisibility visibility, TripModality tripModality) {
         return TripSettings.builder()
                 .tripStatus(status)
                 .visibility(visibility)
                 .updateRefresh(null)
+                .tripModality(tripModality)
                 .build();
     }
 
