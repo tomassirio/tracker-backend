@@ -167,7 +167,11 @@ public class AdminTripController {
 
         UUID promotedTripId =
                 promotedTripService.promoteTrip(
-                        adminId, tripId, request != null ? request.donationLink() : null);
+                        adminId,
+                        tripId,
+                        request != null ? request.donationLink() : null,
+                        Boolean.TRUE.equals(request != null ? request.isPreAnnounced() : null),
+                        request != null ? request.countdownStartDate() : null);
 
         log.info("Accepted trip promotion request with ID: {}", promotedTripId);
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(promotedTripId);

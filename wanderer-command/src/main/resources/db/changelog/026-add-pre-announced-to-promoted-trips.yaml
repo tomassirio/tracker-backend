@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-add-pre-announced-to-promoted-trips
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: promoted_trips
+                columnName: is_pre_announced
+      changes:
+        - addColumn:
+            tableName: promoted_trips
+            columns:
+              - column:
+                  name: is_pre_announced
+                  type: boolean
+                  defaultValueBoolean: false
+                  constraints:
+                    nullable: false
+              - column:
+                  name: countdown_start_date
+                  type: timestamp with time zone

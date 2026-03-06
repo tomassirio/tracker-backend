@@ -88,6 +88,8 @@ public class PromotedTripQueryServiceImpl implements PromotedTripQueryService {
                 promoter.getUsername(),
                 tripOwner.getId().toString(),
                 tripOwner.getUsername(),
-                promotedTrip.getPromotedAt());
+                promotedTrip.getPromotedAt(),
+                promotedTrip.isPreAnnounced(),
+                promotedTrip.getCountdownStartDate());
     }
 }

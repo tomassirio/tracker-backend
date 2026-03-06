@@ -136,7 +136,8 @@ class AdminTripControllerTest {
 
         String requestBody = String.format("{\"donationLink\":\"%s\"}", donationLink);
 
-        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), eq(donationLink)))
+        when(promotedTripService.promoteTrip(
+                        any(UUID.class), eq(tripId), eq(donationLink), eq(false), eq(null)))
                 .thenReturn(promotedTripId);
 
         mockMvc.perform(
@@ -152,7 +153,8 @@ class AdminTripControllerTest {
         UUID tripId = UUID.randomUUID();
         UUID promotedTripId = UUID.randomUUID();
 
-        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), eq(null)))
+        when(promotedTripService.promoteTrip(
+                        any(UUID.class), eq(tripId), eq(null), eq(false), eq(null)))
                 .thenReturn(promotedTripId);
 
         mockMvc.perform(
@@ -168,7 +170,8 @@ class AdminTripControllerTest {
         UUID tripId = UUID.randomUUID();
         String requestBody = "{\"donationLink\":\"https://example.com/donate\"}";
 
-        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), any()))
+        when(promotedTripService.promoteTrip(
+                        any(UUID.class), eq(tripId), any(), any(Boolean.class), any()))
                 .thenThrow(new EntityNotFoundException("Trip not found"));
 
         mockMvc.perform(
@@ -183,7 +186,8 @@ class AdminTripControllerTest {
         UUID tripId = UUID.randomUUID();
         String requestBody = "{\"donationLink\":\"https://example.com/donate\"}";
 
-        when(promotedTripService.promoteTrip(any(UUID.class), eq(tripId), any()))
+        when(promotedTripService.promoteTrip(
+                        any(UUID.class), eq(tripId), any(), any(Boolean.class), any()))
                 .thenThrow(new IllegalStateException("Trip is already promoted"));
 
         mockMvc.perform(

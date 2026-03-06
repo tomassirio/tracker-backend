@@ -34,7 +34,12 @@ public class PromotedTripServiceImpl implements PromotedTripService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Override
-    public UUID promoteTrip(UUID adminId, UUID tripId, String donationLink) {
+    public UUID promoteTrip(
+            UUID adminId,
+            UUID tripId,
+            String donationLink,
+            boolean isPreAnnounced,
+            Instant countdownStartDate) {
         // Validate trip exists
         tripRepository
                 .findById(tripId)
@@ -43,6 +48,12 @@ public class PromotedTripServiceImpl implements PromotedTripService {
         // Check if trip is already promoted
         if (promotedTripRepository.existsByTripId(tripId)) {
             throw new IllegalStateException("Trip is already promoted");
+        }
+
+        // countdownStartDate is required when the trip is pre-announced
+        if (isPreAnnounced && countdownStartDate == null) {
+            throw new IllegalArgumentException(
+                    "countdownStartDate is required when isPreAnnounced is true");
         }
 
         // Pre-generate ID and timestamp for promoted trip
@@ -57,6 +68,8 @@ public class PromotedTripServiceImpl implements PromotedTripService {
                         .donationLink(donationLink)
                         .promotedBy(adminId)
                         .promotedAt(promotedAt)
+                        .preAnnounced(isPreAnnounced)
+                        .countdownStartDate(countdownStartDate)
                         .build());
 
         return promotedTripId;

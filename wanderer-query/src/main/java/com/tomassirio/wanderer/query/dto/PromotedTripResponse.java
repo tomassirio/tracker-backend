@@ -15,4 +15,11 @@ public record PromotedTripResponse(
                 String promotedByUsername,
         @Schema(description = "Unique identifier of the trip owner") String tripOwnerId,
         @Schema(description = "Username of the trip owner") String tripOwnerUsername,
-        @Schema(description = "Timestamp when the trip was promoted") Instant promotedAt) {}
+        @Schema(description = "Timestamp when the trip was promoted") Instant promotedAt,
+        @Schema(description = "Whether this trip is pre-announced, enabling a countdown display")
+                boolean preAnnounced,
+        @Schema(
+                        description =
+                                "The date from which the countdown starts, typically the planned"
+                                        + " trip start date")
+                Instant countdownStartDate) {}

@@ -36,4 +36,12 @@ public class PromotedTrip {
     @NotNull
     @Column(name = "promoted_at", nullable = false)
     private Instant promotedAt;
+
+    @NotNull
+    @Column(name = "is_pre_announced", nullable = false)
+    @Builder.Default
+    private boolean preAnnounced = false;
+
+    @Column(name = "countdown_start_date")
+    private Instant countdownStartDate;
 }

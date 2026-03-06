@@ -24,6 +24,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -68,7 +69,7 @@ class PromotedTripServiceImplTest {
         when(promotedTripRepository.existsByTripId(tripId)).thenReturn(false);
 
         // When
-        UUID result = promotedTripService.promoteTrip(adminId, tripId, donationLink);
+        UUID result = promotedTripService.promoteTrip(adminId, tripId, donationLink, false, null);
 
         // Then
         assertThat(result).isNotNull();
@@ -87,7 +88,10 @@ class PromotedTripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> promotedTripService.promoteTrip(adminId, tripId, donationLink))
+        assertThatThrownBy(
+                        () ->
+                                promotedTripService.promoteTrip(
+                                        adminId, tripId, donationLink, false, null))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("Trip not found");
 
@@ -122,7 +126,10 @@ class PromotedTripServiceImplTest {
         when(promotedTripRepository.existsByTripId(tripId)).thenReturn(true);
 
         // When & Then
-        assertThatThrownBy(() -> promotedTripService.promoteTrip(adminId, tripId, donationLink))
+        assertThatThrownBy(
+                        () ->
+                                promotedTripService.promoteTrip(
+                                        adminId, tripId, donationLink, false, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Trip is already promoted");
 
@@ -156,13 +163,89 @@ class PromotedTripServiceImplTest {
         when(promotedTripRepository.existsByTripId(tripId)).thenReturn(false);
 
         // When
-        UUID result = promotedTripService.promoteTrip(adminId, tripId, null);
+        UUID result = promotedTripService.promoteTrip(adminId, tripId, null, false, null);
 
         // Then
         assertThat(result).isNotNull();
         verify(tripRepository).findById(tripId);
         verify(promotedTripRepository).existsByTripId(tripId);
         verify(eventPublisher).publishEvent(any(TripPromotedEvent.class));
+    }
+
+    @Test
+    void promoteTrip_withPreAnnounced_shouldPublishEventWithCountdownDate() {
+        // Given
+        UUID adminId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        Instant countdownStartDate = Instant.parse("2025-06-01T08:00:00Z");
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("Trip Name")
+                        .userId(USER_ID)
+                        .tripSettings(
+                                TripSettings.builder()
+                                        .tripStatus(TripStatus.IN_PROGRESS)
+                                        .visibility(TripVisibility.PUBLIC)
+                                        .build())
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+        when(promotedTripRepository.existsByTripId(tripId)).thenReturn(false);
+
+        // When
+        UUID result =
+                promotedTripService.promoteTrip(adminId, tripId, null, true, countdownStartDate);
+
+        // Then
+        assertThat(result).isNotNull();
+        verify(tripRepository).findById(tripId);
+        verify(promotedTripRepository).existsByTripId(tripId);
+
+        ArgumentCaptor<TripPromotedEvent> captor = ArgumentCaptor.forClass(TripPromotedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        TripPromotedEvent publishedEvent = captor.getValue();
+        assertThat(publishedEvent.isPreAnnounced()).isTrue();
+        assertThat(publishedEvent.getCountdownStartDate()).isEqualTo(countdownStartDate);
+    }
+
+    @Test
+    void promoteTrip_whenPreAnnouncedWithoutCountdownDate_shouldThrowIllegalArgumentException() {
+        // Given
+        UUID adminId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("Trip Name")
+                        .userId(USER_ID)
+                        .tripSettings(
+                                TripSettings.builder()
+                                        .tripStatus(TripStatus.IN_PROGRESS)
+                                        .visibility(TripVisibility.PUBLIC)
+                                        .build())
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+        when(promotedTripRepository.existsByTripId(tripId)).thenReturn(false);
+
+        // When & Then
+        assertThatThrownBy(() -> promotedTripService.promoteTrip(adminId, tripId, null, true, null))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("countdownStartDate is required when isPreAnnounced is true");
+
+        verify(tripRepository).findById(tripId);
+        verify(promotedTripRepository).existsByTripId(tripId);
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
