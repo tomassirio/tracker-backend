@@ -8,6 +8,12 @@ public record TripStatusRequest(
         @Schema(
                         description = "Trip status",
                         example = "IN_PROGRESS",
-                        allowableValues = {"CREATED", "IN_PROGRESS", "PAUSED", "FINISHED"})
+                        allowableValues = {
+                            "CREATED",
+                            "IN_PROGRESS",
+                            "PAUSED",
+                            "RESTING",
+                            "FINISHED"
+                        })
                 @NotNull(message = "Status is required")
                 TripStatus status) {}
