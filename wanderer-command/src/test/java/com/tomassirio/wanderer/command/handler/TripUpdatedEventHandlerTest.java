@@ -11,6 +11,7 @@ import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripUpdate;
+import com.tomassirio.wanderer.commons.domain.UpdateType;
 import com.tomassirio.wanderer.commons.domain.WeatherCondition;
 import java.time.Instant;
 import java.util.UUID;
@@ -114,6 +115,78 @@ class TripUpdatedEventHandlerTest {
         assertThat(saved.getId()).isEqualTo(tripUpdateId);
         assertThat(saved.getCity()).isNull();
         assertThat(saved.getCountry()).isNull();
+
+        verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
+    }
+
+    @Test
+    void handle_whenUpdateTypeIsDayStart_shouldPersistUpdateType() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID tripUpdateId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
+        Instant timestamp = Instant.now();
+
+        Trip trip = Trip.builder().id(tripId).name("Camino").build();
+
+        TripUpdatedEvent event =
+                TripUpdatedEvent.builder()
+                        .tripUpdateId(tripUpdateId)
+                        .tripId(tripId)
+                        .location(location)
+                        .batteryLevel(100)
+                        .message("Good morning!")
+                        .updateType(UpdateType.DAY_START)
+                        .timestamp(timestamp)
+                        .build();
+
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+
+        // When
+        handler.handle(event);
+
+        // Then
+        ArgumentCaptor<TripUpdate> captor = ArgumentCaptor.forClass(TripUpdate.class);
+        verify(tripUpdateRepository).save(captor.capture());
+
+        TripUpdate saved = captor.getValue();
+        assertThat(saved.getUpdateType()).isEqualTo(UpdateType.DAY_START);
+
+        verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
+    }
+
+    @Test
+    void handle_whenUpdateTypeIsDayEnd_shouldPersistUpdateType() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID tripUpdateId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
+        Instant timestamp = Instant.now();
+
+        Trip trip = Trip.builder().id(tripId).name("Camino").build();
+
+        TripUpdatedEvent event =
+                TripUpdatedEvent.builder()
+                        .tripUpdateId(tripUpdateId)
+                        .tripId(tripId)
+                        .location(location)
+                        .batteryLevel(20)
+                        .message("Good night!")
+                        .updateType(UpdateType.DAY_END)
+                        .timestamp(timestamp)
+                        .build();
+
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+
+        // When
+        handler.handle(event);
+
+        // Then
+        ArgumentCaptor<TripUpdate> captor = ArgumentCaptor.forClass(TripUpdate.class);
+        verify(tripUpdateRepository).save(captor.capture());
+
+        TripUpdate saved = captor.getValue();
+        assertThat(saved.getUpdateType()).isEqualTo(UpdateType.DAY_END);
 
         verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
     }

@@ -13,6 +13,7 @@ import com.tomassirio.wanderer.command.service.impl.TripUpdateServiceImpl;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.UpdateType;
 import com.tomassirio.wanderer.commons.domain.WeatherCondition;
 import java.util.Optional;
 import java.util.UUID;
@@ -45,7 +46,8 @@ class TripUpdateServiceImplTest {
         UUID userId = UUID.randomUUID();
         UUID tripId = UUID.randomUUID();
         GeoLocation location = GeoLocation.builder().lat(48.8566).lon(2.3522).build();
-        TripUpdateCreationRequest request = new TripUpdateCreationRequest(location, 85, "Paris!");
+        TripUpdateCreationRequest request =
+                new TripUpdateCreationRequest(location, 85, "Paris!", null);
 
         Trip trip = Trip.builder().id(tripId).userId(userId).name("Euro Trip").build();
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
@@ -77,7 +79,8 @@ class TripUpdateServiceImplTest {
         UUID userId = UUID.randomUUID();
         UUID tripId = UUID.randomUUID();
         GeoLocation location = GeoLocation.builder().lat(0.0).lon(0.0).build();
-        TripUpdateCreationRequest request = new TripUpdateCreationRequest(location, 50, "Ocean");
+        TripUpdateCreationRequest request =
+                new TripUpdateCreationRequest(location, 50, "Ocean", null);
 
         Trip trip = Trip.builder().id(tripId).userId(userId).name("Ocean Trip").build();
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
@@ -106,7 +109,7 @@ class TripUpdateServiceImplTest {
         UUID tripId = UUID.randomUUID();
         GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
         TripUpdateCreationRequest request =
-                new TripUpdateCreationRequest(location, 90, "Santiago!");
+                new TripUpdateCreationRequest(location, 90, "Santiago!", null);
 
         Trip trip = Trip.builder().id(tripId).userId(userId).name("Camino").build();
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
@@ -139,7 +142,8 @@ class TripUpdateServiceImplTest {
         UUID userId = UUID.randomUUID();
         UUID tripId = UUID.randomUUID();
         GeoLocation location = GeoLocation.builder().lat(48.8566).lon(2.3522).build();
-        TripUpdateCreationRequest request = new TripUpdateCreationRequest(location, 75, "Rainy?");
+        TripUpdateCreationRequest request =
+                new TripUpdateCreationRequest(location, 75, "Rainy?", null);
 
         Trip trip = Trip.builder().id(tripId).userId(userId).name("Euro Trip").build();
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
@@ -160,5 +164,89 @@ class TripUpdateServiceImplTest {
         TripUpdatedEvent event = captor.getValue();
         assertThat(event.getTemperatureCelsius()).isNull();
         assertThat(event.getWeatherCondition()).isNull();
+    }
+
+    @Test
+    void createTripUpdate_whenUpdateTypeIsDayStart_shouldIncludeUpdateTypeInEvent() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
+        TripUpdateCreationRequest request =
+                new TripUpdateCreationRequest(location, 100, "Good morning!", UpdateType.DAY_START);
+
+        Trip trip = Trip.builder().id(tripId).userId(userId).name("Camino").build();
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        doNothing().when(ownershipValidator).validateOwnership(any(), any(), any(), any(), any());
+        when(geocodingService.reverseGeocode(location)).thenReturn(null);
+        when(weatherService.lookupCurrentWeather(location)).thenReturn(null);
+
+        // When
+        UUID result = tripUpdateService.createTripUpdate(userId, tripId, request);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        ArgumentCaptor<TripUpdatedEvent> captor = ArgumentCaptor.forClass(TripUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        TripUpdatedEvent event = captor.getValue();
+        assertThat(event.getUpdateType()).isEqualTo(UpdateType.DAY_START);
+    }
+
+    @Test
+    void createTripUpdate_whenUpdateTypeIsDayEnd_shouldIncludeUpdateTypeInEvent() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
+        TripUpdateCreationRequest request =
+                new TripUpdateCreationRequest(location, 20, "Good night!", UpdateType.DAY_END);
+
+        Trip trip = Trip.builder().id(tripId).userId(userId).name("Camino").build();
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        doNothing().when(ownershipValidator).validateOwnership(any(), any(), any(), any(), any());
+        when(geocodingService.reverseGeocode(location)).thenReturn(null);
+        when(weatherService.lookupCurrentWeather(location)).thenReturn(null);
+
+        // When
+        UUID result = tripUpdateService.createTripUpdate(userId, tripId, request);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        ArgumentCaptor<TripUpdatedEvent> captor = ArgumentCaptor.forClass(TripUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        TripUpdatedEvent event = captor.getValue();
+        assertThat(event.getUpdateType()).isEqualTo(UpdateType.DAY_END);
+    }
+
+    @Test
+    void createTripUpdate_whenUpdateTypeIsNull_shouldPublishEventWithNullUpdateType() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(48.8566).lon(2.3522).build();
+        TripUpdateCreationRequest request =
+                new TripUpdateCreationRequest(location, 75, "Walking", null);
+
+        Trip trip = Trip.builder().id(tripId).userId(userId).name("Euro Trip").build();
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        doNothing().when(ownershipValidator).validateOwnership(any(), any(), any(), any(), any());
+        when(geocodingService.reverseGeocode(location)).thenReturn(null);
+        when(weatherService.lookupCurrentWeather(location)).thenReturn(null);
+
+        // When
+        UUID result = tripUpdateService.createTripUpdate(userId, tripId, request);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        ArgumentCaptor<TripUpdatedEvent> captor = ArgumentCaptor.forClass(TripUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        TripUpdatedEvent event = captor.getValue();
+        assertThat(event.getUpdateType()).isNull();
     }
 }

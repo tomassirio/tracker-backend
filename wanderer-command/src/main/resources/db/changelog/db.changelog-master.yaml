@@ -51,3 +51,5 @@ databaseChangeLog:
       file: db/changelog/025-add-trip-modality-to-trips.yaml
   - include:
       file: db/changelog/026-add-pre-announced-to-promoted-trips.yaml
+  - include:
+      file: db/changelog/027-add-update-type-to-trip-updates.yaml

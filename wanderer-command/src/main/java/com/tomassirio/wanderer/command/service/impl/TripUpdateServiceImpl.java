@@ -69,6 +69,7 @@ public class TripUpdateServiceImpl implements TripUpdateService {
                                 Optional.ofNullable(weatherResult)
                                         .map(WeatherService.WeatherResult::condition)
                                         .orElse(null))
+                        .updateType(request.updateType())
                         .timestamp(timestamp)
                         .build());
 
