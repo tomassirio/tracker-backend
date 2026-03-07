@@ -223,6 +223,62 @@ class TripUpdateServiceImplTest {
     }
 
     @Test
+    void createTripUpdate_whenUpdateTypeIsTripStarted_shouldIncludeUpdateTypeInEvent() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
+        TripUpdateCreationRequest request =
+                new TripUpdateCreationRequest(location, 100, "Let's go!", UpdateType.TRIP_STARTED);
+
+        Trip trip = Trip.builder().id(tripId).userId(userId).name("Camino").build();
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        doNothing().when(ownershipValidator).validateOwnership(any(), any(), any(), any(), any());
+        when(geocodingService.reverseGeocode(location)).thenReturn(null);
+        when(weatherService.lookupCurrentWeather(location)).thenReturn(null);
+
+        // When
+        UUID result = tripUpdateService.createTripUpdate(userId, tripId, request);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        ArgumentCaptor<TripUpdatedEvent> captor = ArgumentCaptor.forClass(TripUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        TripUpdatedEvent event = captor.getValue();
+        assertThat(event.getUpdateType()).isEqualTo(UpdateType.TRIP_STARTED);
+    }
+
+    @Test
+    void createTripUpdate_whenUpdateTypeIsTripEnded_shouldIncludeUpdateTypeInEvent() {
+        // Given
+        UUID userId = UUID.randomUUID();
+        UUID tripId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
+        TripUpdateCreationRequest request =
+                new TripUpdateCreationRequest(location, 15, "We made it!", UpdateType.TRIP_ENDED);
+
+        Trip trip = Trip.builder().id(tripId).userId(userId).name("Camino").build();
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        doNothing().when(ownershipValidator).validateOwnership(any(), any(), any(), any(), any());
+        when(geocodingService.reverseGeocode(location)).thenReturn(null);
+        when(weatherService.lookupCurrentWeather(location)).thenReturn(null);
+
+        // When
+        UUID result = tripUpdateService.createTripUpdate(userId, tripId, request);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        ArgumentCaptor<TripUpdatedEvent> captor = ArgumentCaptor.forClass(TripUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+
+        TripUpdatedEvent event = captor.getValue();
+        assertThat(event.getUpdateType()).isEqualTo(UpdateType.TRIP_ENDED);
+    }
+
+    @Test
     void createTripUpdate_whenUpdateTypeIsNull_shouldPublishEventWithNullUpdateType() {
         // Given
         UUID userId = UUID.randomUUID();

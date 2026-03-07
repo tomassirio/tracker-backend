@@ -190,4 +190,76 @@ class TripUpdatedEventHandlerTest {
 
         verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
     }
+
+    @Test
+    void handle_whenUpdateTypeIsTripStarted_shouldPersistUpdateType() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID tripUpdateId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
+        Instant timestamp = Instant.now();
+
+        Trip trip = Trip.builder().id(tripId).name("Camino").build();
+
+        TripUpdatedEvent event =
+                TripUpdatedEvent.builder()
+                        .tripUpdateId(tripUpdateId)
+                        .tripId(tripId)
+                        .location(location)
+                        .batteryLevel(100)
+                        .message("Let's go!")
+                        .updateType(UpdateType.TRIP_STARTED)
+                        .timestamp(timestamp)
+                        .build();
+
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+
+        // When
+        handler.handle(event);
+
+        // Then
+        ArgumentCaptor<TripUpdate> captor = ArgumentCaptor.forClass(TripUpdate.class);
+        verify(tripUpdateRepository).save(captor.capture());
+
+        TripUpdate saved = captor.getValue();
+        assertThat(saved.getUpdateType()).isEqualTo(UpdateType.TRIP_STARTED);
+
+        verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
+    }
+
+    @Test
+    void handle_whenUpdateTypeIsTripEnded_shouldPersistUpdateType() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID tripUpdateId = UUID.randomUUID();
+        GeoLocation location = GeoLocation.builder().lat(42.8805).lon(-8.5457).build();
+        Instant timestamp = Instant.now();
+
+        Trip trip = Trip.builder().id(tripId).name("Camino").build();
+
+        TripUpdatedEvent event =
+                TripUpdatedEvent.builder()
+                        .tripUpdateId(tripUpdateId)
+                        .tripId(tripId)
+                        .location(location)
+                        .batteryLevel(15)
+                        .message("We made it!")
+                        .updateType(UpdateType.TRIP_ENDED)
+                        .timestamp(timestamp)
+                        .build();
+
+        when(tripRepository.getReferenceById(tripId)).thenReturn(trip);
+
+        // When
+        handler.handle(event);
+
+        // Then
+        ArgumentCaptor<TripUpdate> captor = ArgumentCaptor.forClass(TripUpdate.class);
+        verify(tripUpdateRepository).save(captor.capture());
+
+        TripUpdate saved = captor.getValue();
+        assertThat(saved.getUpdateType()).isEqualTo(UpdateType.TRIP_ENDED);
+
+        verify(achievementCalculationService).checkAndUnlockAchievements(tripId);
+    }
 }

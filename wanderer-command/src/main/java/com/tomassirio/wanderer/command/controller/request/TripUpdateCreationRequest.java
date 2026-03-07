@@ -22,7 +22,14 @@ public record TripUpdateCreationRequest(
                 @Size(max = 500, message = "Message must not exceed 500 characters")
                 String message,
         @Schema(
-                        description = "Type of update: REGULAR, DAY_START, or DAY_END",
+                        description =
+                                "Type of update: REGULAR, DAY_START, DAY_END, TRIP_STARTED, or TRIP_ENDED",
                         example = "REGULAR",
-                        allowableValues = {"REGULAR", "DAY_START", "DAY_END"})
+                        allowableValues = {
+                            "REGULAR",
+                            "DAY_START",
+                            "DAY_END",
+                            "TRIP_STARTED",
+                            "TRIP_ENDED"
+                        })
                 UpdateType updateType) {}
