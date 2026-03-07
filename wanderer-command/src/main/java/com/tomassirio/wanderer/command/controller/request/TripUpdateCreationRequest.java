@@ -1,6 +1,7 @@
 package com.tomassirio.wanderer.command.controller.request;
 
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
+import com.tomassirio.wanderer.commons.domain.UpdateType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -19,4 +20,16 @@ public record TripUpdateCreationRequest(
                 Integer battery,
         @Schema(description = "Optional message or note", example = "Reached checkpoint")
                 @Size(max = 500, message = "Message must not exceed 500 characters")
-                String message) {}
+                String message,
+        @Schema(
+                        description =
+                                "Type of update: REGULAR, DAY_START, DAY_END, TRIP_STARTED, or TRIP_ENDED",
+                        example = "REGULAR",
+                        allowableValues = {
+                            "REGULAR",
+                            "DAY_START",
+                            "DAY_END",
+                            "TRIP_STARTED",
+                            "TRIP_ENDED"
+                        })
+                UpdateType updateType) {}

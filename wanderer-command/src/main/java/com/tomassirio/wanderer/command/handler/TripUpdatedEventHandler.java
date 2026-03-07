@@ -50,6 +50,7 @@ public class TripUpdatedEventHandler implements EventHandler<TripUpdatedEvent> {
                         .country(event.getCountry())
                         .temperatureCelsius(event.getTemperatureCelsius())
                         .weatherCondition(event.getWeatherCondition())
+                        .updateType(event.getUpdateType())
                         .timestamp(event.getTimestamp())
                         .build();
 

@@ -62,6 +62,10 @@ public class TripUpdate {
     @Column(name = "weather_condition")
     private WeatherCondition weatherCondition;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "update_type")
+    private UpdateType updateType;
+
     @NotNull
     @Column(nullable = false)
     private Instant timestamp;
