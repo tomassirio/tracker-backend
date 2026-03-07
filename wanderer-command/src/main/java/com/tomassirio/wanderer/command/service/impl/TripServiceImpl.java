@@ -15,13 +15,17 @@ import com.tomassirio.wanderer.command.repository.UserRepository;
 import com.tomassirio.wanderer.command.service.TripService;
 import com.tomassirio.wanderer.command.service.validator.OwnershipValidator;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
+import com.tomassirio.wanderer.commons.domain.TripPlanType;
+import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -60,6 +64,7 @@ public class TripServiceImpl implements TripService {
                         .visibility(request.visibility().name())
                         .tripPlanId(null)
                         .creationTimestamp(creationTimestamp)
+                        .tripModality(request.tripModality())
                         .build());
 
         return tripId;
@@ -201,6 +206,7 @@ public class TripServiceImpl implements TripService {
                                 tripPlan.getStartDate().atStartOfDay().toInstant(ZoneOffset.UTC))
                         .endTimestamp(
                                 tripPlan.getEndDate().atStartOfDay().toInstant(ZoneOffset.UTC))
+                        .tripModality(deriveModalityFromPlanType(tripPlan.getPlanType()))
                         .build());
 
         return tripId;
@@ -208,7 +214,11 @@ public class TripServiceImpl implements TripService {
 
     @Override
     public UUID updateSettings(
-            UUID userId, UUID id, Integer updateRefresh, Boolean automaticUpdates) {
+            UUID userId,
+            UUID id,
+            Integer updateRefresh,
+            Boolean automaticUpdates,
+            TripModality tripModality) {
         // Validate trip exists and ownership
         Trip trip =
                 tripRepository
@@ -217,14 +227,41 @@ public class TripServiceImpl implements TripService {
 
         ownershipValidator.validateOwnership(trip, userId, Trip::getUserId, Trip::getId, "trip");
 
+        validateModalityTransition(trip, tripModality);
+
         // Publish event - persistence handler will write to DB
         eventPublisher.publishEvent(
                 TripSettingsUpdatedEvent.builder()
                         .tripId(id)
                         .updateRefresh(updateRefresh)
                         .automaticUpdates(automaticUpdates)
+                        .tripModality(tripModality)
                         .build());
 
         return id;
+    }
+
+    private TripModality deriveModalityFromPlanType(TripPlanType planType) {
+        return TripPlanType.MULTI_DAY.equals(planType)
+                ? TripModality.MULTI_DAY
+                : TripModality.SIMPLE;
+    }
+
+    /**
+     * Validates that the requested modality transition is permitted. A trip can be upgraded from
+     * SIMPLE to MULTI_DAY, but the reverse downgrade is not allowed.
+     */
+    private void validateModalityTransition(Trip trip, TripModality newModality) {
+        if (newModality == null) {
+            return;
+        }
+        TripModality currentModality =
+                Optional.ofNullable(trip.getTripSettings())
+                        .map(TripSettings::getTripModality)
+                        .orElse(null);
+        if (currentModality == TripModality.MULTI_DAY && newModality == TripModality.SIMPLE) {
+            throw new IllegalStateException(
+                    "Trip modality cannot be downgraded from MULTI_DAY to SIMPLE.");
+        }
     }
 }

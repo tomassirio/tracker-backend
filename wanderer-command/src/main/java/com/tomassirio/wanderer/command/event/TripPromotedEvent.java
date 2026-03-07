@@ -19,6 +19,8 @@ public class TripPromotedEvent implements DomainEvent, Broadcastable {
     private String donationLink;
     private UUID promotedBy;
     private Instant promotedAt;
+    private boolean preAnnounced;
+    private Instant countdownStartDate;
 
     @Override
     public String getEventType() {

@@ -54,7 +54,7 @@ class TripCreatedEventHandlerTest {
                         .build();
         TripDetails tripDetails = TripDetails.builder().build();
 
-        when(embeddedObjectsInitializer.createTripSettings(TripVisibility.PUBLIC))
+        when(embeddedObjectsInitializer.createTripSettings(TripVisibility.PUBLIC, null))
                 .thenReturn(tripSettings);
         when(embeddedObjectsInitializer.createTripDetails()).thenReturn(tripDetails);
 
@@ -99,7 +99,7 @@ class TripCreatedEventHandlerTest {
                         .build();
         TripDetails tripDetails = TripDetails.builder().build();
 
-        when(embeddedObjectsInitializer.createTripSettings(TripVisibility.PRIVATE))
+        when(embeddedObjectsInitializer.createTripSettings(TripVisibility.PRIVATE, null))
                 .thenReturn(tripSettings);
         when(embeddedObjectsInitializer.createTripDetails()).thenReturn(tripDetails);
 
@@ -154,7 +154,7 @@ class TripCreatedEventHandlerTest {
                         .endTimestamp(endTimestamp)
                         .build();
 
-        when(embeddedObjectsInitializer.createTripSettings(TripVisibility.PUBLIC))
+        when(embeddedObjectsInitializer.createTripSettings(TripVisibility.PUBLIC, null))
                 .thenReturn(tripSettings);
         when(embeddedObjectsInitializer.createTripDetailsFromEvent(
                         startLocation, endLocation, waypoints, startTimestamp, endTimestamp))

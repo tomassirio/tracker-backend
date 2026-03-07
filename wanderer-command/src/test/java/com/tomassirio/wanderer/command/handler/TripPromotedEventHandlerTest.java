@@ -30,6 +30,7 @@ class TripPromotedEventHandlerTest {
         UUID promotedBy = UUID.randomUUID();
         String donationLink = "https://example.com/donate";
         Instant promotedAt = Instant.now();
+        Instant countdownStartDate = Instant.parse("2025-06-01T08:00:00Z");
 
         TripPromotedEvent event =
                 TripPromotedEvent.builder()
@@ -38,6 +39,8 @@ class TripPromotedEventHandlerTest {
                         .donationLink(donationLink)
                         .promotedBy(promotedBy)
                         .promotedAt(promotedAt)
+                        .preAnnounced(true)
+                        .countdownStartDate(countdownStartDate)
                         .build();
 
         // When
@@ -53,6 +56,8 @@ class TripPromotedEventHandlerTest {
         assertThat(saved.getDonationLink()).isEqualTo(donationLink);
         assertThat(saved.getPromotedBy()).isEqualTo(promotedBy);
         assertThat(saved.getPromotedAt()).isEqualTo(promotedAt);
+        assertThat(saved.isPreAnnounced()).isTrue();
+        assertThat(saved.getCountdownStartDate()).isEqualTo(countdownStartDate);
     }
 
     @Test
@@ -70,6 +75,8 @@ class TripPromotedEventHandlerTest {
                         .donationLink(null)
                         .promotedBy(promotedBy)
                         .promotedAt(promotedAt)
+                        .preAnnounced(false)
+                        .countdownStartDate(null)
                         .build();
 
         // When
@@ -85,5 +92,7 @@ class TripPromotedEventHandlerTest {
         assertThat(saved.getDonationLink()).isNull();
         assertThat(saved.getPromotedBy()).isEqualTo(promotedBy);
         assertThat(saved.getPromotedAt()).isEqualTo(promotedAt);
+        assertThat(saved.isPreAnnounced()).isFalse();
+        assertThat(saved.getCountdownStartDate()).isNull();
     }
 }

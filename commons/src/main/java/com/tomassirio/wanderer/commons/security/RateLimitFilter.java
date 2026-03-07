@@ -16,9 +16,9 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Per-IP rate-limiting filter using a fixed-window counter stored in memory. Each service configures
- * its own limits via {@code app.rate-limit.*} properties (set per app through Helm values), so no
- * endpoint-specific branching is needed here.
+ * Per-IP rate-limiting filter using a fixed-window counter stored in memory. Each service
+ * configures its own limits via {@code app.rate-limit.*} properties (set per app through Helm
+ * values), so no endpoint-specific branching is needed here.
  *
  * <p>Rate-limit metadata is exposed via response headers:
  *
@@ -139,5 +139,3 @@ public class RateLimitFilter extends OncePerRequestFilter {
         }
     }
 }
-
-

@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.command.event;
 
 import com.tomassirio.wanderer.command.websocket.WebSocketEventType;
 import com.tomassirio.wanderer.command.websocket.payload.TripSettingsUpdatedPayload;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +17,7 @@ public class TripSettingsUpdatedEvent implements DomainEvent, Broadcastable {
     private UUID tripId;
     private Integer updateRefresh;
     private Boolean automaticUpdates;
+    private TripModality tripModality;
 
     @Override
     public String getEventType() {
@@ -38,6 +40,7 @@ public class TripSettingsUpdatedEvent implements DomainEvent, Broadcastable {
                 .tripId(tripId)
                 .updateRefresh(updateRefresh)
                 .automaticUpdates(automaticUpdates)
+                .tripModality(tripModality)
                 .build();
     }
 }

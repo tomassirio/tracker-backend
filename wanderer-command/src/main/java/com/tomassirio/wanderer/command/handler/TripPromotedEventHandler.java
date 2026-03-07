@@ -37,6 +37,8 @@ public class TripPromotedEventHandler implements EventHandler<TripPromotedEvent>
                         .donationLink(event.getDonationLink())
                         .promotedBy(event.getPromotedBy())
                         .promotedAt(event.getPromotedAt())
+                        .preAnnounced(event.isPreAnnounced())
+                        .countdownStartDate(event.getCountdownStartDate())
                         .build();
 
         promotedTripRepository.save(promotedTrip);

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
@@ -29,6 +30,7 @@ class TripEmbeddedObjectsInitializerTest {
         assertThat(settings.getTripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(settings.getVisibility()).isEqualTo(TripVisibility.PUBLIC);
         assertThat(settings.getUpdateRefresh()).isNull();
+        assertThat(settings.getTripModality()).isNull();
     }
 
     @Test
@@ -42,6 +44,7 @@ class TripEmbeddedObjectsInitializerTest {
         assertThat(settings.getTripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(settings.getVisibility()).isEqualTo(TripVisibility.PRIVATE);
         assertThat(settings.getUpdateRefresh()).isNull();
+        assertThat(settings.getTripModality()).isNull();
     }
 
     @Test
@@ -55,6 +58,47 @@ class TripEmbeddedObjectsInitializerTest {
         assertThat(settings.getTripStatus()).isEqualTo(TripStatus.CREATED);
         assertThat(settings.getVisibility()).isEqualTo(TripVisibility.PROTECTED);
         assertThat(settings.getUpdateRefresh()).isNull();
+        assertThat(settings.getTripModality()).isNull();
+    }
+
+    // Tests for createTripSettings(TripVisibility, TripModality)
+
+    @Test
+    void
+            createTripSettings_whenCalledWithVisibilityAndSimpleModality_shouldCreateSettingsWithModality() {
+        // When
+        TripSettings settings =
+                initializer.createTripSettings(TripVisibility.PUBLIC, TripModality.SIMPLE);
+
+        // Then
+        assertThat(settings).isNotNull();
+        assertThat(settings.getTripStatus()).isEqualTo(TripStatus.CREATED);
+        assertThat(settings.getVisibility()).isEqualTo(TripVisibility.PUBLIC);
+        assertThat(settings.getUpdateRefresh()).isNull();
+        assertThat(settings.getTripModality()).isEqualTo(TripModality.SIMPLE);
+    }
+
+    @Test
+    void
+            createTripSettings_whenCalledWithVisibilityAndMultiDayModality_shouldCreateSettingsWithModality() {
+        // When
+        TripSettings settings =
+                initializer.createTripSettings(TripVisibility.PUBLIC, TripModality.MULTI_DAY);
+
+        // Then
+        assertThat(settings).isNotNull();
+        assertThat(settings.getTripModality()).isEqualTo(TripModality.MULTI_DAY);
+    }
+
+    @Test
+    void
+            createTripSettings_whenCalledWithVisibilityAndNullModality_shouldCreateSettingsWithNullModality() {
+        // When
+        TripSettings settings = initializer.createTripSettings(TripVisibility.PUBLIC, null);
+
+        // Then
+        assertThat(settings).isNotNull();
+        assertThat(settings.getTripModality()).isNull();
     }
 
     // Tests for createTripDetails()

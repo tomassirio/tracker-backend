@@ -9,6 +9,7 @@ import com.tomassirio.wanderer.command.event.TripSettingsUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.commons.domain.Trip;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
@@ -143,5 +144,58 @@ class TripSettingsUpdatedEventHandlerTest {
         verify(tripRepository).findById(tripId);
         // Handler should not call any methods on embeddedObjectsInitializer when trip is not found
         verifyNoInteractions(embeddedObjectsInitializer);
+    }
+
+    @Test
+    void handle_whenTripModalityProvided_shouldUpdateTripModality() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        TripSettingsUpdatedEvent event =
+                TripSettingsUpdatedEvent.builder()
+                        .tripId(tripId)
+                        .tripModality(TripModality.MULTI_DAY)
+                        .build();
+
+        TripSettings tripSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .tripModality(TripModality.SIMPLE)
+                        .build();
+        Trip trip = Trip.builder().id(tripId).tripSettings(tripSettings).build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+
+        // When
+        handler.handle(event);
+
+        // Then
+        verify(embeddedObjectsInitializer).ensureTripSettings(trip, null);
+        assertThat(trip.getTripSettings().getTripModality()).isEqualTo(TripModality.MULTI_DAY);
+    }
+
+    @Test
+    void handle_whenTripModalityIsNull_shouldNotChangeTripModality() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        TripSettingsUpdatedEvent event =
+                TripSettingsUpdatedEvent.builder().tripId(tripId).updateRefresh(60).build();
+
+        TripSettings tripSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .tripModality(TripModality.SIMPLE)
+                        .build();
+        Trip trip = Trip.builder().id(tripId).tripSettings(tripSettings).build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+
+        // When
+        handler.handle(event);
+
+        // Then
+        assertThat(trip.getTripSettings().getTripModality())
+                .isEqualTo(TripModality.SIMPLE); // Unchanged
     }
 }

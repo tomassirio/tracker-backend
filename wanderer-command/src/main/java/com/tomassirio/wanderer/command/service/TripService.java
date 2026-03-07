@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.command.service;
 
 import com.tomassirio.wanderer.command.controller.request.TripCreationRequest;
 import com.tomassirio.wanderer.command.controller.request.TripUpdateRequest;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import com.tomassirio.wanderer.commons.domain.TripStatus;
 import com.tomassirio.wanderer.commons.domain.TripVisibility;
 import java.util.UUID;
@@ -99,16 +100,22 @@ public interface TripService {
     UUID changeStatus(UUID userId, UUID id, TripStatus status);
 
     /**
-     * Updates trip settings (updateRefresh and automaticUpdates).
+     * Updates trip settings (updateRefresh, automaticUpdates, and tripModality).
      *
      * @param userId the UUID of the user making the request (for ownership validation)
      * @param id the UUID of the trip to update
      * @param updateRefresh the interval in seconds for automatic location updates (nullable)
      * @param automaticUpdates whether automatic updates are enabled (nullable)
+     * @param tripModality the trip modality (SIMPLE or MULTI_DAY, nullable)
      * @return the UUID of the trip
      * @throws jakarta.persistence.EntityNotFoundException if no trip exists with the given ID
      * @throws org.springframework.security.access.AccessDeniedException if user doesn't own the
      *     trip
      */
-    UUID updateSettings(UUID userId, UUID id, Integer updateRefresh, Boolean automaticUpdates);
+    UUID updateSettings(
+            UUID userId,
+            UUID id,
+            Integer updateRefresh,
+            Boolean automaticUpdates,
+            TripModality tripModality);
 }

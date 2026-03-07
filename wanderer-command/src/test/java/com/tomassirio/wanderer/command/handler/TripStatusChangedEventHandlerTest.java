@@ -214,4 +214,65 @@ class TripStatusChangedEventHandlerTest {
         // Then
         verify(activeTripRepository).delete(activeTrip);
     }
+
+    @Test
+    void handle_whenStatusChangedFromInProgressToResting_shouldRemoveActiveTrip() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        TripStatusChangedEvent event =
+                TripStatusChangedEvent.builder()
+                        .tripId(tripId)
+                        .previousStatus("IN_PROGRESS")
+                        .newStatus("RESTING")
+                        .build();
+
+        TripSettings tripSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.IN_PROGRESS)
+                        .visibility(TripVisibility.PUBLIC)
+                        .build();
+        Trip trip = Trip.builder().id(tripId).userId(userId).tripSettings(tripSettings).build();
+        ActiveTrip activeTrip = ActiveTrip.builder().userId(userId).tripId(tripId).build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        when(activeTripRepository.findById(userId)).thenReturn(Optional.of(activeTrip));
+
+        // When
+        handler.handle(event);
+
+        // Then
+        verify(activeTripRepository).delete(activeTrip);
+        assertThat(trip.getTripSettings().getTripStatus()).isEqualTo(TripStatus.RESTING);
+    }
+
+    @Test
+    void handle_whenStatusChangedFromRestingToInProgress_shouldCreateActiveTrip() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        TripStatusChangedEvent event =
+                TripStatusChangedEvent.builder()
+                        .tripId(tripId)
+                        .previousStatus("RESTING")
+                        .newStatus("IN_PROGRESS")
+                        .build();
+
+        TripSettings tripSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.RESTING)
+                        .visibility(TripVisibility.PUBLIC)
+                        .build();
+        Trip trip = Trip.builder().id(tripId).userId(userId).tripSettings(tripSettings).build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(trip));
+        when(activeTripRepository.findById(userId)).thenReturn(Optional.empty());
+
+        // When
+        handler.handle(event);
+
+        // Then
+        verify(activeTripRepository).save(any(ActiveTrip.class));
+        assertThat(trip.getTripSettings().getTripStatus()).isEqualTo(TripStatus.IN_PROGRESS);
+    }
 }

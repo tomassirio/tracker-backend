@@ -3,6 +3,7 @@ package com.tomassirio.wanderer.command.event;
 import com.tomassirio.wanderer.command.websocket.WebSocketEventType;
 import com.tomassirio.wanderer.command.websocket.payload.TripLifecyclePayload;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,7 @@ public class TripCreatedEvent implements DomainEvent, Broadcastable {
     private List<GeoLocation> waypoints;
     private Instant startTimestamp;
     private Instant endTimestamp;
+    private TripModality tripModality;
 
     @Override
     public String getEventType() {

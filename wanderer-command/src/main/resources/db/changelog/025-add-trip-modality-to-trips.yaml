@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-add-trip-modality-to-trips
+      author: tomassirio
+      preConditions:
+        - onFail: MARK_RAN
+        - not:
+            - columnExists:
+                tableName: trips
+                columnName: trip_modality
+      changes:
+        - addColumn:
+            tableName: trips
+            columns:
+              - column:
+                  name: trip_modality
+                  type: varchar(50)
+      rollback:
+        - dropColumn:
+            tableName: trips
+            columnName: trip_modality

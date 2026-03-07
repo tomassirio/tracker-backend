@@ -142,8 +142,7 @@ public class AuthController {
         }
         String homeUrl = baseUrl.replaceAll("/+$", "");
         String logoDataUri = buildLogoDataUri();
-        return template
-                .replace("{{loginUrl}}", loginUrl)
+        return template.replace("{{loginUrl}}", loginUrl)
                 .replace("{{homeUrl}}", homeUrl)
                 .replace("{{logoSrc}}", logoDataUri);
     }

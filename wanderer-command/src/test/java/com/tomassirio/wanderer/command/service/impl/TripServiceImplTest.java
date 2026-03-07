@@ -27,6 +27,7 @@ import com.tomassirio.wanderer.command.utils.TestEntityFactory;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
 import com.tomassirio.wanderer.commons.domain.TripDetails;
+import com.tomassirio.wanderer.commons.domain.TripModality;
 import com.tomassirio.wanderer.commons.domain.TripPlan;
 import com.tomassirio.wanderer.commons.domain.TripPlanType;
 import com.tomassirio.wanderer.commons.domain.TripSettings;
@@ -44,6 +45,7 @@ import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -1043,7 +1045,7 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When
-        UUID result = tripService.updateSettings(USER_ID, tripId, 120, true);
+        UUID result = tripService.updateSettings(USER_ID, tripId, 120, true, null);
 
         // Then
         assertThat(result).isNotNull();
@@ -1079,7 +1081,8 @@ class TripServiceImplTest {
         assertThatThrownBy(
                         () ->
                                 tripService.updateSettings(
-                                        USER_ID, tripId, 120, true)) // USER_ID is not the owner
+                                        USER_ID, tripId, 120, true,
+                                        null)) // USER_ID is not the owner
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("does not have permission to modify trip");
 
@@ -1095,7 +1098,7 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.empty());
 
         // When & Then
-        assertThatThrownBy(() -> tripService.updateSettings(USER_ID, tripId, 120, true))
+        assertThatThrownBy(() -> tripService.updateSettings(USER_ID, tripId, 120, true, null))
                 .isInstanceOf(EntityNotFoundException.class)
                 .hasMessageContaining("Trip not found");
 
@@ -1130,12 +1133,86 @@ class TripServiceImplTest {
         when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
 
         // When - only update automaticUpdates
-        UUID result = tripService.updateSettings(USER_ID, tripId, null, true);
+        UUID result = tripService.updateSettings(USER_ID, tripId, null, true, null);
 
         // Then
         assertThat(result).isNotNull();
         assertThat(result).isEqualTo(tripId);
         verify(tripRepository).findById(tripId);
         verify(eventPublisher).publishEvent(any(TripSettingsUpdatedEvent.class));
+    }
+
+    @Test
+    void updateSettings_whenUpgradingFromSimpleToMultiDay_shouldPublishEvent() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .tripModality(TripModality.SIMPLE)
+                        .build();
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("My Trip")
+                        .userId(USER_ID)
+                        .tripSettings(existingSettings)
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+
+        // When
+        UUID result =
+                tripService.updateSettings(USER_ID, tripId, null, null, TripModality.MULTI_DAY);
+
+        // Then
+        assertThat(result).isEqualTo(tripId);
+        ArgumentCaptor<TripSettingsUpdatedEvent> captor =
+                ArgumentCaptor.forClass(TripSettingsUpdatedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().getTripModality()).isEqualTo(TripModality.MULTI_DAY);
+    }
+
+    @Test
+    void updateSettings_whenDowngradingFromMultiDayToSimple_shouldThrowIllegalStateException() {
+        // Given
+        UUID tripId = UUID.randomUUID();
+
+        TripSettings existingSettings =
+                TripSettings.builder()
+                        .tripStatus(TripStatus.CREATED)
+                        .visibility(TripVisibility.PUBLIC)
+                        .tripModality(TripModality.MULTI_DAY)
+                        .build();
+
+        Trip existingTrip =
+                Trip.builder()
+                        .id(tripId)
+                        .name("My Trip")
+                        .userId(USER_ID)
+                        .tripSettings(existingSettings)
+                        .tripDetails(TripDetails.builder().build())
+                        .creationTimestamp(Instant.now())
+                        .enabled(true)
+                        .build();
+
+        when(tripRepository.findById(tripId)).thenReturn(Optional.of(existingTrip));
+
+        // When & Then
+        assertThatThrownBy(
+                        () ->
+                                tripService.updateSettings(
+                                        USER_ID, tripId, null, null, TripModality.SIMPLE))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining(
+                        "Trip modality cannot be downgraded from MULTI_DAY to SIMPLE.");
+
+        verify(eventPublisher, never()).publishEvent(any());
     }
 }

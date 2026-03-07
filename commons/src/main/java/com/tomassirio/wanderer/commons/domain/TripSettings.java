@@ -32,4 +32,8 @@ public class TripSettings {
 
     @Column(name = "automatic_updates")
     private Boolean automaticUpdates; // whether automatic updates are enabled
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trip_modality")
+    private TripModality tripModality; // whether this is a simple or multi-day trip
 }
