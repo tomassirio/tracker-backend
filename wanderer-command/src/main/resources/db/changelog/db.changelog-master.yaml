@@ -81,3 +81,5 @@ databaseChangeLog:
       file: db/changelog/040-add-performance-indexes.yaml
   - include:
       file: db/changelog/041-add-update-count-to-trips.yaml
+  - include:
+      file: db/changelog/042-seed-activation-achievements-data.yaml

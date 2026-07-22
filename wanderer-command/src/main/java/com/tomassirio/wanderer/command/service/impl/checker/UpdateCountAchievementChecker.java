@@ -17,6 +17,7 @@ public class UpdateCountAchievementChecker implements TripAchievementChecker {
     @Override
     public List<AchievementType> getApplicableTypes() {
         return List.of(
+                AchievementType.UPDATES_1,
                 AchievementType.UPDATES_10,
                 AchievementType.UPDATES_50,
                 AchievementType.UPDATES_100);

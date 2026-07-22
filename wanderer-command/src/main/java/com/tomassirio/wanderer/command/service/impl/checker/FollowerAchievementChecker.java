@@ -17,6 +17,7 @@ public class FollowerAchievementChecker implements SocialAchievementChecker {
     @Override
     public List<AchievementType> getApplicableTypes() {
         return List.of(
+                AchievementType.FOLLOWERS_1,
                 AchievementType.FOLLOWERS_10,
                 AchievementType.FOLLOWERS_50,
                 AchievementType.FOLLOWERS_100);

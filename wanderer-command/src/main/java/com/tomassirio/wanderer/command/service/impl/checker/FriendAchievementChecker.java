@@ -17,7 +17,10 @@ public class FriendAchievementChecker implements SocialAchievementChecker {
     @Override
     public List<AchievementType> getApplicableTypes() {
         return List.of(
-                AchievementType.FRIENDS_5, AchievementType.FRIENDS_20, AchievementType.FRIENDS_50);
+                AchievementType.FRIENDS_1,
+                AchievementType.FRIENDS_5,
+                AchievementType.FRIENDS_20,
+                AchievementType.FRIENDS_50);
     }
 
     @Override

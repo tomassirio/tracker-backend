@@ -1,0 +1,115 @@
+databaseChangeLog:
+  - changeSet:
+      id: 042-seed-activation-achievements-data
+      author: tomassirio
+      comment: "Seed achievements table with new activation AchievementType values"
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: achievements
+      changes:
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FIRST_TRIP
+              - column:
+                  name: name
+                  value: "First Steps"
+              - column:
+                  name: description
+                  value: "Create your first trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 1
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: UPDATES_1
+              - column:
+                  name: name
+                  value: "Breaking the Ice"
+              - column:
+                  name: description
+                  value: "Post your first update on a trip"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 1
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FOLLOWERS_1
+              - column:
+                  name: name
+                  value: "First Fan"
+              - column:
+                  name: description
+                  value: "Gain your first follower"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 1
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: FRIENDS_1
+              - column:
+                  name: name
+                  value: "First Friend"
+              - column:
+                  name: description
+                  value: "Make your first friend"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 1
+              - column:
+                  name: enabled
+                  valueBoolean: true
+        - insert:
+            tableName: achievements
+            columns:
+              - column:
+                  name: id
+                  valueComputed: gen_random_uuid()
+              - column:
+                  name: type
+                  value: PROFILE_COMPLETED
+              - column:
+                  name: name
+                  value: "All Set Up"
+              - column:
+                  name: description
+                  value: "Fill in your display name and bio"
+              - column:
+                  name: threshold_value
+                  valueNumeric: 1
+              - column:
+                  name: enabled
+                  valueBoolean: true
