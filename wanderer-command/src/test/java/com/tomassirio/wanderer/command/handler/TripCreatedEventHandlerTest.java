@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.TripCreatedEvent;
 import com.tomassirio.wanderer.command.repository.TripRepository;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.command.service.helper.TripEmbeddedObjectsInitializer;
 import com.tomassirio.wanderer.commons.domain.GeoLocation;
 import com.tomassirio.wanderer.commons.domain.Trip;
@@ -29,6 +30,7 @@ class TripCreatedEventHandlerTest {
 
     @Mock private TripEmbeddedObjectsInitializer embeddedObjectsInitializer;
     @Mock private TripRepository tripRepository;
+    @Mock private AchievementService achievementCalculationService;
 
     @InjectMocks private TripCreatedEventHandler handler;
 
@@ -73,6 +75,7 @@ class TripCreatedEventHandlerTest {
         assertThat(savedTrip.getTripSettings()).isEqualTo(tripSettings);
         assertThat(savedTrip.getTripDetails()).isEqualTo(tripDetails);
         assertThat(savedTrip.getEnabled()).isTrue();
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(ownerId);
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.tomassirio.wanderer.command.handler;
 
 import com.tomassirio.wanderer.command.event.UserDetailsUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.UserRepository;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.UserDetails;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserDetailsUpdatedEventHandler implements EventHandler<UserDetailsUpdatedEvent> {
 
     private final UserRepository userRepository;
+    private final AchievementService achievementCalculationService;
 
     @Override
     @EventListener
@@ -42,6 +44,9 @@ public class UserDetailsUpdatedEventHandler implements EventHandler<UserDetailsU
 
                             user.setUserDetails(details);
                             log.info("User details updated for user: {}", event.getUserId());
+
+                            achievementCalculationService.checkAndUnlockSocialAchievements(
+                                    event.getUserId());
                         });
     }
 }

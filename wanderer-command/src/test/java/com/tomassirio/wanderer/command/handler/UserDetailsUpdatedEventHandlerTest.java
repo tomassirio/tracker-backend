@@ -1,11 +1,14 @@
 package com.tomassirio.wanderer.command.handler;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.tomassirio.wanderer.command.event.UserDetailsUpdatedEvent;
 import com.tomassirio.wanderer.command.repository.UserRepository;
+import com.tomassirio.wanderer.command.service.AchievementService;
 import com.tomassirio.wanderer.commons.domain.User;
 import com.tomassirio.wanderer.commons.domain.UserDetails;
 import java.util.Optional;
@@ -20,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class UserDetailsUpdatedEventHandlerTest {
 
     @Mock private UserRepository userRepository;
+    @Mock private AchievementService achievementCalculationService;
 
     @InjectMocks private UserDetailsUpdatedEventHandler handler;
 
@@ -47,6 +51,7 @@ class UserDetailsUpdatedEventHandlerTest {
         // Then
         assertThat(user.getUserDetails().getDisplayName()).isEqualTo("John Doe");
         assertThat(user.getUserDetails().getBio()).isEqualTo("Walking the Camino");
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
     }
 
     @Test
@@ -73,6 +78,7 @@ class UserDetailsUpdatedEventHandlerTest {
         // Then
         assertThat(user.getUserDetails().getDisplayName()).isEqualTo("New Name");
         assertThat(user.getUserDetails().getBio()).isEqualTo("Keep this bio");
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
     }
 
     @Test
@@ -98,6 +104,7 @@ class UserDetailsUpdatedEventHandlerTest {
         assertThat(user.getUserDetails()).isNotNull();
         assertThat(user.getUserDetails().getDisplayName()).isEqualTo("John");
         assertThat(user.getUserDetails().getBio()).isEqualTo("Bio text");
+        verify(achievementCalculationService).checkAndUnlockSocialAchievements(userId);
     }
 
     @Test
@@ -114,5 +121,6 @@ class UserDetailsUpdatedEventHandlerTest {
 
         // Then
         verify(userRepository).findById(userId);
+        verify(achievementCalculationService, never()).checkAndUnlockSocialAchievements(any());
     }
 }
